@@ -1,0 +1,26 @@
+unit lp.builtinfn;
+
+interface
+
+uses classes, SysUtils, Generics.Collections, Variants
+  ,lp.evaluator;
+
+function Len(args: TList<TEvalObject>): TEvalObject;
+
+implementation
+
+function Len(args: TList<TEvalObject>): TEvalObject;
+begin
+  if (args.Count<>1) then
+    Result := newError('wrong number of arguments. got=%d, want=1', [args.Count])
+  else
+  begin
+    if args[0].ObjetcType=STRING_OBJ then
+      Result := TNumberObject.Create(Length(TStringObject(args[0]).Value))
+    else
+      Result := newError('argument to `len` not supported, got %s', [args[0].ObjetcType]);
+  end;
+end;
+
+
+end.

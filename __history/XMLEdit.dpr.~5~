@@ -1,0 +1,18 @@
+program XMLEdit;
+
+uses
+  Forms,
+  xmledit.main in 'xmledit.main.pas' {Form6},
+  lp.token in 'lp.token.pas',
+  lp.lexer in 'lp.lexer.pas',
+  lp.parser in 'lp.parser.pas',
+  lp.evaluator in 'lp.evaluator.pas';
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TForm6, Form6);
+  Application.Run;
+end.

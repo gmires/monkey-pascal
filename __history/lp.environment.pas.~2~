@@ -1,0 +1,26 @@
+unit lp.environment;
+
+interface
+
+uses classes, SysUtils, Generics.Collections, Variants
+  ,lp.parser;
+
+
+type
+  TEnvironment = class
+    FStore: TDictionary<string,TEvalObject>;
+    FOuter: TEnvironment;
+  public
+    constructor Create; overload;
+    constructor Create(AOuter:TEnvironment); overload;
+    destructor Destroy; override;
+    property Store: TDictionary<string,TEvalObject> read FStore;
+    property Outer: TEnvironment read FOuter write FOuter;
+    function GetValue(name:string; var value:TEvalObject ):Boolean;
+    function SetValue(name:string; value:TEvalObject ):TEvalObject;
+  end;
+
+
+implementation
+
+end.

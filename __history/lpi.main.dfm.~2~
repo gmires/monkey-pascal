@@ -1,0 +1,127 @@
+object Form6: TForm6
+  Left = 302
+  Top = 123
+  Caption = 'Form6'
+  ClientHeight = 815
+  ClientWidth = 1150
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  OldCreateOrder = False
+  OnCreate = FormCreate
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 1150
+    Height = 41
+    Align = alTop
+    TabOrder = 0
+    ExplicitWidth = 1149
+    object Button1: TButton
+      Left = 10
+      Top = 6
+      Width = 181
+      Height = 25
+      Caption = 'Create ParseTree'
+      TabOrder = 0
+    end
+    object Button2: TButton
+      Left = 195
+      Top = 6
+      Width = 141
+      Height = 25
+      Caption = 'AST Describe'
+      TabOrder = 1
+      OnClick = Button2Click
+    end
+    object Button3: TButton
+      Left = 340
+      Top = 6
+      Width = 141
+      Height = 25
+      Caption = 'AST Evaluate'
+      TabOrder = 2
+      OnClick = Button3Click
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Top = 41
+    Width = 1150
+    Height = 774
+    Align = alClient
+    Caption = 'Panel2'
+    TabOrder = 1
+    ExplicitWidth = 1149
+    ExplicitHeight = 295
+    object Label1: TLabel
+      AlignWithMargins = True
+      Left = 4
+      Top = 616
+      Width = 1142
+      Height = 13
+      Align = alBottom
+      Caption = 'Log'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentFont = False
+      ExplicitWidth = 20
+    end
+    object MSouce: TMemo
+      AlignWithMargins = True
+      Left = 4
+      Top = 4
+      Width = 1142
+      Height = 606
+      Align = alClient
+      Lines.Strings = (
+        'let a = -(2 + 25.023) * 125 /2; '
+        '3*5+2; '
+        '(8*(8+2)) / 9;'
+        ''
+        'if (3>2) {'
+        '  let b = (3+1)==4;'
+        '}'
+        ''
+        'let add = fn(){'
+        '  return true;'
+        '}'
+        ''
+        'let del = fn(a,b){'
+        '  return (a+b);'
+        '}'
+        ''
+        'if (a>2.33) {'
+        '  let x = add();'
+        '} else {'
+        '  let x = del(a, 1);'
+        '}')
+      TabOrder = 0
+      ExplicitLeft = 1
+      ExplicitTop = 1
+      ExplicitWidth = 270
+      ExplicitHeight = 278
+    end
+    object List: TListBox
+      AlignWithMargins = True
+      Left = 4
+      Top = 635
+      Width = 1142
+      Height = 135
+      Align = alBottom
+      ItemHeight = 13
+      TabOrder = 1
+      ExplicitLeft = 3
+      ExplicitTop = 677
+      ExplicitWidth = 1143
+    end
+  end
+end

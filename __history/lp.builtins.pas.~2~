@@ -1,0 +1,17 @@
+unit lp.builtins;
+
+interface
+
+uses lp.evaluator;
+
+implementation
+
+procedure init;
+begin
+
+end;
+
+initialization
+  init;
+
+end.

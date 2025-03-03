@@ -1,0 +1,20 @@
+program LPInterpreter;
+
+uses
+  Forms,
+  lpi.main in 'lpi.main.pas' {LPMain},
+  lp.token in 'lp.token.pas',
+  lp.lexer in 'lp.lexer.pas',
+  lp.parser in 'lp.parser.pas',
+  lp.evaluator in 'lp.evaluator.pas',
+  lp.environment in 'lp.environment.pas',
+  lp.evalobject in 'lp.evalobject.pas';
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TLPMain, LPMain);
+  Application.Run;
+end.
