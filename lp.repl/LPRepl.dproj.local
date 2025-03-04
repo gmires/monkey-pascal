@@ -2,12 +2,12 @@
 <BorlandProject>
 	<Transactions>
     <Transaction>2025/03/03 10.00.00.000.513,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.lexer.pas</Transaction>
-    <Transaction>2025/03/03 10.00.00.000.391,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.evaluator.pas</Transaction>
+    <Transaction>2025/03/03 10.00.00.000.272,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.evalobject.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.634,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.parser.pas</Transaction>
-    <Transaction>2025/03/03 10.00.00.000.698,C:\Users\giacomo\Documents\RAD Studio\Projects\Project5.dproj=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.repl\LPRepl.dproj</Transaction>
+    <Transaction>2025/03/03 10.00.00.000.698,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.repl\LPRepl.dproj=C:\Users\giacomo\Documents\RAD Studio\Projects\Project5.dproj</Transaction>
     <Transaction>2025/03/03 10.00.00.000.154,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.environment.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.934,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.builtins.pas</Transaction>
-    <Transaction>2025/03/03 10.00.00.000.272,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.evalobject.pas</Transaction>
+    <Transaction>2025/03/03 10.00.00.000.391,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.evaluator.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.757,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.token.pas</Transaction>
   </Transactions>
 </BorlandProject>
