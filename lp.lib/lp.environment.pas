@@ -16,6 +16,7 @@ const
 	FUNCTION_OBJ     = 'FUNCTION';
 	BUILTIN_OBJ      = 'BUILTIN';
 	ARRAY_OBJ        = 'ARRAY';
+	HASH_OBJ         = 'HASH';
 
 type
   TEvalObject = class;
@@ -35,20 +36,32 @@ type
   end;
 
   // ---- Object --------------------
-
   TEvalObjectType = string;
 
   TEvalObject = class
   public
-    function ObjetcType:TEvalObjectType; virtual;
+    function ObjectType:TEvalObjectType; virtual;
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
+  end;
+
+  THashkey = class
+  public
+    ObjectType: TEvalObjectType;
+    FValueStr: string;
+    FValueNum: Double;
+    FValueBool: Boolean;
+  public
+    class function fromObject(Obj: TEvalObject):THashkey;
+    constructor Create(Ref: TEvalObject);
+    function Equals(Obj: TObject): Boolean; override;
+    function GetHashCode: Integer; override;
   end;
 
   TNumberObject = class(TEvalObject)
   public
     Value: Double;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -58,7 +71,7 @@ type
   TBooleanObject = class(TEvalObject)
   public
     Value: Boolean;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -68,7 +81,7 @@ type
   TStringObject = class(TEvalObject)
   public
     Value: string;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -77,7 +90,7 @@ type
 
   TNullObject = class(TEvalObject)
   public
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   end;
@@ -85,7 +98,7 @@ type
   TReturnValueObject = class(TEvalObject)
   public
     Value: TEvalObject;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -97,7 +110,7 @@ type
   TErrorObject = class(TEvalObject)
   public
     ErrMessage: string;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -110,7 +123,7 @@ type
     Parameters: TList<TASTIdentifier>;
 	  Body: TASTBlockStatement;
 	  Env: TEnvironment;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -121,7 +134,7 @@ type
   TBuiltinObject = class(TEvalObject)
   public
     BuiltinFunction: TBuiltinFunction;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
@@ -131,11 +144,27 @@ type
   TArrayObject = class(TEvalObject)
   public
     Elements: TList<TEvalObject>;
-    function ObjetcType:TEvalObjectType; override;
+    function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
     destructor Destroy; override;
+  end;
+
+  THashPair = class
+  public
+    Key: TEvalObject;
+    Value: TEvalObject;
+  public
+    constructor Create(AKey, AValue:TEvalObject);
+  end;
+
+  THashObject = class(TEvalObject)
+  public
+    Pairs: TDictionary<THashkey,THashPair>;
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
   end;
 
 implementation
@@ -152,7 +181,7 @@ begin
   Result := '';
 end;
 
-function TEvalObject.ObjetcType: TEvalObjectType;
+function TEvalObject.ObjectType: TEvalObjectType;
 begin
   Result := '';
 end;
@@ -174,7 +203,7 @@ begin
   Result := FloatToStr(Value)
 end;
 
-function TNumberObject.ObjetcType: TEvalObjectType;
+function TNumberObject.ObjectType: TEvalObjectType;
 begin
   Result := NUMBER_OBJ;
 end;
@@ -196,7 +225,7 @@ begin
   if Value then Result := 'True' else Result := 'False';
 end;
 
-function TBooleanObject.ObjetcType: TEvalObjectType;
+function TBooleanObject.ObjectType: TEvalObjectType;
 begin
   Result := BOOLEAN_OBJ;
 end;
@@ -216,6 +245,8 @@ end;
 constructor TReturnValueObject.Create(AValue: TEvalObject);
 begin
   Create;
+  Value := AValue.Clone;
+  {
   if AValue is TNumberObject  then Value := TNumberObject.Create(TNumberObject(AValue).Value)
   else
   if AValue is TBooleanObject then Value := TBooleanObject.Create(TBooleanObject(AValue).Value)
@@ -230,6 +261,7 @@ begin
     Value := TFunctionObject.Create(TFunctionObject(AValue).Parameters
       ,TFunctionObject(AValue).Body
       ,TFunctionObject(AValue).Env);
+  }
 end;
 
 destructor TReturnValueObject.Destroy;
@@ -244,7 +276,7 @@ begin
   Result := Value.Inspect;
 end;
 
-function TReturnValueObject.ObjetcType: TEvalObjectType;
+function TReturnValueObject.ObjectType: TEvalObjectType;
 begin
   Result := RETURN_VALUE_OBJ;
 end;
@@ -271,7 +303,7 @@ begin
   Result := TErrorObject.Create(Format(AFormat, Args));
 end;
 
-function TErrorObject.ObjetcType: TEvalObjectType;
+function TErrorObject.ObjectType: TEvalObjectType;
 begin
   Result := ERROR_OBJ;
 end;
@@ -307,7 +339,7 @@ begin
   Result := '';
 end;
 
-function TFunctionObject.ObjetcType: TEvalObjectType;
+function TFunctionObject.ObjectType: TEvalObjectType;
 begin
   Result := FUNCTION_OBJ;
 end;
@@ -365,7 +397,7 @@ begin
   Result := 'Null';
 end;
 
-function TNullObject.ObjetcType: TEvalObjectType;
+function TNullObject.ObjectType: TEvalObjectType;
 begin
   Result := NULL_OBJ;
 end;
@@ -387,7 +419,7 @@ begin
   Result := Value;
 end;
 
-function TStringObject.ObjetcType: TEvalObjectType;
+function TStringObject.ObjectType: TEvalObjectType;
 begin
   Result := STRING_OBJ;
 end;
@@ -409,7 +441,7 @@ begin
   Result := 'builtin function'
 end;
 
-function TBuiltinObject.ObjetcType: TEvalObjectType;
+function TBuiltinObject.ObjectType: TEvalObjectType;
 begin
   Result := BUILTIN_OBJ;
 end;
@@ -450,9 +482,103 @@ begin
   Result := Result + ']';
 end;
 
-function TArrayObject.ObjetcType: TEvalObjectType;
+function TArrayObject.ObjectType: TEvalObjectType;
 begin
   Result := ARRAY_OBJ;
+end;
+
+{ THashkey }
+
+constructor THashkey.Create(Ref: TEvalObject);
+begin
+  FValueStr := '';
+  FValueNum := -1;
+  FValueBool:= false;
+
+  ObjectType:= Ref.ObjectType;
+  if (ObjectType=NUMBER_OBJ) then
+    FValueNum := TNumberObject(Ref).Value
+  else
+  if (ObjectType=STRING_OBJ) then
+    FValueStr := TStringObject(Ref).Value
+  else
+  if (ObjectType=BOOLEAN_OBJ) then
+    FValueBool := TBooleanObject(Ref).Value
+  else
+    ObjectType := ERROR_OBJ;
+end;
+
+function THashkey.Equals(Obj: TObject): Boolean;
+begin
+  Result := (Obj is THashkey) and (THashkey(Obj).ObjectType=ObjectType);
+
+  if Result then
+    if (ObjectType=NUMBER_OBJ) then
+      Result := FValueNum = THashkey(Obj).FValueNum
+    else
+    if (ObjectType=STRING_OBJ) then
+      Result := FValueStr = THashkey(Obj).FValueStr
+    else
+    if (ObjectType=BOOLEAN_OBJ) then
+      Result := FValueBool = THashkey(Obj).FValueBool;
+end;
+
+class function THashkey.fromObject(Obj: TEvalObject): THashkey;
+begin
+  Result := THashkey.Create(Obj);
+end;
+
+function THashkey.GetHashCode: Integer;
+begin
+  Result := 1;
+end;
+
+{ THashPair }
+
+constructor THashPair.Create(AKey, AValue: TEvalObject);
+begin
+  Key := AKey;
+  Value := AValue;
+end;
+
+{ THashObject }
+
+function THashObject.Clone: TEvalObject;
+var
+  key:THashkey;
+  k,v:TEvalObject;
+begin
+  Result := THashObject.Create;
+  THashObject(Result).Pairs := TDictionary<THashkey,THashPair>.create;
+  for key in Pairs.Keys do
+  begin
+    k := Pairs[key].Key.Clone;
+    v := Pairs[key].Value.Clone;
+    THashObject(Result).Pairs.Add(THashkey.fromObject(k), THashPair.Create(k,v));
+  end;
+end;
+
+function THashObject.Inspect: string;
+var
+  key: THashkey;
+  pair: THashPair;
+begin
+  Result := '{';
+  if Pairs.Count>0 then
+  begin
+    for key in Pairs.Keys do
+    begin
+      pair := Pairs[key];
+      Result := Result + pair.Key.Inspect + ':' + pair.Value.Inspect + ',';
+    end;
+    Result := Copy(Result,1,length(Result)-1);
+  end;
+  Result := Result + '}';
+end;
+
+function THashObject.ObjectType: TEvalObjectType;
+begin
+  Result := HASH_OBJ;
 end;
 
 end.

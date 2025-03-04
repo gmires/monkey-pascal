@@ -23,7 +23,7 @@ function isError(obj: TEvalObject):Boolean;
 begin
   Result := False;
 	if (obj <> nil) then
-		Result := (obj.ObjetcType() = ERROR_OBJ);
+		Result := (obj.ObjectType() = ERROR_OBJ);
 end;
 
 function isTruthy(obj:TEvalObject): Boolean;
@@ -63,7 +63,7 @@ begin
   begin
     Result := Eval(TASTBlockStatement(node).FStatements[i], env);
     if (Result<>nil) then
-      if (Result.ObjetcType = RETURN_VALUE_OBJ) or (Result.ObjetcType = ERROR_OBJ) then
+      if (Result.ObjectType = RETURN_VALUE_OBJ) or (Result.ObjectType = ERROR_OBJ) then
         Break;
   end;
 
@@ -83,8 +83,8 @@ end;
 function evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
 begin
 
-  if (right.ObjetcType <> NUMBER_OBJ) then
-    Result := TErrorObject.newError('unknown operator: -%s', [right.ObjetcType])
+  if (right.ObjectType <> NUMBER_OBJ) then
+    Result := TErrorObject.newError('unknown operator: -%s', [right.ObjectType])
   else
     Result := TNumberObject.Create(-TNumberObject(right).Value);
 end;
@@ -95,7 +95,7 @@ begin
   else
   if Op='-' then Result := evalMinusPrefixOperatorExpression(right)
   else
-    Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjetcType])
+    Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjectType])
 end;
 
 function evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -121,7 +121,7 @@ begin
   else
   if Op='!=' then Result:= nativeBoolToBooleanObject(LVal <> RVal)
   else
-    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjetcType, Op, right.ObjetcType])
+    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
 function evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -141,15 +141,15 @@ begin
   else
   if Op='!=' then Result:= nativeBoolToBooleanObject(LVal <> RVal)
   else
-    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjetcType, Op, right.ObjetcType])
+    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
 function evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
 begin
-  if ((left.ObjetcType=NUMBER_OBJ) and (right.ObjetcType=NUMBER_OBJ)) then
+  if ((left.ObjectType=NUMBER_OBJ) and (right.ObjectType=NUMBER_OBJ)) then
     Result := evalIntegerInfixExpression(Op, left, right)
   else
-  if ((left.ObjetcType=STRING_OBJ) and (right.ObjetcType=STRING_OBJ)) then
+  if ((left.ObjectType=STRING_OBJ) and (right.ObjectType=STRING_OBJ)) then
     Result := evalStringInfixExpression(Op, left, right)
   else
   if (Op='==') then
@@ -158,10 +158,10 @@ begin
   if (Op='!=') then
     Result := nativeBoolToBooleanObject(left <> right)
   else
-  if (left.ObjetcType<>right.ObjetcType) then
-		Result := TErrorObject.newError('type mismatch: %s %s %s', [left.ObjetcType, Op, right.ObjetcType])
+  if (left.ObjectType<>right.ObjectType) then
+		Result := TErrorObject.newError('type mismatch: %s %s %s', [left.ObjectType, Op, right.ObjectType])
   else
-		Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjetcType, Op, right.ObjetcType])
+		Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
 function evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
@@ -191,6 +191,34 @@ begin
       Result := TErrorObject.newError('identifier not found: %s ',[node.Value]);
   end;
 end;
+
+function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
+var
+  k,v: TEvalObject;
+  h:THashkey;
+  pair: TPair<TASTExpression,TASTExpression>;
+begin
+  Result := THashObject.Create;
+  THashObject(Result).Pairs := TDictionary<THashkey,THashPair>.create;
+
+  for pair in node.Pairs do
+  begin
+    k := Eval(pair.Key, env);
+    if isError(k) then
+      Exit(k);
+
+    h:= THashkey.fromObject(k);
+    if h.ObjectType=ERROR_OBJ then
+      Exit(TErrorObject.newError('unusable as hash key: %s', [k.ObjectType]));
+
+    v := Eval(pair.Value, env);
+    if isError(v) then
+      Exit(v);
+
+    THashObject(Result).Pairs.Add(h, THashPair.Create(k,v));
+  end;
+end;
+
 
 function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
 var
@@ -224,12 +252,31 @@ begin
     Result := TArrayObject(AArray).Elements[idx];
 end;
 
+function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
+var
+  HO:THashObject;
+  HK:THashkey;
+begin
+  HO := AHash as THashObject;
+  HK := THashkey.fromObject(AIndex);
+  if HK.ObjectType=ERROR_OBJ then
+    Exit(TErrorObject.newError('unusable as hash key: %s', [AIndex.ObjectType]));
+
+  if HO.Pairs.ContainsKey(HK) then
+    Result := HO.Pairs[HK].Value
+  else
+    Result := TNullObject.Create;
+end;
+
 function evalIndexExpression(left, index:TEvalObject):TEvalObject;
 begin
-  if (left.ObjetcType=ARRAY_OBJ) and (index.ObjetcType=NUMBER_OBJ) then
+  if (left.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
     Result := evalArrayIndexExpression(left, index)
   else
-    Result := TErrorObject.newError('index operator not supported: %s', [left.ObjetcType]);
+  if (left.ObjectType=HASH_OBJ) then
+    Result := evalHashIndexExpression(left, index)
+  else
+    Result := TErrorObject.newError('index operator not supported: %s', [left.ObjectType]);
 end;
 
 function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
@@ -261,7 +308,7 @@ begin
   if (fn is TBuiltinObject) then
     Result := TBuiltinObject(fn).BuiltinFunction(args)
   else
-    Result := TErrorObject.newError('not a function: %s', [fn.ObjetcType])
+    Result := TErrorObject.newError('not a function: %s', [fn.ObjectType])
 end;
 
 
@@ -293,6 +340,9 @@ begin
     if ((TArrayObject(Result).Elements.Count=1) and (isError(TArrayObject(Result).Elements[0]))) then
       Result := TArrayObject(Result).Elements[0];
   end
+  else
+  if node is TASTHashLiteral then
+    Result := evalHashLiteral(TASTHashLiteral(node), env)
   else
   if node is TASTIndexExpression then
   begin
@@ -366,11 +416,6 @@ begin
     end;
   end;
 end;
-
-/// --- builtin function
-
-
-/// --- builtin function
 
 procedure init;
 begin

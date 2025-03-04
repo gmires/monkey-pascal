@@ -2,6 +2,6 @@
 <BorlandProject>
 	<Transactions/>
 	<Default.Personality>
-		<Projects ActiveProject="D:\SORGENTI\SS-LPI\lp.interpreter\LPInterpreter.dproj"/>
+		<Projects ActiveProject="D:\SORGENTI\SS-LPI\lp.repl\LPRepl.dproj"/>
 	</Default.Personality>
 </BorlandProject>

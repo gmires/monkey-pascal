@@ -1046,7 +1046,8 @@ var
   i: Integer;
 begin
   Result := TASTCallExpression.Create;
-  TASTCallExpression(Result).Funct := Funct.Clone as TASTExpression;
+  TASTCallExpression(Result).Funct:= Funct.Clone as TASTExpression;
+  TASTCallExpression(Result).Args := TList<TASTExpression>.create;
   for i := 0 to Args.Count-1 do
     TASTCallExpression(Result).Args.Add(Args[i].Clone as TASTExpression);
 end;

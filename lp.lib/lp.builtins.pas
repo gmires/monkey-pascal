@@ -14,13 +14,13 @@ begin
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
   begin
-    if args[0].ObjetcType=ARRAY_OBJ then
+    if args[0].ObjectType=ARRAY_OBJ then
       Result := TNumberObject.Create(TArrayObject(args[0]).Elements.Count)
     else
-    if args[0].ObjetcType=STRING_OBJ then
+    if args[0].ObjectType=STRING_OBJ then
       Result := TNumberObject.Create(Length(TStringObject(args[0]).Value))
     else
-      Result := TErrorObject.newError('argument to `len` not supported, got %s', [args[0].ObjetcType]);
+      Result := TErrorObject.newError('argument to `len` not supported, got %s', [args[0].ObjectType]);
   end;
 end;
 
@@ -30,8 +30,8 @@ begin
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
-  if args[0].ObjetcType<>ARRAY_OBJ then
-    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjetcType])
+  if args[0].ObjectType<>ARRAY_OBJ then
+    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjectType])
   else
   begin
     if (args[0] is TArrayObject) then
@@ -49,8 +49,8 @@ begin
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
-  if args[0].ObjetcType<>ARRAY_OBJ then
-    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjetcType])
+  if args[0].ObjectType<>ARRAY_OBJ then
+    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjectType])
   else
   begin
     if (args[0] is TArrayObject) then
@@ -70,8 +70,8 @@ begin
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
-  if args[0].ObjetcType<>ARRAY_OBJ then
-    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjetcType])
+  if args[0].ObjectType<>ARRAY_OBJ then
+    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjectType])
   else
   begin
     if (TArrayObject(args[0]).Elements.Count>0) then
@@ -93,8 +93,8 @@ begin
   if (args.Count<>2) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
-  if args[0].ObjetcType<>ARRAY_OBJ then
-    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjetcType])
+  if args[0].ObjectType<>ARRAY_OBJ then
+    Result := TErrorObject.newError('argument to `first` must be ARRAY, got %s', [args[0].ObjectType])
   else
   begin
     Result := TArrayObject(args[0]).Clone;
