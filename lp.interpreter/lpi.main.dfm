@@ -1,6 +1,6 @@
 object LPMain: TLPMain
-  Left = 351
-  Top = 129
+  Left = 349
+  Top = 156
   Caption = 'LP Interpreter v.1.0'
   ClientHeight = 815
   ClientWidth = 1150

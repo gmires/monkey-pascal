@@ -365,7 +365,7 @@ begin
   for key in FStore.Keys do
     FStore[key].Free;
   FStore.Free;
-  if (FOuter<>nil) then FOuter.Free;
+//  if (FOuter<>nil) then FOuter.Free;
   inherited;
 end;
 

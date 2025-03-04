@@ -90,6 +90,22 @@ begin
       ReadChar;
       Result := TToken.create(ttSTRING, ReadString);
     end;
+    '&' :
+    begin
+      if (PeekChar='&') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttLOGICALAND, '&&');
+      end
+    end;
+    '|' :
+    begin
+      if (PeekChar='|') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttLOGICALOR, '||');
+      end
+    end;
     '<' : Result := TToken.create(ttLT, ch);
     '>' : Result := TToken.create(ttGT, ch);
   else

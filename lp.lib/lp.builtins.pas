@@ -102,6 +102,18 @@ begin
   end;
 end;
 
+function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to args.Count-1 do
+  begin
+    Write(args[i].Inspect);
+    Writeln;
+  end;
+end;
+
 procedure init;
 begin
   builtins.Add('len', TBuiltinObject.Create(_Len));
@@ -109,6 +121,7 @@ begin
   builtins.Add('last', TBuiltinObject.Create(_ArrayLast));
   builtins.Add('rest', TBuiltinObject.Create(_ArrayRest));
   builtins.Add('push', TBuiltinObject.Create(_ArrayPush));
+  builtins.Add('println', TBuiltinObject.Create(_PrintLn));
 end;
 
 initialization

@@ -8,6 +8,7 @@ uses SysUtils, Classes, Generics.Collections
 type
   TEXPrecedence = (
 	  LOWEST
+	  , LOGICAL
 	  , EQUALS
 	  , LESSGREATER
 	  , SUM
@@ -188,6 +189,30 @@ type
     destructor Destroy; override;
   end;
 
+  TASTWhileExpression = class(TASTExpression)
+  public
+    Condition: TASTExpression;
+    Body: TASTBlockStatement;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  TASTForExpression = class(TASTExpression)
+  public
+    Init: TASTLetStatement;
+    Condition: TASTExpression;
+    Expression: TASTNode;
+    Body: TASTBlockStatement;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   TASTFunctionLiteral = class(TASTExpression)
     Parameters:TList<TASTIdentifier>;
     Body: TASTBlockStatement;
@@ -220,6 +245,7 @@ type
     InfixFuncts: TDictionary<TTokenType,TParseInfixExpression>;
     procedure nextToken;
     function  peekTokenIs(TType:TTokenType): Boolean;
+    function  currTokenIs(TType:TTokenType): Boolean;
     function  currPrecedence: TEXPrecedence;
     function  peekPrecedence: TEXPrecedence;
     function  expectPeek(TType:TTokenType):Boolean;
@@ -243,6 +269,8 @@ type
     function ParseIdentifier:TASTExpression;
     function ParseBoolean:TASTExpression;
     function ParseIfExpression:TASTExpression;
+    function ParseWhileExpression:TASTExpression;
+    function ParseForExpression:TASTExpression;
     function ParseFunctionLiteral:TASTExpression;
     function ParseFunctionParameters:TList<TASTIdentifier>;
     function ParseCallExpression(funct:TASTExpression):TASTExpression;
@@ -278,6 +306,8 @@ begin
   Precedences.Add(ttASTERISK, PRODUCT);
   Precedences.Add(ttLPAREN, CALL);
   Precedences.Add(ttLBRACKET, INDEX);
+  Precedences.Add(ttLOGICALAND, LOGICAL);
+  Precedences.Add(ttLOGICALOR, LOGICAL);
 
   PrefixFuncts:= TDictionary<TTokenType,TParsePrefixExpression>.Create;
   PrefixFuncts.Add(ttIDENT, ParseIdentifier);
@@ -292,6 +322,8 @@ begin
 	PrefixFuncts.Add(ttFUNCTION, ParseFunctionLiteral);
 	PrefixFuncts.Add(ttLBRACKET, ParseArrayLiteral);
 	PrefixFuncts.Add(ttLBRACE, ParseHashLiteral);
+	PrefixFuncts.Add(ttWHILE, ParseWhileExpression);
+	PrefixFuncts.Add(ttFOR, ParseForExpression);
 
   InfixFuncts := TDictionary<TTokenType,TParseInfixExpression>.Create;
   InfixFuncts.Add(ttPLUS, ParseInfixExpression);
@@ -304,6 +336,8 @@ begin
 	InfixFuncts.Add(ttGT, ParseInfixExpression);
 	InfixFuncts.Add(ttLPAREN, ParseCallExpression);
 	InfixFuncts.Add(ttLBRACKET, ParseIndexExpression);
+	InfixFuncts.Add(ttLOGICALAND, ParseInfixExpression);
+	InfixFuncts.Add(ttLOGICALOR, ParseInfixExpression);
 
   Lexer := ALexer;
   CurrToken:=nil;
@@ -319,6 +353,11 @@ begin
     Result := Precedences[CurrToken.TokenType]
   else
     Result := LOWEST;
+end;
+
+function TParser.currTokenIs(TType: TTokenType): Boolean;
+begin
+  Result := (CurrToken.TokenType = TType);
 end;
 
 destructor TParser.Destroy;
@@ -463,6 +502,40 @@ begin
 
   if peekTokenIs(ttSEMICOLON) then
     nextToken;
+end;
+
+function TParser.ParseForExpression: TASTExpression;
+begin
+  Result := TASTForExpression.Create;
+  Result.Token := CurrToken.Clone;
+
+  if expectPeek(ttLPAREN) then
+  begin
+    nextToken;
+
+    TASTForExpression(Result).Init := ParseLetStatement;
+    if currTokenIs(ttSEMICOLON) then
+    begin
+      nextToken;
+      TASTForExpression(Result).Condition := ParseExpression(LOWEST);
+      if expectPeek(ttSEMICOLON) then
+      begin
+        nextToken;
+        if currTokenIs(ttLET) then
+          TASTForExpression(Result).Expression := ParseLetStatement
+        else
+          TASTForExpression(Result).Expression := ParseExpression(LOWEST);
+
+        if expectPeek(ttRPAREN) then
+          if expectPeek(ttLBRACE) then
+          begin
+            TASTForExpression(Result).Body := ParseBlockStatement;
+            if currTokenIs(ttRBRACE) then
+              nextToken;
+          end;
+      end;
+    end;
+  end;
 end;
 
 function TParser.ParseFunctionLiteral: TASTExpression;
@@ -688,6 +761,27 @@ begin
   Result := TASTStringLiteral.Create;
   Result.Token := CurrToken.Clone;
   TASTStringLiteral(Result).Value := CurrToken.Literal;
+end;
+
+function TParser.ParseWhileExpression: TASTExpression;
+begin
+  Result := TASTWhileExpression.Create;
+  Result.Token := CurrToken.Clone;
+
+  if expectPeek(ttLPAREN) then
+  begin
+    nextToken;
+    TASTWhileExpression(Result).Condition := ParseExpression(LOWEST);
+
+    if expectPeek(ttRPAREN) then
+      if expectPeek(ttLBRACE) then
+      begin
+        TASTWhileExpression(Result).Body := ParseBlockStatement;
+        if expectPeek(ttLBRACE) then
+          nextToken;
+      end;
+  end;
+
 end;
 
 function TParser.peekPrecedence: TEXPrecedence;
@@ -987,7 +1081,7 @@ end;
 
 function TASTIfExpression.toString: string;
 begin
-  Result := 'if ';
+  Result := 'if';
 end;
 
 { TASTFunctionLiteral }
@@ -1165,18 +1259,89 @@ end;
 
 constructor TASTHashLiteral.Create;
 begin
-
+  FPairs := nil;
 end;
 
 destructor TASTHashLiteral.Destroy;
+var
+  key:TASTExpression;
 begin
-
+  if (FPairs<>nil) then
+  begin
+    for key in Pairs.Keys do
+    begin
+      Pairs[key].Free;
+      Pairs.Remove(key);
+      key.Free
+    end;
+    FPairs.Free;
+  end;
   inherited;
 end;
 
 function TASTHashLiteral.toString: string;
 begin
   Result := 'HashMap';
+end;
+
+{ TASTWhileExpression }
+
+function TASTWhileExpression.Clone: TASTNode;
+begin
+  Result := TASTWhileExpression.Create;
+  TASTWhileExpression(Result).Condition := Condition.Clone as TASTExpression;
+  TASTWhileExpression(Result).Body := Body.Clone as TASTBlockStatement;
+end;
+
+constructor TASTWhileExpression.Create;
+begin
+  Condition := nil;
+  Body := nil;
+end;
+
+destructor TASTWhileExpression.Destroy;
+begin
+  FreeAndNilAssigned(Condition);
+  FreeAndNilAssigned(Body);
+  inherited;
+end;
+
+function TASTWhileExpression.toString: string;
+begin
+  Result := 'while';
+end;
+
+{ TASTForExpression }
+
+function TASTForExpression.Clone: TASTNode;
+begin
+  Result := TASTForExpression.Create;
+  TASTForExpression(Result).Init := Init.Clone as TASTLetStatement;
+  TASTForExpression(Result).Condition := Condition.Clone as TASTExpression;
+  TASTForExpression(Result).Expression:= Condition.Clone;
+  TASTForExpression(Result).Body := Init.Clone as TASTBlockStatement;
+end;
+
+constructor TASTForExpression.Create;
+begin
+  Init:= nil;
+  Condition:= nil;
+  Expression:= nil;
+  Body:= nil;
+end;
+
+destructor TASTForExpression.Destroy;
+begin
+  FreeAndNilAssigned(Init);
+  FreeAndNilAssigned(Condition);
+  FreeAndNilAssigned(Expression);
+  FreeAndNilAssigned(Body);
+  inherited;
+end;
+
+function TASTForExpression.toString: string;
+begin
+  Result := 'for';
 end;
 
 end.

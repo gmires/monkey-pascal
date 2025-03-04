@@ -39,10 +39,15 @@ type
     , ttEQ //    = "=="
     , ttNOT_EQ // = "!="
 
-    , ttSTRING // = """
+    , ttSTRING   // = """
     , ttLBRACKET // = "["
-    , ttRBRACKET    // = "]"
+    , ttRBRACKET // = "]"
     , ttCOLON    // = ":"
+
+    , ttLOGICALAND    // = "&&"
+    , ttLOGICALOR    // = "||"
+    , ttWHILE    // = "WHILE"
+    , ttFOR    // = "FOR"
   );
 
 
@@ -116,6 +121,10 @@ const
     , 'LBRACKET'
     , 'RBRACKET'
     , 'COLON'
+    , 'LOGICALAND'
+    , 'LOGICALOR'
+    , 'WHILE'
+    , 'FOR'
   );
 begin
   Result := 'TK Type = ' + TTypeStr[TokenType] + ', literal value = ' + Literal;
@@ -131,6 +140,8 @@ begin
   keywords.Add('if', ttIF);
   keywords.Add('else', ttELSE);
   keywords.Add('return', ttRETURN);
+  keywords.Add('while', ttWHILE);
+  keywords.Add('for', ttFOR);
 end;
 
 procedure deinit;

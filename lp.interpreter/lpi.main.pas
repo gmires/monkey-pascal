@@ -160,6 +160,22 @@ begin
       Describe(TASTIfExpression(node).Alternative, N);
     end
     else
+    if node is TASTWhileExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTWhileExpression(node).Condition, N);
+      Describe(TASTWhileExpression(node).Body, N);
+    end
+    else
+    if node is TASTForExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTForExpression(node).Init, N);
+      Describe(TASTForExpression(node).Condition, N);
+      Describe(TASTForExpression(node).Expression, N);
+      Describe(TASTForExpression(node).Body, N);
+    end
+    else
     if node is TASTCallExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);

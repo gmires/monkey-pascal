@@ -34,6 +34,21 @@ begin
   if obj is TBooleanObject then Result := TBooleanObject(obj).Value;
 end;
 
+function isTruthyWithError(obj:TEvalObject; var ErrObj:TEvalObject): Boolean;
+begin
+  Result := True;
+  if obj is TNullObject then Result := false
+  else
+  if obj is TBooleanObject then Result := TBooleanObject(obj).Value
+  else
+  if obj is TErrorObject then
+  begin
+    Result := false;
+    ErrObj := obj;
+  end;
+end;
+
+
 function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
 var
   i: Integer;
@@ -144,6 +159,24 @@ begin
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
+function evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+var
+  LVal,
+  RVal:Boolean;
+begin
+  LVal:= TBooleanObject(left).Value;
+  RVal:= TBooleanObject(right).Value;
+  if Op='==' then Result:= nativeBoolToBooleanObject(LVal = RVal)
+  else
+  if Op='!=' then Result:= nativeBoolToBooleanObject(LVal <> RVal)
+  else
+  if Op='&&' then Result:= nativeBoolToBooleanObject(LVal and RVal)
+  else
+  if Op='||' then Result:= nativeBoolToBooleanObject(LVal or RVal)
+  else
+    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
+end;
+
 function evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
 begin
   if ((left.ObjectType=NUMBER_OBJ) and (right.ObjectType=NUMBER_OBJ)) then
@@ -151,6 +184,9 @@ begin
   else
   if ((left.ObjectType=STRING_OBJ) and (right.ObjectType=STRING_OBJ)) then
     Result := evalStringInfixExpression(Op, left, right)
+  else
+  if ((left.ObjectType=BOOLEAN_OBJ) and (right.ObjectType=BOOLEAN_OBJ)) then
+    Result := evalBooleanInfixExpression(Op, left, right)
   else
   if (Op='==') then
     Result := nativeBoolToBooleanObject(left = right)
@@ -178,6 +214,31 @@ begin
       Result := TNullObject.Create;
   end;
 end;
+
+function evalWhileExpression(node:TASTWhileExpression; env :TEnvironment):TEvalObject;
+begin
+  Result := nil;
+  while isTruthyWithError(Eval(TASTWhileExpression(node).Condition, env), Result) do
+    Result := Eval(TASTWhileExpression(node).Body, env)
+end;
+
+function evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
+var
+  ForEnv: TEnvironment;
+begin
+  ForEnv:= TEnvironment.Create(env);
+  try
+    Eval(node.Init, ForEnv);
+    while isTruthyWithError(Eval(TASTForExpression(node).Condition, ForEnv), Result) do
+    begin
+      Result := Eval(TASTForExpression(node).Body, ForEnv);
+      Eval(TASTForExpression(node).Expression, ForEnv);
+    end;
+  finally
+    ForEnv.Free;
+  end;
+end;
+
 
 function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
 begin
@@ -301,9 +362,18 @@ end;
 
 
 function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
+var
+  FEnv:TEnvironment;
 begin
   if (fn is TFunctionObject) then
-    Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, extendFunctionEnv(fn as TFunctionObject, args)))
+  begin
+    FEnv := extendFunctionEnv(fn as TFunctionObject, args);
+    try
+      Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
+    finally
+      FEnv.Free;
+    end;
+  end
   else
   if (fn is TBuiltinObject) then
     Result := TBuiltinObject(fn).BuiltinFunction(args)
@@ -380,6 +450,12 @@ begin
   else
   if node is TASTIfExpression then
     Result := evalIfExpression(node as TASTIfExpression, env)
+  else
+  if node is TASTWhileExpression then
+    Result := evalWhileExpression(node as TASTWhileExpression, env)
+  else
+  if node is TASTForExpression then
+    Result := evalForExpression(node as TASTForExpression, env)
   else
   if node is TASTReturnStatement then
   begin
