@@ -84,27 +84,37 @@ object LPMain: TLPMain
       object Label1: TLabel
         AlignWithMargins = True
         Left = 3
-        Top = 591
+        Top = 582
         Width = 1130
         Height = 13
         Margins.Top = 0
         Margins.Bottom = 0
         Align = alBottom
-        Caption = 'Log'
+        Caption = 'Console Log'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
-        ExplicitWidth = 20
+        ExplicitTop = 581
+      end
+      object SplitLog: TSplitter
+        AlignWithMargins = True
+        Left = 3
+        Top = 598
+        Width = 1130
+        Height = 3
+        Cursor = crVSplit
+        Align = alBottom
+        ExplicitTop = 610
       end
       object MSouce: TMemo
         AlignWithMargins = True
         Left = 3
         Top = 16
         Width = 1130
-        Height = 572
+        Height = 563
         Align = alClient
         Lines.Strings = (
           'let n = 8;'
@@ -124,6 +134,7 @@ object LPMain: TLPMain
           'return fibonacci(n);')
         TabOrder = 0
         ExplicitLeft = 8
+        ExplicitHeight = 572
       end
       object List: TListBox
         AlignWithMargins = True

@@ -102,6 +102,57 @@ begin
   end;
 end;
 
+function _Delete(args: TList<TEvalObject>): TEvalObject;
+var
+  i,idx: Integer;
+  keyr: THashkey;
+begin
+  Result := nil;
+  if (args.Count<>2) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=2', [args.Count])
+  else
+  if ((args[0].ObjectType<>ARRAY_OBJ) and (args[0].ObjectType<>HASH_OBJ)) then
+    Result := TErrorObject.newError('argument to `first` must be ARRAY or HASHMAP, got %s', [args[0].ObjectType])
+  else
+  begin
+    if args[0].ObjectType=ARRAY_OBJ then
+    begin
+      if args[1].ObjectType=NUMBER_OBJ then
+      begin
+        idx := Trunc(TNumberObject(args[1]).Value);
+
+        Result := TArrayObject.Create;
+        TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+        for i := 0 to TArrayObject(args[0]).Elements.Count-1 do
+          if (i<>idx) then
+            TArrayObject(Result).Elements.Add(TArrayObject(args[0]).Elements[i].Clone);
+      end
+      else Result := TErrorObject.newError('invalid index type for ARRAY , got %s', [args[1].ObjectType]);
+    end
+    else
+    if args[0].ObjectType=HASH_OBJ then
+    begin
+      keyr := THashkey.fromObject(args[1]);
+      try
+        if keyr.ObjectType=ERROR_OBJ then
+          Result := TErrorObject.newError('invalid index type for HashMap , got %s', [args[1].ObjectType])
+        else
+        begin
+          Result := THashObject(args[0]).Clone as THashObject;
+          if THashObject(Result).Pairs.ContainsKey(keyr) then
+          begin
+            THashObject(Result).Pairs[keyr].Free;
+            THashObject(Result).Pairs.Remove(keyr);
+          end;
+        end;
+      finally
+        keyr.Free;
+      end;
+    end;
+  end;
+end;
+
+
 function _PrintLn(args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
@@ -120,6 +171,7 @@ begin
   builtins.Add('first', TBuiltinObject.Create(_ArrayFirst));
   builtins.Add('last', TBuiltinObject.Create(_ArrayLast));
   builtins.Add('rest', TBuiltinObject.Create(_ArrayRest));
+  builtins.Add('delete', TBuiltinObject.Create(_Delete));
   builtins.Add('push', TBuiltinObject.Create(_ArrayPush));
   builtins.Add('println', TBuiltinObject.Create(_PrintLn));
 end;

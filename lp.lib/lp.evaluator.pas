@@ -313,6 +313,22 @@ begin
     Result := TArrayObject(AArray).Elements[idx];
 end;
 
+function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
+var
+  idx, max: Integer;
+begin
+  idx := Trunc(TNumberObject(AIndex).Value);
+  max := TArrayObject(AArray).Elements.Count - 1;
+
+  if ((idx<0) or (idx>max)) then
+    Exit(TErrorObject.newError('unusable index for array: %s', [TNumberObject(AIndex).Inspect]))
+  else
+  begin
+    TArrayObject(AArray).Elements[idx] := AValue;
+    Result := AArray;
+  end;
+end;
+
 function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
 var
   HO:THashObject;
@@ -327,6 +343,26 @@ begin
     Result := HO.Pairs[HK].Value
   else
     Result := TNullObject.Create;
+end;
+
+function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
+var
+  HO:THashObject;
+  HK:THashkey;
+begin
+  HO := AHash as THashObject;
+  HK := THashkey.fromObject(AIndex);
+  if HK.ObjectType=ERROR_OBJ then
+    Exit(TErrorObject.newError('unusable as hash key: %s', [AIndex.ObjectType]));
+
+  if HO.Pairs.ContainsKey(HK) then
+    HO.Pairs[HK].Value := AValue
+  else
+    HO.Pairs.Add(HK,THashPair.Create(AIndex, AValue));
+
+  Result := AHash;
+
+//  Result := TErrorObject.newError('hash no contain key: %s', [AIndex.Inspect]);
 end;
 
 function evalIndexExpression(left, index:TEvalObject):TEvalObject;
@@ -346,7 +382,7 @@ var
 begin
   Result := TEnvironment.Create(fn.Env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetValue(fn.Parameters[i].Value,args[i]);
+    Result.SetValue(fn.Parameters[i].Value,args[i].Clone);
 end;
 
 function unwrapReturnValue(obj:TEvalObject):TEvalObject;
@@ -384,7 +420,7 @@ end;
 
 function Eval(node: TASTNode; env: TEnvironment): TEvalObject;
 var
-  val,index:TEvalObject;
+  val,enobj,index:TEvalObject;
   args:TList<TEvalObject>;
 begin
   Result := nil;
@@ -468,9 +504,32 @@ begin
   begin
     val := Eval(TASTLetStatement(node).Expression, env);
     if NOT isError(val) then
-      env.SetValue(TASTLetStatement(node).Name.Value, val)
-    else
-      Result := val;
+    begin
+      if TASTLetStatement(node).Name is TASTIdentifier then
+        env.SetValue(TASTIdentifier(TASTLetStatement(node).Name).Value, val)
+      else
+      if TASTLetStatement(node).Name is TASTIndexExpression then
+      begin
+        enobj := Eval(TASTIndexExpression(TASTLetStatement(node).Name).Left, env);
+        if NOT isError(val) then
+        begin
+          index := Eval(TASTIndexExpression(TASTLetStatement(node).Name).Index, env);
+          if NOT isError(val) then
+          begin
+            if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
+              Result := assignArrayIndexExpression(enobj, index, val)
+            else
+            if (enobj.ObjectType=HASH_OBJ) then
+              Result := assignHashIndexExpression(enobj, index, val)
+            else
+              Result := TErrorObject.newError('index operator not supported: %s', [enobj.ObjectType]);
+          end
+          else Result := val;
+        end
+        else Result := val;
+      end;
+    end
+    else Result := val;
   end
   else
   if node is TASTIdentifier then

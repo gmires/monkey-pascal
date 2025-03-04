@@ -148,6 +148,18 @@ type
 
   TASTLetStatement = class(TASTStatement)
   public
+    Name: TASTExpression;
+    Expression: TASTExpression;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+(*
+  TASTLetStatement = class(TASTStatement)
+  public
     Name: TASTIdentifier;
     Expression: TASTExpression;
     function toString:string; override;
@@ -156,6 +168,7 @@ type
     constructor Create;
     destructor Destroy; override;
   end;
+*)
 
   TASTReturnStatement = class(TASTStatement)
   public
@@ -685,9 +698,12 @@ begin
   Result.Token := CurrToken.Clone;
   if expectPeek(ttIDENT) then
   begin
+    Result.Name := ParseExpression(LOWEST);
+  {*
     Result.Name := TASTIdentifier.Create;
     Result.Name.Token := CurrToken.Clone;
     Result.Name.Value := CurrToken.Literal;
+  *}
     if expectPeek(ttASSIGN) then
     begin
       nextToken;

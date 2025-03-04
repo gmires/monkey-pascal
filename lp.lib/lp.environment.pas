@@ -559,17 +559,26 @@ begin
 end;
 
 function THashObject.Inspect: string;
+
+  function asString(value:TEvalObject):string;
+  begin
+    if value.ObjectType=STRING_OBJ then
+      Result := '"' + value.Inspect + '"'
+    else
+      Result := value.Inspect;
+  end;
+
 var
   key: THashkey;
   pair: THashPair;
 begin
-  Result := '{';
+  Result := 'HashMap {';
   if Pairs.Count>0 then
   begin
     for key in Pairs.Keys do
     begin
       pair := Pairs[key];
-      Result := Result + pair.Key.Inspect + ':' + pair.Value.Inspect + ',';
+      Result := Result + asString(pair.Key) + ':' + asString(pair.Value) + ',';
     end;
     Result := Copy(Result,1,length(Result)-1);
   end;

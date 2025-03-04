@@ -6,9 +6,8 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, xmldom, XMLIntf, msxmldom, XMLDoc, ComCtrls, StdCtrls
 
-  ,Generics.Collections
-  ,ExtCtrls
-  ,lp.lexer, lp.token, lp.parser, lp.environment , lp.evaluator
+  ,Generics.Collections, ExtCtrls
+  ,lp.lexer, lp.token, lp.parser, lp.environment , lp.evaluator, lp.builtins
   ;
 
 
@@ -26,6 +25,7 @@ type
     List: TListBox;
     TVAST: TTreeView;
     Label3: TLabel;
+    SplitLog: TSplitter;
     procedure BtnDescribeClick(Sender: TObject);
     procedure BtnRunClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -36,14 +36,23 @@ type
     { Public declarations }
   end;
 
-
 var
   LPMain: TLPMain;
-
+  MLog: TListBox;
 
 implementation
 
 {$R *.dfm}
+
+function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to args.Count-1 do
+    MLog.Items.Add(args[i].Inspect);
+end;
+
 
 procedure TLPMain.BtnDescribeClick(Sender: TObject);
 var
@@ -89,7 +98,8 @@ begin
         try
           List.Items.Add(O.Inspect)
         finally
-          O.Free;
+          if NOT E.Store.ContainsValue(O) then
+            FreeAndNil(O);
         end;
       finally
         E.Free;
@@ -228,6 +238,15 @@ end;
 procedure TLPMain.FormCreate(Sender: TObject);
 begin
   pcMain.TabIndex := 0;
+  MLog:= List;
 end;
+
+procedure init;
+begin
+  builtins['println'] := TBuiltinObject.Create(_PrintLn);
+end;
+
+initialization
+  init;
 
 end.
