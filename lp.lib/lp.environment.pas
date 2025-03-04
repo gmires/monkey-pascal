@@ -200,7 +200,7 @@ end;
 
 function TNumberObject.Inspect: string;
 begin
-  Result := FloatToStr(Value)
+  Result :=  StringReplace(FloatToStr(Value),',','.',[rfReplaceAll])
 end;
 
 function TNumberObject.ObjectType: TEvalObjectType;
@@ -222,7 +222,7 @@ end;
 
 function TBooleanObject.Inspect: string;
 begin
-  if Value then Result := 'True' else Result := 'False';
+  if Value then Result := 'true' else Result := 'false';
 end;
 
 function TBooleanObject.ObjectType: TEvalObjectType;
@@ -335,8 +335,18 @@ begin
 end;
 
 function TFunctionObject.Inspect: string;
+var
+  i:Integer;
 begin
-  Result := '';
+  Result := 'function(';
+  if (Parameters.Count>0) then
+  begin
+    for i := 0 to Parameters.Count-1 do
+      Result := Result + Parameters[i].Value+',';
+
+    Result := Copy(Result,1,Length(Result)-1);
+  end;
+  Result := Result+')';
 end;
 
 function TFunctionObject.ObjectType: TEvalObjectType;
@@ -438,7 +448,7 @@ end;
 
 function TBuiltinObject.Inspect: string;
 begin
-  Result := 'builtin function'
+  Result := 'builtin function()'
 end;
 
 function TBuiltinObject.ObjectType: TEvalObjectType;
