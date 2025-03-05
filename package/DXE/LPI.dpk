@@ -1,0 +1,38 @@
+package LPI;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  lp.builtins in '..\..\lp.lib\lp.builtins.pas',
+  lp.environment in '..\..\lp.lib\lp.environment.pas',
+  lp.evaluator in '..\..\lp.lib\lp.evaluator.pas',
+  lp.lexer in '..\..\lp.lib\lp.lexer.pas',
+  lp.parser in '..\..\lp.lib\lp.parser.pas',
+  lp.token in '..\..\lp.lib\lp.token.pas';
+
+end.

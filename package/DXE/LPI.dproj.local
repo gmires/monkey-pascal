@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2025/03/05 08.00.00.000.771,=D:\SORGENTI\SS-LPI\lp.lib\lp.builtins.pas</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.325,=D:\SORGENTI\SS-LPI\lp.lib\lp.parser.pas</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.099,=D:\SORGENTI\SS-LPI\lp.lib\lp.evaluator.pas</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.210,=D:\SORGENTI\SS-LPI\lp.lib\lp.lexer.pas</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.684,=rtl.dcp</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.995,=D:\SORGENTI\SS-LPI\lp.lib\lp.environment.pas</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.020,C:\Users\giacomo\Documents\RAD Studio\Projects\Package1.dproj=D:\SORGENTI\SS-LPI\package\DXE\LPI.dproj</Transaction>
+    <Transaction>2025/03/05 08.00.00.000.432,=D:\SORGENTI\SS-LPI\lp.lib\lp.token.pas</Transaction>
+  </Transactions>
+</BorlandProject>
