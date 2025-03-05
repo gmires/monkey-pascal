@@ -9,6 +9,9 @@
 			<Projects Include="lp.repl\LPRepl.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="package\DXE\LPI.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -35,14 +38,23 @@
 		<Target Name="LPRepl:Make">
 			<MSBuild Projects="lp.repl\LPRepl.dproj" Targets="Make"/>
 		</Target>
+		<Target Name="LPI">
+			<MSBuild Projects="package\DXE\LPI.dproj"/>
+		</Target>
+		<Target Name="LPI:Clean">
+			<MSBuild Projects="package\DXE\LPI.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="LPI:Make">
+			<MSBuild Projects="package\DXE\LPI.dproj" Targets="Make"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="LPInterpreter;LPRepl"/>
+			<CallTarget Targets="LPInterpreter;LPRepl;LPI"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="LPInterpreter:Clean;LPRepl:Clean"/>
+			<CallTarget Targets="LPInterpreter:Clean;LPRepl:Clean;LPI:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="LPInterpreter:Make;LPRepl:Make"/>
+			<CallTarget Targets="LPInterpreter:Make;LPRepl:Make;LPI:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
