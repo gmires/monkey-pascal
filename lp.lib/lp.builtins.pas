@@ -193,6 +193,17 @@ begin
   end;
 end;
 
+function _ReadLn(args: TList<TEvalObject>): TEvalObject;
+const
+  PROMPT = '<< ';
+var
+  S:string;
+begin
+  S:='';
+  Write(PROMPT); Readln(S);
+  Result := TStringObject.Create(S);
+end;
+
 function _Join(args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
@@ -260,6 +271,41 @@ begin
   end;
 end;
 
+function _Trim(args: TList<TEvalObject>): TEvalObject;
+begin
+  Result := nil;
+  if (args.Count<>1) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
+  else
+  if (args[0].ObjectType<>STRING_OBJ) then
+    Result := TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+  else
+    Result := TStringObject.Create(Trim(TStringObject(args[0]).Value));
+end;
+
+function _LTrim(args: TList<TEvalObject>): TEvalObject;
+begin
+  Result := nil;
+  if (args.Count<>1) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
+  else
+  if (args[0].ObjectType<>STRING_OBJ) then
+    Result := TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+  else
+    Result := TStringObject.Create(TrimLeft(TStringObject(args[0]).Value));
+end;
+
+function _RTrim(args: TList<TEvalObject>): TEvalObject;
+begin
+  Result := nil;
+  if (args.Count<>1) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
+  else
+  if (args[0].ObjectType<>STRING_OBJ) then
+    Result := TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+  else
+    Result := TStringObject.Create(TrimRight(TStringObject(args[0]).Value));
+end;
 
 procedure init;
 begin
@@ -270,9 +316,13 @@ begin
   builtins.Add('delete', TBuiltinObject.Create(_Delete));
   builtins.Add('push', TBuiltinObject.Create(_ArrayPush));
   builtins.Add('println', TBuiltinObject.Create(_PrintLn));
+  builtins.Add('readln', TBuiltinObject.Create(_ReadLn));
   builtins.Add('keyof', TBuiltinObject.Create(_HashKeysOf));
   builtins.Add('join', TBuiltinObject.Create(_Join));
   builtins.Add('split', TBuiltinObject.Create(_Split));
+  builtins.Add('trim', TBuiltinObject.Create(_Trim));
+  builtins.Add('rtrim', TBuiltinObject.Create(_RTrim));
+  builtins.Add('ltrim', TBuiltinObject.Create(_LTrim));
 end;
 
 initialization
