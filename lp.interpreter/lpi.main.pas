@@ -86,6 +86,7 @@ var
   E:TEnvironment;
   P:TParser;
   O:TEvalObject;
+  Prg:TASTProgram;
 begin
   L:=TLexer.Create(MSouce.Lines.Text);
   try
@@ -93,13 +94,24 @@ begin
     try
       E:=TEnvironment.Create;
       try
-        O := Eval(P.ParseProgram, E);
-        if O<>nil then
+        Prg:=P.ParseProgram;
         try
-          List.Items.Add(O.Inspect)
+          if (P.Errors.Count>0) then
+            List.Items.AddStrings(P.Errors)
+          else
+          begin
+            O := Eval(P.ParseProgram, E);
+
+            if O<>nil then
+            try
+              List.Items.Add(O.Inspect)
+            finally
+              if NOT E.Store.ContainsValue(O) then
+                FreeAndNil(O);
+            end;
+          end;
         finally
-          if NOT E.Store.ContainsValue(O) then
-            FreeAndNil(O);
+          FreeAndNil(Prg);
         end;
       finally
         E.Free;

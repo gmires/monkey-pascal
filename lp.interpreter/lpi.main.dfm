@@ -97,7 +97,7 @@ object LPMain: TLPMain
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
-        ExplicitTop = 581
+        ExplicitWidth = 67
       end
       object SplitLog: TSplitter
         AlignWithMargins = True

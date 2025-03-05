@@ -62,6 +62,7 @@ type
   end;
 
 function LookupIdent(value:string): TTokenType;
+function TokenTypeToStr(value:TTokenType): string;
 
 implementation
 
@@ -74,20 +75,7 @@ begin
     Result := ttIDENT;
 end;
 
-{ TToken }
-
-function TToken.Clone: TToken;
-begin
-  Result := TToken.create(TokenType, Literal);
-end;
-
-constructor TToken.create(ATokenType: TTokenType; ALiteral: string);
-begin
-  TokenType := ATokenType;
-  Literal := ALiteral;
-end;
-
-function TToken.toString: string;
+function TokenTypeToStr(value:TTokenType): string;
 const
   TTypeStr: array[TTokenType] of string = (
     'ILLEGAL'
@@ -127,7 +115,25 @@ const
     , 'FOR'
   );
 begin
-  Result := 'TK Type = ' + TTypeStr[TokenType] + ', literal value = ' + Literal;
+  Result := TTypeStr[value];
+end;
+
+{ TToken }
+
+function TToken.Clone: TToken;
+begin
+  Result := TToken.create(TokenType, Literal);
+end;
+
+constructor TToken.create(ATokenType: TTokenType; ALiteral: string);
+begin
+  TokenType := ATokenType;
+  Literal := ALiteral;
+end;
+
+function TToken.toString: string;
+begin
+  Result := 'TK Type = ' + TokenTypeToStr(TokenType) + ', literal value = ' + Literal;
 end;
 
 procedure init;

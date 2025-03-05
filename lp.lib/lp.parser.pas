@@ -250,12 +250,14 @@ type
   TParseInfixExpression = function(AExpression:TASTExpression):TASTExpression of object;
 
   TParser = class
+    FErrors: TStringList;
     Lexer: TLexer;
     CurrToken:TToken;
     PeekToken:TToken;
     Precedences: TDictionary<TTokenType,TEXPrecedence>;
     PrefixFuncts: TDictionary<TTokenType,TParsePrefixExpression>;
     InfixFuncts: TDictionary<TTokenType,TParseInfixExpression>;
+    procedure AddError(Value:string);
     procedure nextToken;
     function  peekTokenIs(TType:TTokenType): Boolean;
     function  currTokenIs(TType:TTokenType): Boolean;
@@ -294,6 +296,7 @@ type
     destructor Destroy; override;
 
     function ParseProgram: TASTProgram;
+    property Errors: TStringList read FErrors;
   end;
 
 implementation
@@ -306,8 +309,15 @@ end;
 
 { TParser }
 
+procedure TParser.AddError(Value: string);
+begin
+ FErrors.Add(Value);
+end;
+
 constructor TParser.Create(ALexer: TLexer);
 begin
+  FErrors := TStringList.Create;
+
   Precedences:= TDictionary<TTokenType,TEXPrecedence>.Create;
   Precedences.Add(ttEQ, TEXPrecedence.EQUALS);
   Precedences.Add(ttNOT_EQ, TEXPrecedence.EQUALS);
@@ -381,13 +391,17 @@ begin
   PrefixFuncts.Free;
   InfixFuncts.Free;
   Precedences.Free;
+
+  FErrors.Free;
 end;
 
 function TParser.expectPeek(TType: TTokenType): Boolean;
 begin
   Result := peekTokenIs(TType);
   if Result then
-    nextToken;
+    nextToken
+  else
+    AddError('Error Token : ' + PeekToken.toString  + ', expected : ' + TokenTypeToStr(TType));
 end;
 
 procedure TParser.nextToken;
@@ -737,6 +751,8 @@ function TParser.ParseProgram: TASTProgram;
 var
   stmt: TASTStatement;
 begin
+  Errors.Clear;
+
   Result := TASTProgram.Create;
 
   While (CurrToken.TokenType <> ttEOF ) do
@@ -1146,7 +1162,7 @@ end;
 
 function TASTNode.toString: string;
 begin
-  Result := ''; { -- virtual -- }
+  Result := 'ASTNode'; { -- virtual -- }
 end;
 
 { TASTCallExpression }

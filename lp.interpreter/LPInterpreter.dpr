@@ -8,7 +8,8 @@ uses
   lp.evaluator in '..\lp.lib\lp.evaluator.pas',
   lp.lexer in '..\lp.lib\lp.lexer.pas',
   lp.parser in '..\lp.lib\lp.parser.pas',
-  lp.token in '..\lp.lib\lp.token.pas';
+  lp.token in '..\lp.lib\lp.token.pas',
+  lp.utils in '..\lp.lib\lp.utils.pas';
 
 {$R *.res}
 

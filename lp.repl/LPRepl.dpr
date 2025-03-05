@@ -9,7 +9,8 @@ uses
   lp.evaluator in '..\lp.lib\lp.evaluator.pas',
   lp.lexer in '..\lp.lib\lp.lexer.pas',
   lp.parser in '..\lp.lib\lp.parser.pas',
-  lp.token in '..\lp.lib\lp.token.pas';
+  lp.token in '..\lp.lib\lp.token.pas',
+  lp.utils in '..\lp.lib\lp.utils.pas';
 
 const
   HEADER = 'LP Interpreter REPL v.1.0b (JM) --- ';
@@ -30,6 +31,7 @@ var
   Parser:TParser;
   ASTProgram: TASTProgram;
   EvalObj:TEvalObject;
+  i:Integer;
 begin
   Env:= TEnvironment.Create;
   try
@@ -51,13 +53,22 @@ begin
           try
             ASTProgram := Parser.ParseProgram;
             try
-              EvalObj := Eval(ASTProgram, Env);
-              if (EvalObj<>nil) then
+              if (Parser.Errors.Count>0) then
               begin
-                Writeln(EvalObj.Inspect);
-                if NOT Env.Store.ContainsValue(EvalObj) then
-                  FreeAndNil(EvalObj);
+                for i := 0 to Parser.Errors.Count-1 do
+                  Writeln(Parser.Errors[i]);
+              end
+              else
+              begin
+                EvalObj := Eval(ASTProgram, Env);
+                if (EvalObj<>nil) then
+                begin
+                  Writeln(EvalObj.Inspect);
+                  if NOT Env.Store.ContainsValue(EvalObj) then
+                    FreeAndNil(EvalObj);
+                end;
               end;
+
             finally
               ASTProgram.Free;
             end;

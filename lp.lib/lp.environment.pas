@@ -169,6 +169,15 @@ type
 
 implementation
 
+function QuoteIfString(value:TEvalObject):string;
+begin
+  if value.ObjectType=STRING_OBJ then
+    Result := '"' + value.Inspect + '"'
+  else
+    Result := value.Inspect;
+end;
+
+
 { TEvalObject }
 
 function TEvalObject.Clone: TEvalObject;
@@ -484,7 +493,7 @@ begin
     if (Elements.Count>0) then
     begin
       for i := 0 to Elements.Count-1 do
-        Result := Result + Elements[i].Inspect+ ',';
+        Result := Result + QuoteIfString(Elements[i])+ ',';
 
       Result:= Copy(Result,1,length(Result)-1);
     end;
@@ -569,15 +578,6 @@ begin
 end;
 
 function THashObject.Inspect: string;
-
-  function asString(value:TEvalObject):string;
-  begin
-    if value.ObjectType=STRING_OBJ then
-      Result := '"' + value.Inspect + '"'
-    else
-      Result := value.Inspect;
-  end;
-
 var
   key: THashkey;
   pair: THashPair;
@@ -588,7 +588,7 @@ begin
     for key in Pairs.Keys do
     begin
       pair := Pairs[key];
-      Result := Result + asString(pair.Key) + ':' + asString(pair.Value) + ',';
+      Result := Result + QuoteIfString(pair.Key) + ':' + QuoteIfString(pair.Value) + ',';
     end;
     Result := Copy(Result,1,length(Result)-1);
   end;
