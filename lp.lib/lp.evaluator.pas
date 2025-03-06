@@ -15,6 +15,7 @@ type
   TEvaluator = class
     FGarbageCollector:TGarbageCollector;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
+    function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
     function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
     function evalBangOperatorExpression(right: TEvalObject):TEvalObject;
     function evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
@@ -90,34 +91,14 @@ var
   i: Integer;
   R: TEvalObject;
 begin
-  R := nil;
-  for i := 0 to TASTProgram(node).FStatements.Count-1 do
-  begin
-    R := Eval(TASTProgram(node).FStatements[i], env);
-    if R is TReturnValueObject then
-    begin
-      Result := TReturnValueObject(R).Value;
-      Exit;
-    end
-    else
-    if R is TErrorObject then Break;
-  end;
-  Result := R;
+  Result := evalStatements(TASTProgram(node).FStatements, env);
+  if Result is TReturnValueObject then
+    Result := TReturnValueObject(R).Value;
 end;
 
 function TEvaluator.evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
-var
-  i: Integer;
 begin
-  Result := nil;
-  for i := 0 to TASTBlockStatement(node).FStatements.Count-1 do
-  begin
-    Result := Eval(TASTBlockStatement(node).FStatements[i], env);
-    if (Result<>nil) then
-      if (Result.ObjectType = RETURN_VALUE_OBJ) or (Result.ObjectType = ERROR_OBJ) then
-        Break;
-  end;
-
+  Result := evalStatements(TASTBlockStatement(node).FStatements, env);
 end;
 
 function TEvaluator.evalBangOperatorExpression(right: TEvalObject):TEvalObject;
@@ -177,6 +158,20 @@ begin
   if Op='!=' then Result:= nativeBoolToBooleanObject(LVal <> RVal)
   else
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
+end;
+
+function TEvaluator.evalStatements(Statements: TList<TASTStatement>;  env: TEnvironment): TEvalObject;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to Statements.Count-1 do
+  begin
+    Result := Eval(Statements[i], env);
+    if (Result<>nil) then
+      if (Result.ObjectType = RETURN_VALUE_OBJ) or (Result.ObjectType = ERROR_OBJ) then
+        Break;
+  end;
 end;
 
 function TEvaluator.evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -405,8 +400,6 @@ begin
     HO.Pairs.Add(HK,THashPair.Create(AIndex, AValue));
 
   Result := AHash;
-
-//  Result := TErrorObject.newError('hash no contain key: %s', [AIndex.Inspect]);
 end;
 
 constructor TEvaluator.Create;
