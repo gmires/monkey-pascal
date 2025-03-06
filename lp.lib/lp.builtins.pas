@@ -67,7 +67,6 @@ function _ArrayRest(args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
 begin
-  Result := nil;
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
@@ -87,10 +86,7 @@ begin
 end;
 
 function _ArrayPush(args: TList<TEvalObject>): TEvalObject;
-var
-  i: Integer;
 begin
-  Result := nil;
   if (args.Count<>2) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
@@ -155,10 +151,8 @@ end;
 
 function _HashKeysOf(args: TList<TEvalObject>): TEvalObject;
 var
-  i,idx: Integer;
   hkey: THashkey;
 begin
-  Result := nil;
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=2', [args.Count])
   else
@@ -211,7 +205,6 @@ var
   A: TArrayObject;
 begin
   j:=',';
-  Result := nil;
   if (args.Count>2) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, max=2', [args.Count])
   else
@@ -240,12 +233,10 @@ end;
 
 function _Split(args: TList<TEvalObject>): TEvalObject;
 var
-  i: Integer;
   j: char;
   S,S1: string;
 begin
   j:=',';
-  Result := nil;
   if (args.Count>2) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, max=2', [args.Count])
   else
@@ -273,7 +264,6 @@ end;
 
 function _Trim(args: TList<TEvalObject>): TEvalObject;
 begin
-  Result := nil;
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
@@ -285,7 +275,6 @@ end;
 
 function _LTrim(args: TList<TEvalObject>): TEvalObject;
 begin
-  Result := nil;
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else
@@ -297,7 +286,6 @@ end;
 
 function _RTrim(args: TList<TEvalObject>): TEvalObject;
 begin
-  Result := nil;
   if (args.Count<>1) then
     Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
   else

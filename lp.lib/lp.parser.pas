@@ -323,6 +323,8 @@ begin
   Precedences.Add(ttNOT_EQ, TEXPrecedence.EQUALS);
   Precedences.Add(ttLT, LESSGREATER);
   Precedences.Add(ttGT, LESSGREATER);
+  Precedences.Add(ttLE, LESSGREATER);
+  Precedences.Add(ttGE, LESSGREATER);
   Precedences.Add(ttPLUS, SUM);
   Precedences.Add(ttMINUS, SUM);
   Precedences.Add(ttSLASH, PRODUCT);
@@ -357,6 +359,8 @@ begin
 	InfixFuncts.Add(ttNOT_EQ, ParseInfixExpression);
 	InfixFuncts.Add(ttLT, ParseInfixExpression);
 	InfixFuncts.Add(ttGT, ParseInfixExpression);
+	InfixFuncts.Add(ttLE, ParseInfixExpression);
+	InfixFuncts.Add(ttGE, ParseInfixExpression);
 	InfixFuncts.Add(ttLPAREN, ParseCallExpression);
 	InfixFuncts.Add(ttLBRACKET, ParseIndexExpression);
 	InfixFuncts.Add(ttLOGICALAND, ParseInfixExpression);

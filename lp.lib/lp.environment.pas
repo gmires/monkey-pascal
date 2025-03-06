@@ -43,6 +43,11 @@ type
     function ObjectType:TEvalObjectType; virtual;
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
+  public
+    { ** for GC (mark and sweep) ** }
+    GcNext:TEvalObject;
+    GcMark:Boolean;
+    constructor Create;
   end;
 
   THashkey = class
@@ -185,6 +190,12 @@ begin
   Result := nil; { virtual }
 end;
 
+constructor TEvalObject.Create;
+begin
+  GcNext := nil;
+  GcMark := False;
+end;
+
 function TEvalObject.Inspect: string;
 begin
   Result := '';
@@ -204,6 +215,7 @@ end;
 
 constructor TNumberObject.Create(AValue: Double);
 begin
+  inherited Create;
   Value := AValue;
 end;
 
@@ -226,6 +238,7 @@ end;
 
 constructor TBooleanObject.Create(AValue: Boolean);
 begin
+  inherited Create;
   Value := AValue;
 end;
 
@@ -243,6 +256,7 @@ end;
 
 constructor TReturnValueObject.Create;
 begin
+  inherited Create;
   Value := nil;
 end;
 
@@ -299,6 +313,7 @@ end;
 
 constructor TErrorObject.Create(AErrMessage: string);
 begin
+  inherited Create;
   ErrMessage := AErrMessage;
 end;
 
@@ -329,6 +344,7 @@ constructor TFunctionObject.Create(AParameters: TList<TASTIdentifier>;
 var
   i: Integer;
 begin
+  inherited Create;
   Parameters := TList<TASTIdentifier>.create;
   for i := 0 to AParameters.Count-1 do
     Parameters.Add(AParameters[i].Clone as TASTIdentifier);
@@ -430,6 +446,7 @@ end;
 
 constructor TStringObject.Create(AValue: string);
 begin
+  inherited Create;
   Value := AValue;
 end;
 
@@ -452,6 +469,7 @@ end;
 
 constructor TBuiltinObject.Create(ABuiltinFunction: TBuiltinFunction);
 begin
+  inherited Create;
   BuiltinFunction := ABuiltinFunction;
 end;
 

@@ -87,12 +87,14 @@ var
   P:TParser;
   O:TEvalObject;
   Prg:TASTProgram;
+  Ev:TEvaluator;
 begin
   L:=TLexer.Create(MSouce.Lines.Text);
   try
     P := TParser.Create(L);
     try
       E:=TEnvironment.Create;
+      Ev:=TEvaluator.Create;
       try
         Prg:=P.ParseProgram;
         try
@@ -100,7 +102,7 @@ begin
             List.Items.AddStrings(P.Errors)
           else
           begin
-            O := Eval(P.ParseProgram, E);
+            O := Ev.Eval(P.ParseProgram, E);
 
             if O<>nil then
             try
@@ -114,6 +116,7 @@ begin
           FreeAndNil(Prg);
         end;
       finally
+        Ev.Free;
         E.Free;
       end;
     finally

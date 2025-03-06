@@ -7,10 +7,46 @@ uses classes, SysUtils, Generics.Collections, Variants
   , lp.environment
   , lp.parser;
 
+type
+  TGarbageCollector = class
+
+  end;
+
+  TEvaluator = class
+    FGarbageCollector:TGarbageCollector;
+    function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
+    function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
+    function evalBangOperatorExpression(right: TEvalObject):TEvalObject;
+    function evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
+    function evalPrefixExpression(Op:string; right:TEvalObject):TEvalObject;
+    function evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+    function evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+    function evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+    function evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
+    function evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
+    function evalWhileExpression(node:TASTWhileExpression; env :TEnvironment):TEvalObject;
+    function evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
+    function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
+    function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
+    function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
+    function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
+    function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
+    function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
+    function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
+    function evalIndexExpression(left, index:TEvalObject):TEvalObject;
+    function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
+    function unwrapReturnValue(obj:TEvalObject):TEvalObject;
+    function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    function Eval(node: TASTNode; env: TEnvironment): TEvalObject;
+  end;
+
 var
   builtins: TDictionary<string,TBuiltinObject>;
 
-function Eval(node: TASTNode; env: TEnvironment): TEvalObject;
 
 implementation
 
@@ -49,7 +85,7 @@ begin
 end;
 
 
-function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
+function TEvaluator.evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
 var
   i: Integer;
   R: TEvalObject;
@@ -69,7 +105,7 @@ begin
   Result := R;
 end;
 
-function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
+function TEvaluator.evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
 var
   i: Integer;
 begin
@@ -84,7 +120,7 @@ begin
 
 end;
 
-function evalBangOperatorExpression(right: TEvalObject):TEvalObject;
+function TEvaluator.evalBangOperatorExpression(right: TEvalObject):TEvalObject;
 begin
   if (right is TNullObject) then
     Result := TBooleanObject.Create(True)
@@ -95,7 +131,7 @@ begin
     Result :=  TBooleanObject.Create(False);
 end;
 
-function evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
+function TEvaluator.evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
 begin
 
   if (right.ObjectType <> NUMBER_OBJ) then
@@ -104,7 +140,7 @@ begin
     Result := TNumberObject.Create(-TNumberObject(right).Value);
 end;
 
-function evalPrefixExpression(Op:string; right:TEvalObject):TEvalObject;
+function TEvaluator.evalPrefixExpression(Op:string; right:TEvalObject):TEvalObject;
 begin
   if Op='!' then Result := evalBangOperatorExpression(right)
   else
@@ -113,7 +149,7 @@ begin
     Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjectType])
 end;
 
-function evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+function TEvaluator.evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
 var
   LVal,
   RVal:Double;
@@ -130,7 +166,11 @@ begin
   else
   if Op='<' then Result:= nativeBoolToBooleanObject(LVal < RVal)
   else
+  if Op='<=' then Result:= nativeBoolToBooleanObject(LVal <= RVal)
+  else
   if Op='>' then Result:= nativeBoolToBooleanObject(LVal > RVal)
+  else
+  if Op='>=' then Result:= nativeBoolToBooleanObject(LVal >= RVal)
   else
   if Op='==' then Result:= nativeBoolToBooleanObject(LVal = RVal)
   else
@@ -139,7 +179,7 @@ begin
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
-function evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+function TEvaluator.evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
 var
   LVal,
   RVal:string;
@@ -150,7 +190,11 @@ begin
   else
   if Op='<' then Result:= nativeBoolToBooleanObject(LVal < RVal)
   else
+  if Op='<=' then Result:= nativeBoolToBooleanObject(LVal <= RVal)
+  else
   if Op='>' then Result:= nativeBoolToBooleanObject(LVal > RVal)
+  else
+  if Op='>=' then Result:= nativeBoolToBooleanObject(LVal >= RVal)
   else
   if Op='==' then Result:= nativeBoolToBooleanObject(LVal = RVal)
   else
@@ -159,7 +203,7 @@ begin
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
-function evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+function TEvaluator.evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
 var
   LVal,
   RVal:Boolean;
@@ -177,7 +221,7 @@ begin
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
-function evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
+function TEvaluator.evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
 begin
   if ((left.ObjectType=NUMBER_OBJ) and (right.ObjectType=NUMBER_OBJ)) then
     Result := evalIntegerInfixExpression(Op, left, right)
@@ -200,7 +244,7 @@ begin
 		Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
-function evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
+function TEvaluator.evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
 begin
   Result := Eval(TASTIfExpression(node).Condition, env);
   if NOT isError(Result) then
@@ -215,14 +259,14 @@ begin
   end;
 end;
 
-function evalWhileExpression(node:TASTWhileExpression; env :TEnvironment):TEvalObject;
+function TEvaluator.evalWhileExpression(node:TASTWhileExpression; env :TEnvironment):TEvalObject;
 begin
   Result := nil;
   while isTruthyWithError(Eval(TASTWhileExpression(node).Condition, env), Result) do
     Result := Eval(TASTWhileExpression(node).Body, env)
 end;
 
-function evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
+function TEvaluator.evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
 var
   ForEnv: TEnvironment;
 begin
@@ -240,7 +284,7 @@ begin
 end;
 
 
-function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
+function TEvaluator.evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
 begin
   Result:=nil;
 
@@ -253,7 +297,7 @@ begin
   end;
 end;
 
-function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
+function TEvaluator.evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
 var
   k,v: TEvalObject;
   h:THashkey;
@@ -281,7 +325,7 @@ begin
 end;
 
 
-function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
+function TEvaluator.evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
 var
   i:Integer;
   val:TEvalObject;
@@ -300,7 +344,7 @@ begin
   end;
 end;
 
-function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
+function TEvaluator.evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
 var
   idx, max: Integer;
 begin
@@ -313,7 +357,7 @@ begin
     Result := TArrayObject(AArray).Elements[idx];
 end;
 
-function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
+function TEvaluator.assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
 var
   idx, max: Integer;
 begin
@@ -329,7 +373,7 @@ begin
   end;
 end;
 
-function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
+function TEvaluator.evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
 var
   HO:THashObject;
   HK:THashkey;
@@ -345,7 +389,7 @@ begin
     Result := TNullObject.Create;
 end;
 
-function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
+function TEvaluator.assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
 var
   HO:THashObject;
   HK:THashkey;
@@ -365,7 +409,18 @@ begin
 //  Result := TErrorObject.newError('hash no contain key: %s', [AIndex.Inspect]);
 end;
 
-function evalIndexExpression(left, index:TEvalObject):TEvalObject;
+constructor TEvaluator.Create;
+begin
+  FGarbageCollector:= TGarbageCollector.Create;
+end;
+
+destructor TEvaluator.Destroy;
+begin
+  FGarbageCollector.Free;
+  inherited;
+end;
+
+function TEvaluator.evalIndexExpression(left, index:TEvalObject):TEvalObject;
 begin
   if (left.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
     Result := evalArrayIndexExpression(left, index)
@@ -376,7 +431,7 @@ begin
     Result := TErrorObject.newError('index operator not supported: %s', [left.ObjectType]);
 end;
 
-function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
+function TEvaluator.extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
 var
   i: Integer;
 begin
@@ -385,7 +440,7 @@ begin
     Result.SetValue(fn.Parameters[i].Value,args[i].Clone);
 end;
 
-function unwrapReturnValue(obj:TEvalObject):TEvalObject;
+function TEvaluator.unwrapReturnValue(obj:TEvalObject):TEvalObject;
 begin
   Result := nil;
   if (obj is TReturnValueObject) then
@@ -397,7 +452,7 @@ begin
 end;
 
 
-function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
+function TEvaluator.applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
 var
   FEnv:TEnvironment;
 begin
@@ -418,7 +473,7 @@ begin
 end;
 
 
-function Eval(node: TASTNode; env: TEnvironment): TEvalObject;
+function TEvaluator.Eval(node: TASTNode; env: TEnvironment): TEvalObject;
 var
   val,enobj,index:TEvalObject;
   args:TList<TEvalObject>;
@@ -551,6 +606,8 @@ begin
     end;
   end;
 end;
+
+
 
 procedure init;
 begin
