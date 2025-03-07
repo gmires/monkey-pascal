@@ -25,9 +25,10 @@ type
   TEnvironment = class
     FStore: TDictionary<string,TEvalObject>;
     FOuter: TEnvironment;
+    FreeElements: Boolean;
   public
     constructor Create; overload;
-    constructor Create(AOuter:TEnvironment); overload;
+    constructor Create(AOuter:TEnvironment; AFreeElements:Boolean=True); overload;
     destructor Destroy; override;
     property Store: TDictionary<string,TEvalObject> read FStore;
     property Outer: TEnvironment read FOuter write FOuter;
@@ -162,6 +163,7 @@ type
     Value: TEvalObject;
   public
     constructor Create(AKey, AValue:TEvalObject);
+    destructor Destroy; override;
   end;
 
   THashObject = class(TEvalObject)
@@ -170,6 +172,8 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+  public
+    destructor Destroy; override;
   end;
 
 implementation
@@ -384,12 +388,14 @@ end;
 constructor TEnvironment.Create;
 begin
   FStore := TDictionary<string,TEvalObject>.Create;
+  FreeElements := True;
   FOuter := nil;
 end;
 
-constructor TEnvironment.Create(AOuter: TEnvironment);
+constructor TEnvironment.Create(AOuter: TEnvironment;  AFreeElements:Boolean=True);
 begin
   Create;
+  FreeElements := AFreeElements;
   FOuter := AOuter;
 end;
 
@@ -397,10 +403,10 @@ destructor TEnvironment.Destroy;
 var
   key :string;
 begin
-  for key in FStore.Keys do
-    FStore[key].Free;
+  if FreeElements then
+    for key in FStore.Keys do
+      FStore[key].Free;
   FStore.Free;
-//  if (FOuter<>nil) then FOuter.Free;
   inherited;
 end;
 
@@ -497,8 +503,15 @@ begin
 end;
 
 destructor TArrayObject.Destroy;
+var
+  i : Integer;
 begin
-
+  for i := 0 to Elements.Count-1 do
+  begin
+    Elements[i].Free;
+    Elements[i]:=nil;
+  end;
+  Elements.Clear;
   inherited;
 end;
 
@@ -578,6 +591,13 @@ begin
   Value := AValue;
 end;
 
+destructor THashPair.Destroy;
+begin
+  FreeAndNil(Key);
+  FreeAndNil(Value);
+  inherited;
+end;
+
 { THashObject }
 
 function THashObject.Clone: TEvalObject;
@@ -593,6 +613,19 @@ begin
     v := Pairs[key].Value.Clone;
     THashObject(Result).Pairs.Add(THashkey.fromObject(k), THashPair.Create(k,v));
   end;
+end;
+
+destructor THashObject.Destroy;
+var
+  hkey: THashkey;
+begin
+  for hkey in Pairs.Keys do
+  begin
+    Pairs[hkey].Key.Free;
+    Pairs[hkey].Value.Free;
+  end;
+  Pairs.Clear;
+  inherited;
 end;
 
 function THashObject.Inspect: string;

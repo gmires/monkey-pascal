@@ -102,20 +102,19 @@ begin
             List.Items.AddStrings(P.Errors)
           else
           begin
-            O := Ev.Eval(P.ParseProgram, E);
-
+            O := Ev.Eval(Prg, E);
             if O<>nil then
-            try
               List.Items.Add(O.Inspect)
-            finally
-              if NOT E.Store.ContainsValue(O) then
-                FreeAndNil(O);
-            end;
           end;
         finally
           FreeAndNil(Prg);
         end;
       finally
+        List.Items.Add('Gc before sweep = ' + IntToStr(Ev.Gc.ElemCount));
+        Ev.Sweep(E);
+        List.Items.Add('Gc 1° after sweep = ' + IntToStr(Ev.Gc.ElemCount));
+        Ev.Sweep(E);
+        List.Items.Add('Gc 2° after sweep = ' + IntToStr(Ev.Gc.ElemCount));
         Ev.Free;
         E.Free;
       end;
