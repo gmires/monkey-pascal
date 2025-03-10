@@ -253,6 +253,8 @@ procedure TLPMain.FormCreate(Sender: TObject);
 begin
   pcMain.TabIndex := 0;
   MLog:= List;
+
+  ReportMemoryLeaksOnShutdown := True;
 end;
 
 procedure init;

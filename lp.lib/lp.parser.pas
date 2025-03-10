@@ -1346,7 +1346,7 @@ begin
     for key in Pairs.Keys do
     begin
       Pairs[key].Free;
-      Pairs.Remove(key);
+//      Pairs.Remove(key);
       key.Free
     end;
     FPairs.Free;

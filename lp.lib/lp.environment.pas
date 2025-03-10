@@ -509,12 +509,15 @@ destructor TArrayObject.Destroy;
 var
   i : Integer;
 begin
+{
   for i := 0 to Elements.Count-1 do
   begin
     Elements[i].Free;
     Elements[i]:=nil;
   end;
+}
   Elements.Clear;
+  FreeAndNil(Elements);
   inherited;
 end;
 
@@ -596,8 +599,8 @@ end;
 
 destructor THashPair.Destroy;
 begin
-  FreeAndNil(Key);
-  FreeAndNil(Value);
+//  FreeAndNil(Key);
+//  FreeAndNil(Value);
   inherited;
 end;
 
@@ -624,10 +627,13 @@ var
 begin
   for hkey in Pairs.Keys do
   begin
-    Pairs[hkey].Key.Free;
-    Pairs[hkey].Value.Free;
+    Pairs[hkey].Free;
+    hkey.Free;
+    //Pairs[hkey].Key.Free;
+    //Pairs[hkey].Value.Free;
   end;
   Pairs.Clear;
+  FreeAndNil(Pairs);
   inherited;
 end;
 

@@ -722,12 +722,30 @@ end;
 { TGarbageCollector }
 
 function TGarbageCollector.Add(AObject: TEvalObject):TEvalObject;
+var
+  Element: TEvalObject;
+  Hkey: THashkey;
 begin
   Result := AObject;
   if Assigned(AObject) then
   begin
     if FObjects.IndexOf(AObject)<0 then
       FObjects.Add(AObject);
+
+    if AObject.ObjectType=ARRAY_OBJ then
+    begin
+      for Element in TArrayObject(AObject).Elements do
+        Add(Element);
+    end
+    else
+    if AObject.ObjectType=HASH_OBJ then
+    begin
+      for HKey in THashObject(AObject).Pairs.Keys do
+      begin
+        Add(THashObject(AObject).Pairs[HKey].Key);
+        Add(THashObject(AObject).Pairs[HKey].Value);
+      end;
+    end;
     {  AObject.GcNext := FHead.GcNext;
     FHead.GcNext := AObject;
     Inc(FElemCount);  }
