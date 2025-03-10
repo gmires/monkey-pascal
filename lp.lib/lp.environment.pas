@@ -357,8 +357,13 @@ begin
 end;
 
 destructor TFunctionObject.Destroy;
+var
+  i: Integer;
 begin
-
+  for i := 0 to Parameters.Count-1 do
+    Parameters[i].Free;
+  Parameters.Free;
+  Body.Free;
   inherited;
 end;
 
