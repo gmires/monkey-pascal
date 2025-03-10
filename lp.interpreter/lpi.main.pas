@@ -110,11 +110,11 @@ begin
           FreeAndNil(Prg);
         end;
       finally
-        List.Items.Add('Gc before sweep = ' + IntToStr(Ev.Gc.ElemCount));
+        List.Items.Add('Gc before sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
         Ev.Sweep(E);
-        List.Items.Add('Gc 1° after sweep = ' + IntToStr(Ev.Gc.ElemCount));
+        List.Items.Add('Gc 1° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
         Ev.Sweep(E);
-        List.Items.Add('Gc 2° after sweep = ' + IntToStr(Ev.Gc.ElemCount));
+        List.Items.Add('Gc 2° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
         Ev.Free;
         E.Free;
       end;
@@ -253,6 +253,8 @@ procedure TLPMain.FormCreate(Sender: TObject);
 begin
   pcMain.TabIndex := 0;
   MLog:= List;
+
+  ReportMemoryLeaksOnShutdown:=True;
 end;
 
 procedure init;

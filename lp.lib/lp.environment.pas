@@ -25,10 +25,9 @@ type
   TEnvironment = class
     FStore: TDictionary<string,TEvalObject>;
     FOuter: TEnvironment;
-    FreeElements: Boolean;
   public
     constructor Create; overload;
-    constructor Create(AOuter:TEnvironment; AFreeElements:Boolean=True); overload;
+    constructor Create(AOuter:TEnvironment); overload;
     destructor Destroy; override;
     property Store: TDictionary<string,TEvalObject> read FStore;
     property Outer: TEnvironment read FOuter write FOuter;
@@ -388,14 +387,12 @@ end;
 constructor TEnvironment.Create;
 begin
   FStore := TDictionary<string,TEvalObject>.Create;
-  FreeElements := True;
   FOuter := nil;
 end;
 
-constructor TEnvironment.Create(AOuter: TEnvironment;  AFreeElements:Boolean=True);
+constructor TEnvironment.Create(AOuter: TEnvironment);
 begin
   Create;
-  FreeElements := AFreeElements;
   FOuter := AOuter;
 end;
 
@@ -403,9 +400,10 @@ destructor TEnvironment.Destroy;
 var
   key :string;
 begin
-  if FreeElements then
-    for key in FStore.Keys do
-      FStore[key].Free;
+{
+  for key in FStore.Keys do
+    FStore[key].Free;  }
+
   FStore.Free;
   inherited;
 end;

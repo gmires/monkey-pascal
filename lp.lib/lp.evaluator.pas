@@ -9,18 +9,25 @@ uses classes, SysUtils, Generics.Collections, Variants
 
 type
   TGarbageCollector = class
-    FHead: TEvalObject;
-    FElemCount: Integer;
+    // -- FHead: TEvalObject;
+    // -- FElemCount: Integer;
+    FObjects: TList<TEvalObject>;
+    FTrashObjects: TList<TEvalObject>;
+    function GetElemCount: Integer;
+    function GetTrashCount: Integer;
   public
     constructor Create;
     destructor Destroy; override;
 
-    procedure Add(AObject: TEvalObject);
+    function  Add(AObject: TEvalObject):TEvalObject;
+    procedure Remove(AObject: TEvalObject);
     procedure Mark(AObject: TEvalObject); overload;
     procedure Mark(AEnvironment: TEnvironment); overload;
     procedure Sweep;
+    procedure EmptyTrash;
 
-    property ElemCount:Integer read FElemCount;
+    property ElemCount:Integer read GetElemCount;
+    property TrashCount:Integer read GetTrashCount;
   end;
 
   TEvaluator = class
@@ -128,7 +135,10 @@ begin
     begin
       FGarbageCollector.Mark(Result);
       if (Result.ObjectType = RETURN_VALUE_OBJ) then
+      begin
+        FGarbageCollector.Add(TReturnValueObject(Result).Value);
         FGarbageCollector.Mark(TReturnValueObject(Result).Value);
+      end;
 
       Inc(FGCCounter);
       if (FGCCounter>=100) then
@@ -297,7 +307,7 @@ function TEvaluator.evalForExpression(node:TASTForExpression; env :TEnvironment)
 var
   ForEnv: TEnvironment;
 begin
-  ForEnv:= TEnvironment.Create(env, False);
+  ForEnv:= TEnvironment.Create(env);
   try
     Eval(node.Init, ForEnv);
     while isTruthyWithError(Eval(TASTForExpression(node).Condition, ForEnv), Result) do
@@ -473,6 +483,7 @@ end;
 
 destructor TEvaluator.Destroy;
 begin
+  FGarbageCollector.EmptyTrash;
   FGarbageCollector.Free;
   inherited;
 end;
@@ -494,7 +505,7 @@ var
 begin
   Result := TEnvironment.Create(fn.Env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetValue(fn.Parameters[i].Value,args[i].Clone);
+    Result.SetValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone));
 end;
 
 procedure TEvaluator.Sweep(env: TEnvironment);
@@ -524,6 +535,7 @@ begin
     FEnv := extendFunctionEnv(fn as TFunctionObject, args);
     try
       Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
+      Gc.Mark(FEnv);
     finally
       FEnv.Free;
     end;
@@ -707,30 +719,60 @@ begin
   builtins.Free;
 end;
 
-
 { TGarbageCollector }
 
-procedure TGarbageCollector.Add(AObject: TEvalObject);
+function TGarbageCollector.Add(AObject: TEvalObject):TEvalObject;
 begin
+  Result := AObject;
   if Assigned(AObject) then
   begin
-    AObject.GcNext := FHead.GcNext;
+    if FObjects.IndexOf(AObject)<0 then
+      FObjects.Add(AObject);
+    {  AObject.GcNext := FHead.GcNext;
     FHead.GcNext := AObject;
-
-    Inc(FElemCount);
+    Inc(FElemCount);  }
   end;
 end;
 
 constructor TGarbageCollector.Create;
 begin
-  FElemCount := 0;
-  FHead := TEvalObject.Create;
+  FObjects:= TList<TEvalObject>.Create;
+  FTrashObjects:= TList<TEvalObject>.Create;
+{  FElemCount := 0;
+  FHead := TEvalObject.Create;  }
 end;
 
 destructor TGarbageCollector.Destroy;
+var
+  i: Integer;
 begin
-  FreeAndNil(FHead);
+  for i := 0 to FObjects.Count-1 do
+    FObjects[i].Free;
+  FObjects.Clear;
+
+  FreeAndNil(FTrashObjects);
+  FreeAndNil(FObjects);
   inherited;
+end;
+
+procedure TGarbageCollector.EmptyTrash;
+var
+  i: Integer;
+begin
+  for i := 0 to FTrashObjects.Count-1 do
+    FTrashObjects[i].Free;
+
+  FTrashObjects.Clear;
+end;
+
+function TGarbageCollector.GetElemCount: Integer;
+begin
+  Result := FObjects.Count;
+end;
+
+function TGarbageCollector.GetTrashCount: Integer;
+begin
+  Result := FTrashObjects.Count;
 end;
 
 procedure TGarbageCollector.Mark(AObject: TEvalObject);
@@ -769,10 +811,54 @@ begin
     Mark(AEnvironment.Outer);
 end;
 
+procedure TGarbageCollector.Remove(AObject: TEvalObject);
+var
+//  node,tmp: TEvalObject;
+  i:Integer;
+begin
+  i:= FObjects.IndexOf(AObject);
+  if i>=0 then
+    FObjects.Remove(AObject);
+
+
+{
+  if Assigned(AObject) then
+  begin
+    node:= FHead;
+    while Assigned(node.GcNext) do
+    begin
+      if AObject=node.GcNext then
+      begin
+        tmp := node.GcNext;
+        node.GcNext := tmp.GcNext;
+        Dec(FElemCount);
+
+        Break;
+      end
+      else node := node.GcNext;
+    end;
+  end;
+  }
+end;
+
 procedure TGarbageCollector.Sweep;
 var
-  node,tmp: TEvalObject;
+//  node, tmp: TEvalObject;
+  i:Integer;
 begin
+
+  for i := FObjects.Count-1 downto 0 do
+    if NOT FObjects[i].GcMark then
+    begin
+      FTrashObjects.Add(FObjects[i]);
+      FObjects.Remove(FObjects[i]);
+    end;
+
+  for i := 0 to FObjects.Count-1 do
+    FObjects[i].GcMark := False;
+
+
+{
   node:= FHead;
   while Assigned(node.GcNext) do
   begin
@@ -792,6 +878,7 @@ begin
     node.GcNext.GcMark := False;
     node:= node.GcNext;
   end;
+  }
 end;
 
 initialization
