@@ -1,40 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
+    <Transaction>2025/02/10 12.00.00.000.144,C:\Users\giacomo\Documents\RAD Studio\Projects\Unit6.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\xmledit.main.pas</Transaction>
+    <Transaction>2025/02/10 12.00.00.000.987,C:\Users\giacomo\Documents\RAD Studio\Projects\Project5.dproj=C:\Users\giacomo\Desktop\SiStore XML Edit\XMLEdit.dproj</Transaction>
+    <Transaction>2025/02/10 12.00.00.000.144,C:\Users\giacomo\Documents\RAD Studio\Projects\Unit6.dfm=C:\Users\giacomo\Desktop\SiStore XML Edit\xmledit.main.dfm</Transaction>
     <Transaction>2025/02/10 12.00.00.000.102,=C:\Users\giacomo\Documents\RAD Studio\Projects\Unit6.pas</Transaction>
-    <Transaction>2025/02/10 12.00.00.000.987,C:\Users\giacomo\Desktop\SiStore XML Edit\XMLEdit.dproj=C:\Users\giacomo\Documents\RAD Studio\Projects\Project5.dproj</Transaction>
-    <Transaction>2025/02/10 12.00.00.000.144,C:\Users\giacomo\Desktop\SiStore XML Edit\xmledit.main.pas=C:\Users\giacomo\Documents\RAD Studio\Projects\Unit6.pas</Transaction>
-    <Transaction>2025/02/10 12.00.00.000.144,C:\Users\giacomo\Desktop\SiStore XML Edit\xmledit.main.dfm=C:\Users\giacomo\Documents\RAD Studio\Projects\Unit6.dfm</Transaction>
     <Transaction>2025/02/26 11.00.00.000.411,=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
+    <Transaction>2025/02/26 12.00.00.000.175,C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\lp.token.pas</Transaction>
     <Transaction>2025/02/26 12.00.00.000.389,=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
-    <Transaction>2025/02/26 12.00.00.000.175,C:\Users\giacomo\Desktop\SiStore XML Edit\lp.token.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
-    <Transaction>2025/02/26 12.00.00.000.799,C:\Users\giacomo\Desktop\SiStore XML Edit\lp.lexer.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
-    <Transaction>2025/02/26 15.00.00.000.053,C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\lp.parser.pas</Transaction>
+    <Transaction>2025/02/26 12.00.00.000.799,C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\lp.lexer.pas</Transaction>
     <Transaction>2025/02/26 15.00.00.000.179,=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
-    <Transaction>2025/02/28 11.00.00.000.320,C:\Users\giacomo\Desktop\SiStore XML Edit\lp.evaluator.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
+    <Transaction>2025/02/26 15.00.00.000.053,C:\Users\giacomo\Desktop\SiStore XML Edit\lp.parser.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
     <Transaction>2025/02/28 11.00.00.000.541,=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
-    <Transaction>2025/02/28 18.00.00.000.277,=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
+    <Transaction>2025/02/28 11.00.00.000.320,C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\lp.evaluator.pas</Transaction>
     <Transaction>2025/02/28 18.00.00.000.988,C:\Users\giacomo\Desktop\SiStore XML Edit\lp.builtinfn.pas=</Transaction>
-    <Transaction>2025/02/28 18.00.00.000.409,C:\Users\giacomo\Desktop\SiStore XML Edit\lp.builtinfn.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
+    <Transaction>2025/02/28 18.00.00.000.409,C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas=C:\Users\giacomo\Desktop\SiStore XML Edit\lp.builtinfn.pas</Transaction>
+    <Transaction>2025/02/28 18.00.00.000.277,=C:\Users\giacomo\Desktop\SiStore XML Edit\Unit1.pas</Transaction>
     <Transaction>2025/03/03 09.00.00.000.948,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas</Transaction>
-    <Transaction>2025/03/03 09.00.00.000.475,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.environment.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas</Transaction>
+    <Transaction>2025/03/03 09.00.00.000.090,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\xmledit.main.dfm=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lpi.main.dfm</Transaction>
+    <Transaction>2025/03/03 09.00.00.000.475,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.environment.pas</Transaction>
+    <Transaction>2025/03/03 09.00.00.000.064,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.evalobject.pas</Transaction>
     <Transaction>2025/03/03 09.00.00.000.897,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas</Transaction>
-    <Transaction>2025/03/03 09.00.00.000.090,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lpi.main.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\xmledit.main.pas</Transaction>
-    <Transaction>2025/03/03 09.00.00.000.064,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.evalobject.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas</Transaction>
-    <Transaction>2025/03/03 09.00.00.000.090,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lpi.main.dfm=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\xmledit.main.dfm</Transaction>
-    <Transaction>2025/03/03 09.00.00.000.822,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\LPInterpreter.dproj=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\XMLEdit.dproj</Transaction>
+    <Transaction>2025/03/03 09.00.00.000.822,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\XMLEdit.dproj=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\LPInterpreter.dproj</Transaction>
+    <Transaction>2025/03/03 09.00.00.000.090,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\xmledit.main.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lpi.main.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.602,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.evalobject.pas=</Transaction>
+    <Transaction>2025/03/03 10.00.00.000.118,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.token.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.773,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.evalobject.pas</Transaction>
+    <Transaction>2025/03/03 10.00.00.000.500,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.builtins.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.032,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.parser.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.946,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.lexer.pas</Transaction>
-    <Transaction>2025/03/03 10.00.00.000.500,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.builtins.pas</Transaction>
-    <Transaction>2025/03/03 10.00.00.000.808,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.builtins.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.406,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas</Transaction>
-    <Transaction>2025/03/03 10.00.00.000.118,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.token.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.860,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.evaluator.pas</Transaction>
     <Transaction>2025/03/03 10.00.00.000.687,=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.lib\lp.environment.pas</Transaction>
+    <Transaction>2025/03/03 10.00.00.000.808,C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\Unit1.pas=C:\Users\giacomo\Desktop\SiStore Language Program Interpreter\lp.builtins.pas</Transaction>
     <Transaction>2025/03/03 15.00.00.000.483,D:\SORGENTI\SS-LPI\lp.lib\lp.evalobject.pas=</Transaction>
     <Transaction>2025/03/05 15.00.00.000.843,=D:\SORGENTI\SS-LPI\lp.lib\lp.utils.pas</Transaction>
     <Transaction>2025/03/10 10.00.00.000.408,=D:\SORGENTI\SS-LPI\lp.interpreter\Profiling\AQtimeModule1.aqt</Transaction>
+    <Transaction>2025/03/10 12.56.42.349,D:\SORGENTI\SS-LPI\lp.interpreter\Profiling\AQtimeModule1.aqt=</Transaction>
   </Transactions>
 </BorlandProject>
