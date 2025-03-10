@@ -108,8 +108,24 @@ begin
         Result := TToken.create(ttLOGICALOR, '||');
       end
     end;
-    '<' : Result := TToken.create(ttLT, ch);
-    '>' : Result := TToken.create(ttGT, ch);
+    '<' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttLE, '<=');
+      end
+      else Result := TToken.create(ttLT, ch);
+    end;
+    '>' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttGE, '>=');
+      end
+      else Result := TToken.create(ttGT, ch);
+    end
   else
     if isDigit(ch) then
     begin

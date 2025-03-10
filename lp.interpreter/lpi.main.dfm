@@ -117,16 +117,16 @@ object LPMain: TLPMain
         Height = 563
         Align = alClient
         Lines.Strings = (
-          'let n = 8;'
+          'let n = 12;'
           ''
           'let fibonacci = fn(x) {'
           '  if (x == 0) {'
-          '    0               '
+          '    return 0               '
           '  } else {'
           '    if (x == 1) {'
           '      return 1;     '
           '    } else {'
-          '      fibonacci(x - 1) + fibonacci(x - 2); '
+          '      return fibonacci(x - 1) + fibonacci(x - 2); '
           '    }'
           '  }'
           '};'

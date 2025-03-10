@@ -43,6 +43,11 @@ type
     function ObjectType:TEvalObjectType; virtual;
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
+  public
+    { ** for GC (mark and sweep) ** }
+    GcNext:TEvalObject;
+    GcMark:Boolean;
+    constructor Create;
   end;
 
   THashkey = class
@@ -157,6 +162,7 @@ type
     Value: TEvalObject;
   public
     constructor Create(AKey, AValue:TEvalObject);
+    destructor Destroy; override;
   end;
 
   THashObject = class(TEvalObject)
@@ -165,6 +171,8 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+  public
+    destructor Destroy; override;
   end;
 
 implementation
@@ -183,6 +191,12 @@ end;
 function TEvalObject.Clone: TEvalObject;
 begin
   Result := nil; { virtual }
+end;
+
+constructor TEvalObject.Create;
+begin
+  GcNext := nil;
+  GcMark := False;
 end;
 
 function TEvalObject.Inspect: string;
@@ -204,6 +218,7 @@ end;
 
 constructor TNumberObject.Create(AValue: Double);
 begin
+  inherited Create;
   Value := AValue;
 end;
 
@@ -226,6 +241,7 @@ end;
 
 constructor TBooleanObject.Create(AValue: Boolean);
 begin
+  inherited Create;
   Value := AValue;
 end;
 
@@ -243,6 +259,7 @@ end;
 
 constructor TReturnValueObject.Create;
 begin
+  inherited Create;
   Value := nil;
 end;
 
@@ -299,6 +316,7 @@ end;
 
 constructor TErrorObject.Create(AErrMessage: string);
 begin
+  inherited Create;
   ErrMessage := AErrMessage;
 end;
 
@@ -329,6 +347,7 @@ constructor TFunctionObject.Create(AParameters: TList<TASTIdentifier>;
 var
   i: Integer;
 begin
+  inherited Create;
   Parameters := TList<TASTIdentifier>.create;
   for i := 0 to AParameters.Count-1 do
     Parameters.Add(AParameters[i].Clone as TASTIdentifier);
@@ -338,8 +357,13 @@ begin
 end;
 
 destructor TFunctionObject.Destroy;
+var
+  i: Integer;
 begin
-
+  for i := 0 to Parameters.Count-1 do
+    Parameters[i].Free;
+  Parameters.Free;
+  Body.Free;
   inherited;
 end;
 
@@ -381,10 +405,11 @@ destructor TEnvironment.Destroy;
 var
   key :string;
 begin
+{
   for key in FStore.Keys do
-    FStore[key].Free;
+    FStore[key].Free;  }
+
   FStore.Free;
-//  if (FOuter<>nil) then FOuter.Free;
   inherited;
 end;
 
@@ -430,6 +455,7 @@ end;
 
 constructor TStringObject.Create(AValue: string);
 begin
+  inherited Create;
   Value := AValue;
 end;
 
@@ -452,6 +478,7 @@ end;
 
 constructor TBuiltinObject.Create(ABuiltinFunction: TBuiltinFunction);
 begin
+  inherited Create;
   BuiltinFunction := ABuiltinFunction;
 end;
 
@@ -479,8 +506,18 @@ begin
 end;
 
 destructor TArrayObject.Destroy;
+var
+  i : Integer;
 begin
-
+{
+  for i := 0 to Elements.Count-1 do
+  begin
+    Elements[i].Free;
+    Elements[i]:=nil;
+  end;
+}
+  Elements.Clear;
+  FreeAndNil(Elements);
   inherited;
 end;
 
@@ -560,6 +597,13 @@ begin
   Value := AValue;
 end;
 
+destructor THashPair.Destroy;
+begin
+//  FreeAndNil(Key);
+//  FreeAndNil(Value);
+  inherited;
+end;
+
 { THashObject }
 
 function THashObject.Clone: TEvalObject;
@@ -575,6 +619,22 @@ begin
     v := Pairs[key].Value.Clone;
     THashObject(Result).Pairs.Add(THashkey.fromObject(k), THashPair.Create(k,v));
   end;
+end;
+
+destructor THashObject.Destroy;
+var
+  hkey: THashkey;
+begin
+  for hkey in Pairs.Keys do
+  begin
+    Pairs[hkey].Free;
+    hkey.Free;
+    //Pairs[hkey].Key.Free;
+    //Pairs[hkey].Value.Free;
+  end;
+  Pairs.Clear;
+  FreeAndNil(Pairs);
+  inherited;
 end;
 
 function THashObject.Inspect: string;

@@ -87,12 +87,14 @@ var
   P:TParser;
   O:TEvalObject;
   Prg:TASTProgram;
+  Ev:TEvaluator;
 begin
   L:=TLexer.Create(MSouce.Lines.Text);
   try
     P := TParser.Create(L);
     try
       E:=TEnvironment.Create;
+      Ev:=TEvaluator.Create;
       try
         Prg:=P.ParseProgram;
         try
@@ -100,20 +102,20 @@ begin
             List.Items.AddStrings(P.Errors)
           else
           begin
-            O := Eval(P.ParseProgram, E);
-
+            O := Ev.Eval(Prg, E);
             if O<>nil then
-            try
               List.Items.Add(O.Inspect)
-            finally
-              if NOT E.Store.ContainsValue(O) then
-                FreeAndNil(O);
-            end;
           end;
         finally
           FreeAndNil(Prg);
         end;
       finally
+        List.Items.Add('Gc before sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
+        Ev.Sweep(E);
+        List.Items.Add('Gc 1° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
+        Ev.Sweep(E);
+        List.Items.Add('Gc 2° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
+        Ev.Free;
         E.Free;
       end;
     finally
@@ -251,6 +253,8 @@ procedure TLPMain.FormCreate(Sender: TObject);
 begin
   pcMain.TabIndex := 0;
   MLog:= List;
+
+  ReportMemoryLeaksOnShutdown := True;
 end;
 
 procedure init;

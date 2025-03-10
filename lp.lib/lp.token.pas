@@ -36,6 +36,8 @@ type
     , ttBANG  //   = "!"
     , ttLT // = "<"
     , ttGT // = ">"
+    , ttLE // = "<="
+    , ttGE // = ">="
     , ttEQ //    = "=="
     , ttNOT_EQ // = "!="
 
@@ -103,6 +105,8 @@ const
     , 'BANG'
     , 'LT'
     , 'GT'
+    , 'LE'
+    , 'GE'
     , 'EQ'
     , 'NOT_EQ'
     , 'STRING'

@@ -1,4 +1,4 @@
-﻿# monkey pascal interpreter
+﻿# monkey pascal interpreter with Garbage Collector mark-and-sweep
 Code for “Writing an Interpreter in Go” by Thorsten Ball in Pascal.
 
 > Souce inline code testing

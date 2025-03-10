@@ -323,6 +323,8 @@ begin
   Precedences.Add(ttNOT_EQ, TEXPrecedence.EQUALS);
   Precedences.Add(ttLT, LESSGREATER);
   Precedences.Add(ttGT, LESSGREATER);
+  Precedences.Add(ttLE, LESSGREATER);
+  Precedences.Add(ttGE, LESSGREATER);
   Precedences.Add(ttPLUS, SUM);
   Precedences.Add(ttMINUS, SUM);
   Precedences.Add(ttSLASH, PRODUCT);
@@ -357,6 +359,8 @@ begin
 	InfixFuncts.Add(ttNOT_EQ, ParseInfixExpression);
 	InfixFuncts.Add(ttLT, ParseInfixExpression);
 	InfixFuncts.Add(ttGT, ParseInfixExpression);
+	InfixFuncts.Add(ttLE, ParseInfixExpression);
+	InfixFuncts.Add(ttGE, ParseInfixExpression);
 	InfixFuncts.Add(ttLPAREN, ParseCallExpression);
 	InfixFuncts.Add(ttLBRACKET, ParseIndexExpression);
 	InfixFuncts.Add(ttLOGICALAND, ParseInfixExpression);
@@ -516,7 +520,8 @@ begin
       Result.Add(ParseExpression(LOWEST));
     end;
 
-    expectPeek(endTokenType);
+    if NOT expectPeek(endTokenType) then
+      FreeAndNil(Result);
   end
   else nextToken;
 end;
@@ -554,15 +559,22 @@ begin
           TASTForExpression(Result).Expression := ParseExpression(LOWEST);
 
         if expectPeek(ttRPAREN) then
+        begin
           if expectPeek(ttLBRACE) then
           begin
             TASTForExpression(Result).Body := ParseBlockStatement;
             if currTokenIs(ttRBRACE) then
               nextToken;
-          end;
-      end;
-    end;
-  end;
+          end
+          else FreeAndNilAssigned(Result);
+        end
+        else FreeAndNilAssigned(Result);
+      end
+      else FreeAndNilAssigned(Result);
+    end
+    else FreeAndNilAssigned(Result);
+  end
+  else FreeAndNilAssigned(Result);
 end;
 
 function TParser.ParseFunctionLiteral: TASTExpression;
@@ -574,8 +586,11 @@ begin
   begin
     TASTFunctionLiteral(Result).Parameters := ParseFunctionParameters;
     if expectPeek(ttLBRACE) then
-      TASTFunctionLiteral(Result).Body := ParseBlockStatement;
-  end;
+      TASTFunctionLiteral(Result).Body := ParseBlockStatement
+    else
+      FreeAndNilAssigned(Result);
+  end
+  else FreeAndNilAssigned(Result);
 
 end;
 
@@ -604,7 +619,8 @@ begin
       Result.Add(Ident);
     end;
 
-    expectPeek(ttRPAREN);
+    if NOT expectPeek(ttRPAREN) then
+      FreeAndNilAssigned(Result);
   end
   else nextToken;
 end;
@@ -618,7 +634,9 @@ begin
 
   Expr := ParseExpression(LOWEST);
   if expectPeek(ttRPAREN) then
-    Result := Expr;
+    Result := Expr
+  else
+    FreeAndNil(Expr);
 end;
 
 function TParser.ParseHashLiteral: TASTExpression;
@@ -642,9 +660,15 @@ begin
 
       if NOT peekTokenIs(ttRBRACE) and NOT expectPeek(ttCOMMA) then
         Break;
+    end
+    else
+    begin
+      FreeAndNil(key);
+      FreeAndNil(Result);
     end;
   end;
-  expectPeek(ttRBRACE);
+  if NOT expectPeek(ttRBRACE) then
+    FreeAndNil(Result);
 end;
 
 function TParser.ParseIdentifier: TASTExpression;
@@ -665,6 +689,7 @@ begin
     TASTIfExpression(Result).Condition := ParseExpression(LOWEST);
 
     if expectPeek(ttRPAREN) then
+    begin
       if expectPeek(ttLBRACE) then
       begin
         TASTIfExpression(Result).Consequence := ParseBlockStatement;
@@ -672,10 +697,16 @@ begin
         begin
           nextToken;
           if expectPeek(ttLBRACE) then
-            TASTIfExpression(Result).Alternative := ParseBlockStatement;
+            TASTIfExpression(Result).Alternative := ParseBlockStatement
+          else
+            FreeAndNilAssigned(Result);
         end;
-      end;
-  end;
+      end
+      else  FreeAndNilAssigned(Result);
+    end
+    else FreeAndNilAssigned(Result);
+  end
+  else FreeAndNilAssigned(Result);
 
 end;
 
@@ -688,7 +719,8 @@ begin
   nextToken;
   TASTIndexExpression(Result).Index := ParseExpression(LOWEST);
 
-  expectPeek(ttRBRACKET);
+  if NOT expectPeek(ttRBRACKET) then
+    FreeAndNil(Result);
 end;
 
 function TParser.ParseInfixExpression(left: TASTExpression): TASTExpression;
@@ -725,8 +757,10 @@ begin
 
       if peekTokenIs(ttSEMICOLON) then
         nextToken;
-    end;
-  end;
+    end
+    else FreeAndNil(Result);
+  end
+  else FreeAndNil(Result);
 end;
 
 function TParser.ParseNumberLiteral: TASTExpression;
@@ -781,8 +815,10 @@ end;
 function TParser.ParseStatement: TASTStatement;
 begin
   case CurrToken.TokenType of
-    ttLET: Result := ParseLetStatement;
-    ttRETURN: Result := ParseReturnStatement;
+    ttLET:
+      Result := ParseLetStatement;
+    ttRETURN:
+      Result := ParseReturnStatement;
   else
     Result := ParseExpressionStatement;
   end;
@@ -806,13 +842,20 @@ begin
     TASTWhileExpression(Result).Condition := ParseExpression(LOWEST);
 
     if expectPeek(ttRPAREN) then
+    begin
       if expectPeek(ttLBRACE) then
       begin
         TASTWhileExpression(Result).Body := ParseBlockStatement;
         if expectPeek(ttLBRACE) then
-          nextToken;
-      end;
-  end;
+          nextToken
+        else
+          FreeAndNilAssigned(Result);
+      end
+      else FreeAndNilAssigned(Result);
+    end
+    else FreeAndNilAssigned(Result);
+  end
+  else FreeAndNilAssigned(Result);
 
 end;
 
@@ -1303,7 +1346,7 @@ begin
     for key in Pairs.Keys do
     begin
       Pairs[key].Free;
-      Pairs.Remove(key);
+//      Pairs.Remove(key);
       key.Free
     end;
     FPairs.Free;

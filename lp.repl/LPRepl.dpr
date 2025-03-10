@@ -26,6 +26,7 @@ end;
 
 var
   Env: TEnvironment;
+  Eval: TEvaluator;
   line: string;
   Lexer:TLexer;
   Parser:TParser;
@@ -33,7 +34,8 @@ var
   EvalObj:TEvalObject;
   i:Integer;
 begin
-  Env:= TEnvironment.Create;
+  Env :=TEnvironment.Create;
+  Eval:=TEvaluator.Create;
   try
 
     Writeln(HEADER);
@@ -60,13 +62,9 @@ begin
               end
               else
               begin
-                EvalObj := Eval(ASTProgram, Env);
+                EvalObj := Eval.Eval(ASTProgram, Env);
                 if (EvalObj<>nil) then
-                begin
                   Writeln(EvalObj.Inspect);
-                  if NOT Env.Store.ContainsValue(EvalObj) then
-                    FreeAndNil(EvalObj);
-                end;
               end;
 
             finally
@@ -86,6 +84,7 @@ begin
     end;
 
   finally
+    Eval.Free;
     Env.Free;
   end;
 end.
