@@ -33,6 +33,7 @@ type
     property Outer: TEnvironment read FOuter write FOuter;
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
+    function SetOrCreateValue(name:string; value:TEvalObject ):TEvalObject;
   end;
 
   // ---- Object --------------------
@@ -420,13 +421,22 @@ begin
     Result := Outer.GetValue(name, value);
 end;
 
-function TEnvironment.SetValue(name: string; value: TEvalObject): TEvalObject;
+function TEnvironment.SetOrCreateValue(name: string; value: TEvalObject): TEvalObject;
 begin
   Result := value;
   if FStore.ContainsKey(name) then
     FStore[name] := Result
   else
     FStore.Add(name, Result);
+end;
+
+function TEnvironment.SetValue(name: string; value: TEvalObject): TEvalObject;
+begin
+  Result := value;
+  if FStore.ContainsKey(name) then
+    FStore[name] := Result
+  else
+    Result := TErrorObject.newError('identifier not found: %s ',[name]);
 end;
 
 { TNullObject }

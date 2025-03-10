@@ -505,7 +505,7 @@ var
 begin
   Result := TEnvironment.Create(fn.Env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone));
+    Result.SetOrCreateValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone));
 end;
 
 procedure TEvaluator.Sweep(env: TEnvironment);
@@ -654,7 +654,7 @@ begin
     if NOT isError(val) then
     begin
       if TASTLetStatement(node).Name is TASTIdentifier then
-        env.SetValue(TASTIdentifier(TASTLetStatement(node).Name).Value, val)
+        env.SetOrCreateValue(TASTIdentifier(TASTLetStatement(node).Name).Value, val)
       else
       if TASTLetStatement(node).Name is TASTIndexExpression then
       begin
@@ -662,6 +662,38 @@ begin
         if NOT isError(val) then
         begin
           index := Eval(TASTIndexExpression(TASTLetStatement(node).Name).Index, env);
+          if NOT isError(val) then
+          begin
+            if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
+              Result := assignArrayIndexExpression(enobj, index, val)
+            else
+            if (enobj.ObjectType=HASH_OBJ) then
+              Result := assignHashIndexExpression(enobj, index, val)
+            else
+              Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]);
+          end
+          else Result := val;
+        end
+        else Result := val;
+      end;
+    end
+    else Result := val;
+  end
+  else
+  if node is TASTAssignExpression then
+  begin
+    val := Eval(TASTAssignExpression(node).Expression, env);
+    if NOT isError(val) then
+    begin
+      if TASTAssignExpression(node).Name is TASTIdentifier then
+        env.SetValue(TASTIdentifier(TASTAssignExpression(node).Name).Value, val)
+      else
+      if TASTAssignExpression(node).Name is TASTIndexExpression then
+      begin
+        enobj := Eval(TASTIndexExpression(TASTAssignExpression(node).Name).Left, env);
+        if NOT isError(val) then
+        begin
+          index := Eval(TASTIndexExpression(TASTAssignExpression(node).Name).Index, env);
           if NOT isError(val) then
           begin
             if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
