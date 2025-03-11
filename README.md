@@ -11,6 +11,23 @@ let q = [{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"},{"CFGVAL":"XXX","CFGMO
 let q = {"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"};
 ```
 
+# Loop and conditional
+```
+let q = [{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"},{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD02"}];
+let c = len(q);
+
+let i = 0;
+let u = [];
+while(i<c){
+  let q[i]["CFGVAL"] = "YYYZZZ";
+  let u = push(u, q[i]);
+  let i = i +1;
+};
+
+println(u);
+
+```
+
 # Closure
 ```
 let closure = fn(x) {
@@ -25,7 +42,7 @@ println(b(10));
 println(b(15));
 ```
 
-# anonymous function inline
+# Anonymous function inline
 ```
 let q = [1, 2, 3, 6, 1, 3, 45, 4];
 
