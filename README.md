@@ -44,6 +44,22 @@ println(filter(q,fn(x) { return x<10; }));
 
 # expandability
 with builtins function
+```pascal
+function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to args.Count-1 do
+  begin
+    Write(args[i].Inspect);
+    Writeln;
+  end;
+end;
+
+builtins.Add('println', TBuiltinObject.Create(_PrintLn));
+
+```
 
 > Souce inline code testing
 ![Alt text](resources/SRC.png)
