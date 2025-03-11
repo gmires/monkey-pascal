@@ -1,13 +1,18 @@
 ﻿# monkey pascal interpreter with Garbage Collector mark-and-sweep
 Code for “Writing an Interpreter in Go” by Thorsten Ball in Pascal.
 
-#Array
+# Array
+```
 let q = [{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"},{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD02"}];
+```
 
-#HashmMap
+# HashmMap
+```
 let q = {"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"};
+```
 
-#Closure
+# Closure
+```
 let closure = fn(x) {
   return fn(y) {
     return (y + x);
@@ -18,8 +23,10 @@ let b = closure(5);
 println(b(5));
 println(b(10));
 println(b(15));
+```
 
-#anonymous function inline
+# anonymous function inline
+```
 let q = [1, 2, 3, 6, 1, 3, 45, 4];
 
 let filter = fn(x, f) {
@@ -33,8 +40,9 @@ let filter = fn(x, f) {
 };
 
 println(filter(q,fn(x) { return x<10; }));
+```
 
-#expandability
+# expandability
 with builtins function
 
 > Souce inline code testing
