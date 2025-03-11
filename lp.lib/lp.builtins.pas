@@ -4,6 +4,8 @@ interface
 
 uses  classes, SysUtils, Generics.Collections, Variants
   , lp.utils
+  , lp.lexer
+  , lp.parser
   , lp.environment
   , lp.evaluator;
 
@@ -334,7 +336,29 @@ begin
     Result := TStringObject.Create(FormatFloat(TStringObject(args[0]).Value, TNumberObject(args[1]).Value));
 end;
 
+const
+  M_COUNT = 1;
+  M_ARRAY =' /* MODULE ARRAY BUILTIN */'
+    +'let arrayFilter = fn(x, f) { '
+    +'   let r = []; '
+    +'   for(let i = 0;i < len(x); i := i+1){ '
+    +'     if(f(x[i])){ '
+    +'       r := push(r, x[i]); '
+    +'     }; '
+    +'    }; '
+    +' '
+    +'  return r; '
+    +'};';
+var
+  MODULES: Array[0..M_COUNT-1, 0..1] of string = (
+    ('array',M_ARRAY)
+  );
+
 procedure init;
+var
+  L:TLexer;
+  P:TParser;
+  i:Integer;
 begin
   builtins.Add('len', TBuiltinObject.Create(_Len));
   builtins.Add('first', TBuiltinObject.Create(_ArrayFirst));
@@ -353,6 +377,22 @@ begin
   builtins.Add('strtonumdef', TBuiltinObject.Create(_StrToNumDef));
   builtins.Add('numtostr', TBuiltinObject.Create(_NumToStr));
   builtins.Add('formatnum', TBuiltinObject.Create(_FormatFloat));
+
+  for i := Low(MODULES) to High(MODULES) do
+  begin
+    L:=TLexer.Create(MODULES[i][1]);
+    try
+      P := TParser.Create(L);
+      try
+        builtedmodule.Add(MODULES[i][0], P.ParseProgram);
+      finally
+        P.Free;
+      end;
+    finally
+      L.Free;
+    end;
+  end;
+
 end;
 
 initialization

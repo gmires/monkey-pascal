@@ -150,6 +150,9 @@ begin
       Describe(TASTLetStatement(node).Expression, N);
     end
     else
+    if node is TASTImportStatement then
+      N:= TVAST.Items.AddChild(SParent, node.toString)
+    else
     if node is TASTReturnStatement then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);

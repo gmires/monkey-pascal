@@ -73,7 +73,7 @@ type
 
 var
   builtins: TDictionary<string,TBuiltinObject>;
-
+  builtedmodule: TDictionary<string,TASTProgram>;
 
 implementation
 
@@ -661,6 +661,14 @@ begin
     end;
   end
   else
+  if node is TASTImportStatement then
+  begin
+    if builtedmodule.ContainsKey(TASTImportStatement(node).Module) then
+      Result := Eval(builtedmodule[TASTImportStatement(node).Module], env)
+    else
+      Result := CreateErrorObj('nmodule %s not found.',[TASTImportStatement(node).Module]);
+  end
+  else
   if node is TASTLetStatement then
   begin
     val := Eval(TASTLetStatement(node).Expression, env);
@@ -750,18 +758,6 @@ begin
       end;
     end;
   end;
-end;
-
-
-
-procedure init;
-begin
-  builtins := TDictionary<string,TBuiltinObject>.Create;
-end;
-
-procedure deinit;
-begin
-  builtins.Free;
 end;
 
 { TGarbageCollector }
@@ -942,6 +938,20 @@ begin
     node:= node.GcNext;
   end;
   }
+end;
+
+/////-------------------------------------------
+
+procedure init;
+begin
+  builtins := TDictionary<string,TBuiltinObject>.Create;
+  builtedmodule := TDictionary<string,TASTProgram>.Create;
+end;
+
+procedure deinit;
+begin
+  builtins.Free;
+  builtedmodule.Free;
 end;
 
 initialization

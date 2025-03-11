@@ -51,6 +51,7 @@ type
     , ttWHILE    // = "WHILE"
     , ttFOR    // = "FOR"
     , ttVARASSIGN // = ":="
+    , ttIMPORT // = "IMPORT"
   );
 
 
@@ -119,6 +120,7 @@ const
     , 'WHILE'
     , 'FOR'
     , 'VARASSIGN'
+    , 'IMPORT'
   );
 begin
   Result := TTypeStr[value];
@@ -154,6 +156,7 @@ begin
   keywords.Add('return', ttRETURN);
   keywords.Add('while', ttWHILE);
   keywords.Add('for', ttFOR);
+  keywords.Add('import', ttIMPORT);
 end;
 
 procedure deinit;

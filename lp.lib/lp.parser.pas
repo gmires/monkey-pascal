@@ -157,6 +157,16 @@ type
     destructor Destroy; override;
   end;
 
+  TASTImportStatement = class(TASTStatement)
+  public
+    Module: string;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   TASTLetStatement = class(TASTStatement)
   public
     Name: TASTExpression;
@@ -279,6 +289,7 @@ type
     function ParseStatement: TASTStatement;
     function ParseExpressionStatement: TASTExpressionStatement;
     function ParseLetStatement: TASTLetStatement;
+    function ParseImportStatement: TASTImportStatement;
     function ParseReturnStatement: TASTReturnStatement;
     function ParseBlockStatement: TASTBlockStatement;
     // ---------
@@ -739,6 +750,20 @@ begin
 
 end;
 
+function TParser.ParseImportStatement: TASTImportStatement;
+begin
+  Result := TASTImportStatement.Create;
+  Result.Token := CurrToken.Clone;
+
+  if expectPeek(ttSTRING) then
+  begin
+    TASTImportStatement(Result).Module := CurrToken.Literal;
+    if peekTokenIs(ttSEMICOLON) then
+      nextToken;
+  end
+  else FreeAndNilAssigned(Result);
+end;
+
 function TParser.ParseIndexExpression(left: TASTExpression): TASTExpression;
 begin
   Result := TASTIndexExpression.Create;
@@ -848,6 +873,8 @@ begin
       Result := ParseLetStatement;
     ttRETURN:
       Result := ParseReturnStatement;
+    ttIMPORT:
+      Result := ParseImportStatement;
   else
     Result := ParseExpressionStatement;
   end;
@@ -1478,6 +1505,29 @@ end;
 function TASTAssignExpression.toString: string;
 begin
   Result := 'Assign expression ';
+end;
+
+{ TASTImportStatement }
+
+function TASTImportStatement.Clone: TASTNode;
+begin
+  Result := TASTImportStatement.Create;
+  TASTImportStatement(Result).Module := Module;
+end;
+
+constructor TASTImportStatement.Create;
+begin
+  Module:= '';
+end;
+
+destructor TASTImportStatement.Destroy;
+begin
+  inherited;
+end;
+
+function TASTImportStatement.toString: string;
+begin
+  Result := 'Import Stmt MODULE = ' + Module;
 end;
 
 end.
