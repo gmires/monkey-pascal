@@ -7,7 +7,5 @@ Code for “Writing an Interpreter in Go” by Thorsten Ball in Pascal.
 > AST inspector
 ![Alt text](resources/AST.png)
 
-> REPL 
+> REPL
 ![Alt text](resources/REPL.png)
-
-------
