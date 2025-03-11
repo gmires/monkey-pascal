@@ -382,17 +382,18 @@ var
   val:TEvalObject;
 begin
   Result := TList<TEvalObject>.Create;
-  for i := 0 to exps.Count-1 do
-  begin
-    val := Eval(exps[i], env);
-    if isError(val) then
+  if Assigned(exps) then
+    for i := 0 to exps.Count-1 do
     begin
-      Result.Clear;
+      val := Eval(exps[i], env);
+      if isError(val) then
+      begin
+        Result.Clear;
+        Result.Add(val);
+        Break;
+      end;
       Result.Add(val);
-      Break;
     end;
-    Result.Add(val);
-  end;
 end;
 
 function TEvaluator.evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;

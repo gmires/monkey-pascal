@@ -1167,7 +1167,8 @@ begin
   Result := TASTIfExpression.Create;
   TASTIfExpression(Result).Condition := Condition.Clone as TASTExpression;
   TASTIfExpression(Result).Consequence := Consequence.Clone as TASTBlockStatement;
-  TASTIfExpression(Result).Alternative := Alternative.Clone as TASTBlockStatement;
+  if Assigned(Alternative) then
+    TASTIfExpression(Result).Alternative := Alternative.Clone as TASTBlockStatement;
 end;
 
 constructor TASTIfExpression.Create;
@@ -1426,8 +1427,8 @@ begin
   Result := TASTForExpression.Create;
   TASTForExpression(Result).Init := Init.Clone as TASTLetStatement;
   TASTForExpression(Result).Condition := Condition.Clone as TASTExpression;
-  TASTForExpression(Result).Expression:= Condition.Clone;
-  TASTForExpression(Result).Body := Init.Clone as TASTBlockStatement;
+  TASTForExpression(Result).Expression:= Expression.Clone;
+  TASTForExpression(Result).Body := Body.Clone as TASTBlockStatement;
 end;
 
 constructor TASTForExpression.Create;

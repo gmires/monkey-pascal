@@ -295,6 +295,45 @@ begin
     Result := TStringObject.Create(TrimRight(TStringObject(args[0]).Value));
 end;
 
+function _StrToNumDef(args: TList<TEvalObject>): TEvalObject;
+begin
+  if (args.Count<>2) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=2', [args.Count])
+  else
+  if (args[0].ObjectType<>STRING_OBJ) then
+    Result := TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+  else
+  if (args[1].ObjectType<>NUMBER_OBJ) then
+    Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[1].ObjectType])
+  else
+    Result := TNumberObject.Create(StrToFloatDef(TStringObject(args[0]).Value, TNumberObject(args[1]).Value));
+end;
+
+function _NumToStr(args: TList<TEvalObject>): TEvalObject;
+begin
+  if (args.Count<>1) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
+  else
+  if (args[0].ObjectType<>NUMBER_OBJ) then
+    Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[0].ObjectType])
+  else
+    Result := TStringObject.Create(FloatToStr(TNumberObject(args[0]).Value));
+end;
+
+function _FormatFloat(args: TList<TEvalObject>): TEvalObject;
+begin
+  if (args.Count<>2) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, want=2', [args.Count])
+  else
+  if (args[0].ObjectType<>STRING_OBJ) then
+    Result := TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+  else
+  if (args[1].ObjectType<>NUMBER_OBJ) then
+    Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[1].ObjectType])
+  else
+    Result := TStringObject.Create(FormatFloat(TStringObject(args[0]).Value, TNumberObject(args[1]).Value));
+end;
+
 procedure init;
 begin
   builtins.Add('len', TBuiltinObject.Create(_Len));
@@ -311,6 +350,9 @@ begin
   builtins.Add('trim', TBuiltinObject.Create(_Trim));
   builtins.Add('rtrim', TBuiltinObject.Create(_RTrim));
   builtins.Add('ltrim', TBuiltinObject.Create(_LTrim));
+  builtins.Add('strtonumdef', TBuiltinObject.Create(_StrToNumDef));
+  builtins.Add('numtostr', TBuiltinObject.Create(_NumToStr));
+  builtins.Add('formatnum', TBuiltinObject.Create(_FormatFloat));
 end;
 
 initialization
