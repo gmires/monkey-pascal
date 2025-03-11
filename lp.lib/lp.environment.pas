@@ -33,6 +33,7 @@ type
     property Outer: TEnvironment read FOuter write FOuter;
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
+    function SetOrCreateValue(name:string; value:TEvalObject ):TEvalObject;
   end;
 
   // ---- Object --------------------
@@ -349,8 +350,9 @@ var
 begin
   inherited Create;
   Parameters := TList<TASTIdentifier>.create;
-  for i := 0 to AParameters.Count-1 do
-    Parameters.Add(AParameters[i].Clone as TASTIdentifier);
+  if Assigned(AParameters) then
+    for i := 0 to AParameters.Count-1 do
+      Parameters.Add(AParameters[i].Clone as TASTIdentifier);
 
   Body := ABody.Clone as TASTBlockStatement;
   Env := AEnv;
@@ -415,9 +417,18 @@ end;
 
 function TEnvironment.GetValue(name: string; var value: TEvalObject): Boolean;
 begin
-  Result := FStore.TryGetValue(name, value);
+  Result := Store.TryGetValue(name, value);
   if NOT Result and Assigned(Outer) then
     Result := Outer.GetValue(name, value);
+end;
+
+function TEnvironment.SetOrCreateValue(name: string; value: TEvalObject): TEvalObject;
+begin
+  Result := value;
+  if FStore.ContainsKey(name) then
+    FStore[name] := Result
+  else
+    FStore.Add(name, Result);
 end;
 
 function TEnvironment.SetValue(name: string; value: TEvalObject): TEvalObject;
@@ -426,7 +437,10 @@ begin
   if FStore.ContainsKey(name) then
     FStore[name] := Result
   else
-    FStore.Add(name, Result);
+  if FOuter<>nil then
+    Result := FOuter.SetValue(name, value)
+  else
+    Result := TErrorObject.newError('identifier not found: %s ',[name]);
 end;
 
 { TNullObject }

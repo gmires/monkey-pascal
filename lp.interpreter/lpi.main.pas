@@ -176,6 +176,13 @@ begin
       Describe(TASTInfixExpression(node).Right, N);
     end
     else
+    if node is TASTAssignExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTAssignExpression(node).Name, N);
+      Describe(TASTAssignExpression(node).Expression, N);
+    end
+    else
     if node is TASTIfExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
@@ -253,8 +260,6 @@ procedure TLPMain.FormCreate(Sender: TObject);
 begin
   pcMain.TabIndex := 0;
   MLog:= List;
-
-  ReportMemoryLeaksOnShutdown := True;
 end;
 
 procedure init;

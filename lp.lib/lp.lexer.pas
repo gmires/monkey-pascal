@@ -68,7 +68,15 @@ begin
     ']' : Result := TToken.create(ttRBRACKET, ch);
     ';' : Result := TToken.create(ttSEMICOLON, ch);
     ',' : Result := TToken.create(ttCOMMA, ch);
-    ':' : Result := TToken.create(ttCOLON, ch);
+    ':' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttVARASSIGN, ':=');
+      end
+      else Result := TToken.create(ttCOLON, ch);
+    end;
     '=' :
     begin
       if (PeekChar='=') then

@@ -50,6 +50,7 @@ type
     , ttLOGICALOR    // = "||"
     , ttWHILE    // = "WHILE"
     , ttFOR    // = "FOR"
+    , ttVARASSIGN // = ":="
   );
 
 
@@ -117,6 +118,7 @@ const
     , 'LOGICALOR'
     , 'WHILE'
     , 'FOR'
+    , 'VARASSIGN'
   );
 begin
   Result := TTypeStr[value];

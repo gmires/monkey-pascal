@@ -136,6 +136,17 @@ type
     destructor Destroy; override;
   end;
 
+  TASTAssignExpression = class(TASTExpression)
+  public
+    Name: TASTExpression;
+    Expression: TASTExpression;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   TASTExpressionStatement = class(TASTStatement)
   public
     Expression: TASTExpression;
@@ -289,6 +300,7 @@ type
     function ParseFunctionLiteral:TASTExpression;
     function ParseFunctionParameters:TList<TASTIdentifier>;
     function ParseCallExpression(funct:TASTExpression):TASTExpression;
+    function ParseAssignExpression(left:TASTExpression):TASTExpression;
 //    function ParseCallArguments:TList<TASTExpression>;
     // -----------
   public
@@ -330,6 +342,7 @@ begin
   Precedences.Add(ttSLASH, PRODUCT);
   Precedences.Add(ttASTERISK, PRODUCT);
   Precedences.Add(ttLPAREN, CALL);
+  Precedences.Add(ttVARASSIGN, CALL);
   Precedences.Add(ttLBRACKET, INDEX);
   Precedences.Add(ttLOGICALAND, LOGICAL);
   Precedences.Add(ttLOGICALOR, LOGICAL);
@@ -365,6 +378,7 @@ begin
 	InfixFuncts.Add(ttLBRACKET, ParseIndexExpression);
 	InfixFuncts.Add(ttLOGICALAND, ParseInfixExpression);
 	InfixFuncts.Add(ttLOGICALOR, ParseInfixExpression);
+	InfixFuncts.Add(ttVARASSIGN, ParseAssignExpression);
 
   Lexer := ALexer;
   CurrToken:=nil;
@@ -422,6 +436,17 @@ begin
   Result.Token := CurrToken.Clone;
 
   TASTArrayLiteral(Result).Elements := ParseExpressionsList(ttRBRACKET);
+end;
+
+function TParser.ParseAssignExpression(left: TASTExpression): TASTExpression;
+begin
+  Result := TASTAssignExpression.Create;
+  TASTAssignExpression(Result).Token := CurrToken.Clone;
+  TASTAssignExpression(Result).Name:= left;
+
+	nextToken;
+
+	TASTAssignExpression(Result).Expression := parseExpression(LOWEST);
 end;
 
 function TParser.ParseBlockStatement: TASTBlockStatement;
@@ -564,7 +589,11 @@ begin
           begin
             TASTForExpression(Result).Body := ParseBlockStatement;
             if currTokenIs(ttRBRACE) then
-              nextToken;
+            begin
+              if NOT expectPeek(ttSEMICOLON) then
+                FreeAndNilAssigned(Result);
+            end
+            else FreeAndNilAssigned(Result);
           end
           else FreeAndNilAssigned(Result);
         end
@@ -846,10 +875,12 @@ begin
       if expectPeek(ttLBRACE) then
       begin
         TASTWhileExpression(Result).Body := ParseBlockStatement;
-        if expectPeek(ttLBRACE) then
-          nextToken
-        else
-          FreeAndNilAssigned(Result);
+        if currTokenIs(ttRBRACE) then
+        begin
+          if NOT expectPeek(ttSEMICOLON) then
+            FreeAndNilAssigned(Result);
+        end
+        else FreeAndNilAssigned(Result);
       end
       else FreeAndNilAssigned(Result);
     end
@@ -1167,8 +1198,10 @@ var
 begin
   Result := TASTFunctionLiteral.Create;
   TASTFunctionLiteral(Result).Body := Body.Clone as TASTBlockStatement;
-  for i := 0 to Parameters.Count-1 do
-    TASTFunctionLiteral(Result).Parameters.Add(Parameters[i].Clone as TASTIdentifier);
+  TASTFunctionLiteral(Result).Parameters := TList<TASTIdentifier>.Create;
+  if Assigned(Parameters)  then
+    for i := 0 to Parameters.Count-1 do
+      TASTFunctionLiteral(Result).Parameters.Add(Parameters[i].Clone as TASTIdentifier);
 end;
 
 constructor TASTFunctionLiteral.Create;
@@ -1417,6 +1450,33 @@ end;
 function TASTForExpression.toString: string;
 begin
   Result := 'for';
+end;
+
+{ TASTAssignExpression }
+
+function TASTAssignExpression.Clone: TASTNode;
+begin
+  Result := TASTAssignExpression.Create;
+  TASTAssignExpression(Result).Name := Name.Clone as TASTExpression;
+  TASTAssignExpression(Result).Expression:= Expression.Clone as TASTExpression;
+end;
+
+constructor TASTAssignExpression.Create;
+begin
+  Name:=nil;
+  Expression:=nil;
+end;
+
+destructor TASTAssignExpression.Destroy;
+begin
+  FreeAndNilAssigned(Name);
+  FreeAndNilAssigned(Expression);
+  inherited;
+end;
+
+function TASTAssignExpression.toString: string;
+begin
+  Result := 'Assign expression ';
 end;
 
 end.

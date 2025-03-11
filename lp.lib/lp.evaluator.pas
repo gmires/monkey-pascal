@@ -33,6 +33,7 @@ type
   TEvaluator = class
     FGCCounter: Word;
     FGarbageCollector:TGarbageCollector;
+    FFunctEnv:  TList<TEnvironment>;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
     function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
     function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
@@ -467,6 +468,7 @@ constructor TEvaluator.Create;
 begin
   FGCCounter := 0;
   FGarbageCollector:= TGarbageCollector.Create;
+  FFunctEnv := TList<TEnvironment>.Create;
 end;
 
 function TEvaluator.CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
@@ -482,9 +484,16 @@ begin
 end;
 
 destructor TEvaluator.Destroy;
+var
+  current: TEnvironment;
 begin
   FGarbageCollector.EmptyTrash;
   FGarbageCollector.Free;
+
+  for current in FFunctEnv do
+    current.Free;
+
+  FFunctEnv.Free;
   inherited;
 end;
 
@@ -505,7 +514,7 @@ var
 begin
   Result := TEnvironment.Create(fn.Env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone));
+    Result.SetOrCreateValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone));
 end;
 
 procedure TEvaluator.Sweep(env: TEnvironment);
@@ -533,12 +542,15 @@ begin
   if (fn is TFunctionObject) then
   begin
     FEnv := extendFunctionEnv(fn as TFunctionObject, args);
-    try
-      Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
-      Gc.Mark(FEnv);
-    finally
-      FEnv.Free;
-    end;
+//    try
+    Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
+    Gc.Mark(FEnv);
+    if FFunctEnv.IndexOf(FEnv)<0 then
+      FFunctEnv.Add(FEnv);
+
+//    finally
+//      FEnv.Free;
+//    end;
   end
   else
   if (fn is TBuiltinObject) then
@@ -654,7 +666,7 @@ begin
     if NOT isError(val) then
     begin
       if TASTLetStatement(node).Name is TASTIdentifier then
-        env.SetValue(TASTIdentifier(TASTLetStatement(node).Name).Value, val)
+        env.SetOrCreateValue(TASTIdentifier(TASTLetStatement(node).Name).Value, val)
       else
       if TASTLetStatement(node).Name is TASTIndexExpression then
       begin
@@ -662,6 +674,38 @@ begin
         if NOT isError(val) then
         begin
           index := Eval(TASTIndexExpression(TASTLetStatement(node).Name).Index, env);
+          if NOT isError(val) then
+          begin
+            if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
+              Result := assignArrayIndexExpression(enobj, index, val)
+            else
+            if (enobj.ObjectType=HASH_OBJ) then
+              Result := assignHashIndexExpression(enobj, index, val)
+            else
+              Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]);
+          end
+          else Result := val;
+        end
+        else Result := val;
+      end;
+    end
+    else Result := val;
+  end
+  else
+  if node is TASTAssignExpression then
+  begin
+    val := Eval(TASTAssignExpression(node).Expression, env);
+    if NOT isError(val) then
+    begin
+      if TASTAssignExpression(node).Name is TASTIdentifier then
+        Result := env.SetValue(TASTIdentifier(TASTAssignExpression(node).Name).Value, val)
+      else
+      if TASTAssignExpression(node).Name is TASTIndexExpression then
+      begin
+        enobj := Eval(TASTIndexExpression(TASTAssignExpression(node).Name).Left, env);
+        if NOT isError(val) then
+        begin
+          index := Eval(TASTIndexExpression(TASTAssignExpression(node).Name).Index, env);
           if NOT isError(val) then
           begin
             if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
