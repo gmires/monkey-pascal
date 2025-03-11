@@ -1198,8 +1198,10 @@ var
 begin
   Result := TASTFunctionLiteral.Create;
   TASTFunctionLiteral(Result).Body := Body.Clone as TASTBlockStatement;
-  for i := 0 to Parameters.Count-1 do
-    TASTFunctionLiteral(Result).Parameters.Add(Parameters[i].Clone as TASTIdentifier);
+  TASTFunctionLiteral(Result).Parameters := TList<TASTIdentifier>.Create;
+  if Assigned(Parameters)  then
+    for i := 0 to Parameters.Count-1 do
+      TASTFunctionLiteral(Result).Parameters.Add(Parameters[i].Clone as TASTIdentifier);
 end;
 
 constructor TASTFunctionLiteral.Create;

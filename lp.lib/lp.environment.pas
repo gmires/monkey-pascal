@@ -350,8 +350,9 @@ var
 begin
   inherited Create;
   Parameters := TList<TASTIdentifier>.create;
-  for i := 0 to AParameters.Count-1 do
-    Parameters.Add(AParameters[i].Clone as TASTIdentifier);
+  if Assigned(AParameters) then
+    for i := 0 to AParameters.Count-1 do
+      Parameters.Add(AParameters[i].Clone as TASTIdentifier);
 
   Body := ABody.Clone as TASTBlockStatement;
   Env := AEnv;
@@ -416,7 +417,7 @@ end;
 
 function TEnvironment.GetValue(name: string; var value: TEvalObject): Boolean;
 begin
-  Result := FStore.TryGetValue(name, value);
+  Result := Store.TryGetValue(name, value);
   if NOT Result and Assigned(Outer) then
     Result := Outer.GetValue(name, value);
 end;
@@ -435,6 +436,9 @@ begin
   Result := value;
   if FStore.ContainsKey(name) then
     FStore[name] := Result
+  else
+  if FOuter<>nil then
+    Result := FOuter.SetValue(name, value)
   else
     Result := TErrorObject.newError('identifier not found: %s ',[name]);
 end;

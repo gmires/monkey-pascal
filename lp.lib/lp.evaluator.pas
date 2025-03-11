@@ -33,6 +33,7 @@ type
   TEvaluator = class
     FGCCounter: Word;
     FGarbageCollector:TGarbageCollector;
+    FFunctEnv:  TList<TEnvironment>;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
     function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
     function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
@@ -467,6 +468,7 @@ constructor TEvaluator.Create;
 begin
   FGCCounter := 0;
   FGarbageCollector:= TGarbageCollector.Create;
+  FFunctEnv := TList<TEnvironment>.Create;
 end;
 
 function TEvaluator.CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
@@ -482,9 +484,16 @@ begin
 end;
 
 destructor TEvaluator.Destroy;
+var
+  current: TEnvironment;
 begin
   FGarbageCollector.EmptyTrash;
   FGarbageCollector.Free;
+
+  for current in FFunctEnv do
+    current.Free;
+
+  FFunctEnv.Free;
   inherited;
 end;
 
@@ -533,12 +542,15 @@ begin
   if (fn is TFunctionObject) then
   begin
     FEnv := extendFunctionEnv(fn as TFunctionObject, args);
-    try
-      Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
-      Gc.Mark(FEnv);
-    finally
-      FEnv.Free;
-    end;
+//    try
+    Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
+    Gc.Mark(FEnv);
+    if FFunctEnv.IndexOf(FEnv)<0 then
+      FFunctEnv.Add(FEnv);
+
+//    finally
+//      FEnv.Free;
+//    end;
   end
   else
   if (fn is TBuiltinObject) then
@@ -686,7 +698,7 @@ begin
     if NOT isError(val) then
     begin
       if TASTAssignExpression(node).Name is TASTIdentifier then
-        env.SetValue(TASTIdentifier(TASTAssignExpression(node).Name).Value, val)
+        Result := env.SetValue(TASTIdentifier(TASTAssignExpression(node).Name).Value, val)
       else
       if TASTAssignExpression(node).Name is TASTIndexExpression then
       begin
