@@ -236,7 +236,6 @@ type
 
   TASTForExpression = class(TASTExpression)
   public
-    Init: TASTLetStatement;
     Condition: TASTExpression;
     Expression: TASTNode;
     Body: TASTBlockStatement;
@@ -580,31 +579,21 @@ begin
   if expectPeek(ttLPAREN) then
   begin
     nextToken;
-
-    TASTForExpression(Result).Init := ParseLetStatement;
-    if currTokenIs(ttSEMICOLON) then
+    TASTForExpression(Result).Condition := ParseExpression(LOWEST);
+    if expectPeek(ttSEMICOLON) then
     begin
       nextToken;
-      TASTForExpression(Result).Condition := ParseExpression(LOWEST);
-      if expectPeek(ttSEMICOLON) then
-      begin
-        nextToken;
-        if currTokenIs(ttLET) then
-          TASTForExpression(Result).Expression := ParseLetStatement
-        else
-          TASTForExpression(Result).Expression := ParseExpression(LOWEST);
+      TASTForExpression(Result).Expression := ParseExpression(LOWEST);
 
-        if expectPeek(ttRPAREN) then
+      if expectPeek(ttRPAREN) then
+      begin
+        if expectPeek(ttLBRACE) then
         begin
-          if expectPeek(ttLBRACE) then
+          TASTForExpression(Result).Body := ParseBlockStatement;
+          if currTokenIs(ttRBRACE) then
           begin
-            TASTForExpression(Result).Body := ParseBlockStatement;
-            if currTokenIs(ttRBRACE) then
-            begin
-              if NOT expectPeek(ttSEMICOLON) then
-                FreeAndNilAssigned(Result);
-            end
-            else FreeAndNilAssigned(Result);
+            if NOT expectPeek(ttSEMICOLON) then
+              FreeAndNilAssigned(Result);
           end
           else FreeAndNilAssigned(Result);
         end
@@ -613,8 +602,8 @@ begin
       else FreeAndNilAssigned(Result);
     end
     else FreeAndNilAssigned(Result);
-  end
-  else FreeAndNilAssigned(Result);
+  end;
+
 end;
 
 function TParser.ParseFunctionLiteral: TASTExpression;
@@ -1327,6 +1316,7 @@ var
   i: Integer;
 begin
   Result := TASTArrayLiteral.Create;
+  TASTArrayLiteral(Result).Elements := TList<TASTExpression>.Create;
   for i := 0 to Elements.Count-1 do
     TASTArrayLiteral(Result).Elements.Add(Elements[i].Clone as TASTExpression);
 end;
@@ -1352,7 +1342,9 @@ end;
 
 function TASTArrayLiteral.toString: string;
 begin
-  Result := 'Array size = ' + IntToStr( FElements.Count);
+  Result := 'Array';
+  if Assigned(Elements) then
+    Result := Result + ' size = ' + IntToStr(FElements.Count);
 end;
 
 { TASTIndexExpression }
@@ -1390,7 +1382,7 @@ begin
   Result := TASTHashLiteral.Create;
   TASTHashLiteral(Result).FPairs := TDictionary<TASTExpression,TASTExpression>.Create;
   for key in Pairs.Keys do
-    TASTHashLiteral(Result).Pairs.Add(key.Clone as TASTExpression, Pairs[key] as TASTExpression);
+    TASTHashLiteral(Result).Pairs.Add(key.Clone as TASTExpression, Pairs[key].Clone as TASTExpression);
 end;
 
 constructor TASTHashLiteral.Create;
@@ -1452,7 +1444,6 @@ end;
 function TASTForExpression.Clone: TASTNode;
 begin
   Result := TASTForExpression.Create;
-  TASTForExpression(Result).Init := Init.Clone as TASTLetStatement;
   TASTForExpression(Result).Condition := Condition.Clone as TASTExpression;
   TASTForExpression(Result).Expression:= Expression.Clone;
   TASTForExpression(Result).Body := Body.Clone as TASTBlockStatement;
@@ -1460,7 +1451,6 @@ end;
 
 constructor TASTForExpression.Create;
 begin
-  Init:= nil;
   Condition:= nil;
   Expression:= nil;
   Body:= nil;
@@ -1468,7 +1458,6 @@ end;
 
 destructor TASTForExpression.Destroy;
 begin
-  FreeAndNilAssigned(Init);
   FreeAndNilAssigned(Condition);
   FreeAndNilAssigned(Expression);
   FreeAndNilAssigned(Body);

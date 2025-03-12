@@ -116,6 +116,11 @@ object LPMain: TLPMain
         Width = 1130
         Height = 563
         Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'Consolas'
+        Font.Style = []
         Lines.Strings = (
           'let n = 12;'
           ''
@@ -132,6 +137,7 @@ object LPMain: TLPMain
           '};'
           ''
           'return fibonacci(n);')
+        ParentFont = False
         TabOrder = 0
         ExplicitLeft = 8
         ExplicitHeight = 572

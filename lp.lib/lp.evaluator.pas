@@ -305,19 +305,11 @@ begin
 end;
 
 function TEvaluator.evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
-var
-  ForEnv: TEnvironment;
 begin
-  ForEnv:= TEnvironment.Create(env);
-  try
-    Eval(node.Init, ForEnv);
-    while isTruthyWithError(Eval(TASTForExpression(node).Condition, ForEnv), Result) do
-    begin
-      Result := Eval(TASTForExpression(node).Body, ForEnv);
-      Eval(TASTForExpression(node).Expression, ForEnv);
-    end;
-  finally
-    ForEnv.Free;
+  while isTruthyWithError(Eval(TASTForExpression(node).Condition, env), Result) do
+  begin
+    Result := Eval(TASTForExpression(node).Body, env);
+    Eval(TASTForExpression(node).Expression, env);
   end;
 end;
 
@@ -786,7 +778,11 @@ begin
         Add(THashObject(AObject).Pairs[HKey].Key);
         Add(THashObject(AObject).Pairs[HKey].Value);
       end;
-    end;
+    end
+    else
+    if AObject.ObjectType=RETURN_VALUE_OBJ then
+      Add(TReturnValueObject(AObject).Value);
+
     {  AObject.GcNext := FHead.GcNext;
     FHead.GcNext := AObject;
     Inc(FElemCount);  }
@@ -806,7 +802,11 @@ var
   i: Integer;
 begin
   for i := 0 to FObjects.Count-1 do
+  try
     FObjects[i].Free;
+  except
+    Continue;
+  end;
   FObjects.Clear;
 
   FreeAndNil(FTrashObjects);
@@ -819,7 +819,11 @@ var
   i: Integer;
 begin
   for i := 0 to FTrashObjects.Count-1 do
+  try
     FTrashObjects[i].Free;
+  except
+    Continue;
+  end;
 
   FTrashObjects.Clear;
 end;
@@ -839,24 +843,30 @@ var
   Element: TEvalObject;
   HKey: THashkey;
 begin
-  if NOT (AObject.GcMark) then
-  begin
-    AObject.GcMark := True;
-    if AObject.ObjectType=ARRAY_OBJ then
+  if Assigned(AObject) then
+    if NOT (AObject.GcMark) then
     begin
-      for Element in TArrayObject(AObject).Elements do
-        Mark(Element);
-    end
-    else
-    if AObject.ObjectType=HASH_OBJ then
-    begin
-      for HKey in THashObject(AObject).Pairs.Keys do
+      AObject.GcMark := True;
+      if AObject.ObjectType=ARRAY_OBJ then
       begin
-        Mark(THashObject(AObject).Pairs[HKey].Key);
-        Mark(THashObject(AObject).Pairs[HKey].Value);
+        for Element in TArrayObject(AObject).Elements do
+          Mark(Element);
+      end
+      else
+      if AObject.ObjectType=HASH_OBJ then
+      begin
+        for HKey in THashObject(AObject).Pairs.Keys do
+        begin
+          Mark(THashObject(AObject).Pairs[HKey].Key);
+          Mark(THashObject(AObject).Pairs[HKey].Value);
+        end;
+      end
+      else
+      if AObject.ObjectType=RETURN_VALUE_OBJ then
+      begin
+        Mark(TReturnValueObject(AObject).Value);
       end;
     end;
-  end;
 end;
 
 procedure TGarbageCollector.Mark(AEnvironment: TEnvironment);

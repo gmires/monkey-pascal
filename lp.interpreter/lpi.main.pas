@@ -204,7 +204,6 @@ begin
     if node is TASTForExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
-      Describe(TASTForExpression(node).Init, N);
       Describe(TASTForExpression(node).Condition, N);
       Describe(TASTForExpression(node).Expression, N);
       Describe(TASTForExpression(node).Body, N);
@@ -228,8 +227,9 @@ begin
     if node is TASTArrayLiteral then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
-      for i := 0 to TASTArrayLiteral(node).Elements.Count-1 do
-        Describe(TASTArrayLiteral(node).Elements[i], N);
+      if Assigned(TASTArrayLiteral(node).Elements) then
+        for i := 0 to TASTArrayLiteral(node).Elements.Count-1 do
+          Describe(TASTArrayLiteral(node).Elements[i], N);
     end
     else
     if node is TASTIndexExpression then
