@@ -253,6 +253,7 @@ begin
     or (node is TASTStringLiteral)
     or (node is TASTBoolean)
     or (node is TASTIdentifier)
+    or (node is TASTNullLiteral)
     then
       TVAST.Items.AddChild(SParent, node.toString);
   end;

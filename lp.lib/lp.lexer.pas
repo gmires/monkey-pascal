@@ -56,18 +56,41 @@ begin
   SkipComment;
   case ch of
      #0 : Result := TToken.create(ttEOF, '');
-    '+' : Result := TToken.create(ttPLUS, ch);
-    '-' : Result := TToken.create(ttMINUS, ch);
-    '*' : Result := TToken.create(ttASTERISK, ch);
-    '/' : Result := TToken.create(ttSLASH, ch);
-    '(' : Result := TToken.create(ttLPAREN, ch);
-    ')' : Result := TToken.create(ttRPAREN, ch);
-    '{' : Result := TToken.create(ttLBRACE, ch);
-    '}' : Result := TToken.create(ttRBRACE, ch);
-    '[' : Result := TToken.create(ttLBRACKET, ch);
-    ']' : Result := TToken.create(ttRBRACKET, ch);
-    ';' : Result := TToken.create(ttSEMICOLON, ch);
-    ',' : Result := TToken.create(ttCOMMA, ch);
+    '+' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttPLUSASSIGN, '+=');
+      end
+      else Result := TToken.create(ttPLUS, ch);
+    end;
+    '-' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttMINUSASSIGN, '-=');
+      end
+      else Result := TToken.create(ttMINUS, ch);
+    end;
+    '*' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttASTERISKASSIGN, '*=');
+      end
+      else Result := TToken.create(ttASTERISK, ch);
+    end;
+    '/' : begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttSLASHASSIGN, '/=');
+      end
+      else Result := TToken.create(ttSLASH, ch);
+    end;
     ':' :
     begin
       if (PeekChar='=') then
@@ -77,6 +100,16 @@ begin
       end
       else Result := TToken.create(ttCOLON, ch);
     end;
+
+    '(' : Result := TToken.create(ttLPAREN, ch);
+    ')' : Result := TToken.create(ttRPAREN, ch);
+    '{' : Result := TToken.create(ttLBRACE, ch);
+    '}' : Result := TToken.create(ttRBRACE, ch);
+    '[' : Result := TToken.create(ttLBRACKET, ch);
+    ']' : Result := TToken.create(ttRBRACKET, ch);
+    ';' : Result := TToken.create(ttSEMICOLON, ch);
+    ',' : Result := TToken.create(ttCOMMA, ch);
+    '?' : Result := TToken.create(ttQUESTION, ch);
     '=' :
     begin
       if (PeekChar='=') then

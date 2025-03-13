@@ -24,6 +24,7 @@ type
 
   TEnvironment = class
     FStore: TDictionary<string,TEvalObject>;
+    FConst: TStringList;
     FOuter: TEnvironment;
   public
     constructor Create; overload;
@@ -33,7 +34,7 @@ type
     property Outer: TEnvironment read FOuter write FOuter;
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
-    function SetOrCreateValue(name:string; value:TEvalObject ):TEvalObject;
+    function SetOrCreateValue(name:string; value:TEvalObject; IsConst:Boolean ):TEvalObject;
   end;
 
   // ---- Object --------------------
@@ -394,6 +395,7 @@ end;
 constructor TEnvironment.Create;
 begin
   FStore := TDictionary<string,TEvalObject>.Create;
+  FConst := TStringList.Create;
   FOuter := nil;
 end;
 
@@ -404,14 +406,15 @@ begin
 end;
 
 destructor TEnvironment.Destroy;
-var
-  key :string;
+//var
+//  key :string;
 begin
 {
   for key in FStore.Keys do
     FStore[key].Free;  }
 
   FStore.Free;
+  FConst.Free;
   inherited;
 end;
 
@@ -422,20 +425,34 @@ begin
     Result := Outer.GetValue(name, value);
 end;
 
-function TEnvironment.SetOrCreateValue(name: string; value: TEvalObject): TEvalObject;
+function TEnvironment.SetOrCreateValue(name: string; value: TEvalObject; IsConst:Boolean): TEvalObject;
 begin
   Result := value;
   if FStore.ContainsKey(name) then
-    FStore[name] := Result
+  begin
+    if FConst.IndexOf(name)<0 then
+      FStore[name] := Result
+    else
+      Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
+  end
   else
+  begin
     FStore.Add(name, Result);
+    if IsConst then
+      FConst.Add(name);
+  end;
 end;
 
 function TEnvironment.SetValue(name: string; value: TEvalObject): TEvalObject;
 begin
   Result := value;
   if FStore.ContainsKey(name) then
-    FStore[name] := Result
+  begin
+    if FConst.IndexOf(name)<0 then
+      FStore[name] := Result
+    else
+      Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
+  end
   else
   if FOuter<>nil then
     Result := FOuter.SetValue(name, value)
@@ -520,8 +537,8 @@ begin
 end;
 
 destructor TArrayObject.Destroy;
-var
-  i : Integer;
+//var
+//  i : Integer;
 begin
 {
   for i := 0 to Elements.Count-1 do

@@ -52,6 +52,14 @@ type
     , ttFOR    // = "FOR"
     , ttVARASSIGN // = ":="
     , ttIMPORT // = "IMPORT"
+    // -- new token -- //
+    , ttCONST // = "CONST"
+    , ttNULL  // = "NULL"
+    , ttPLUSASSIGN  // = "+="
+    , ttASTERISKASSIGN  // = "*="
+    , ttSLASHASSIGN // = "/="
+    , ttMINUSASSIGN // = "-="
+    , ttQUESTION // = "?"
   );
 
 
@@ -121,6 +129,13 @@ const
     , 'FOR'
     , 'VARASSIGN'
     , 'IMPORT'
+    , 'CONST'
+    , 'NULL'
+    , 'PLUSASSIGN'
+    , 'ASTERISKASSIGN'
+    , 'SLASHASSIGN'
+    , 'MINUSASSIGN'
+    , 'QUESTION'
   );
 begin
   Result := TTypeStr[value];
@@ -157,6 +172,8 @@ begin
   keywords.Add('while', ttWHILE);
   keywords.Add('for', ttFOR);
   keywords.Add('import', ttIMPORT);
+  keywords.Add('const', ttCONST);
+  keywords.Add('null', ttNULL);
 end;
 
 procedure deinit;
