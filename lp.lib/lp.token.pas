@@ -60,6 +60,9 @@ type
     , ttSLASHASSIGN // = "/="
     , ttMINUSASSIGN // = "-="
     , ttQUESTION // = "?"
+    , ttSWITCH // = "SWITCH"
+    , ttCASE // = "CASE"
+    , ttDEFAULT // = "DEFAULT"
   );
 
 
@@ -136,6 +139,9 @@ const
     , 'SLASHASSIGN'
     , 'MINUSASSIGN'
     , 'QUESTION'
+    , 'SWITCH'
+    , 'CASE'
+    , 'DEFAULT'
   );
 begin
   Result := TTypeStr[value];
@@ -174,6 +180,9 @@ begin
   keywords.Add('import', ttIMPORT);
   keywords.Add('const', ttCONST);
   keywords.Add('null', ttNULL);
+  keywords.Add('switch', ttSWITCH);
+  keywords.Add('case', ttCASE);
+  keywords.Add('default', ttDEFAULT);
 end;
 
 procedure deinit;

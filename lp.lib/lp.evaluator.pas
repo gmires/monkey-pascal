@@ -33,7 +33,7 @@ type
   TEvaluator = class
     FGCCounter: Word;
     FGarbageCollector:TGarbageCollector;
-    FFunctEnv:  TList<TEnvironment>;
+    FFunctEnv: TList<TEnvironment>;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
     function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
     function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
@@ -45,6 +45,8 @@ type
     function evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
     function evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
     function evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
+    function evalSwitchExpression(node:TASTSwitchExpression; env :TEnvironment):TEvalObject;
+    function evalTernaryExpression(node:TASTTernaryExpression; env :TEnvironment):TEvalObject;
     function evalWhileExpression(node:TASTWhileExpression; env :TEnvironment):TEvalObject;
     function evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
     function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
@@ -192,19 +194,19 @@ var
 begin
   LVal:= TNumberObject(left).Value;
   RVal:= TNumberObject(right).Value;
-  if Op='+' then Result:= TNumberObject.Create(LVal + RVal)
+  if Op='+'  then Result:= TNumberObject.Create(LVal + RVal)
   else
-  if Op='-' then Result:= TNumberObject.Create(LVal - RVal)
+  if Op='-'  then Result:= TNumberObject.Create(LVal - RVal)
   else
-  if Op='*' then Result:= TNumberObject.Create(LVal * RVal)
+  if Op='*'  then Result:= TNumberObject.Create(LVal * RVal)
   else
-  if Op='/' then Result:= TNumberObject.Create(LVal / RVal)
+  if Op='/'  then Result:= TNumberObject.Create(LVal / RVal)
   else
-  if Op='<' then Result:= nativeBoolToBooleanObject(LVal < RVal)
+  if Op='<'  then Result:= nativeBoolToBooleanObject(LVal < RVal)
   else
   if Op='<=' then Result:= nativeBoolToBooleanObject(LVal <= RVal)
   else
-  if Op='>' then Result:= nativeBoolToBooleanObject(LVal > RVal)
+  if Op='>'  then Result:= nativeBoolToBooleanObject(LVal > RVal)
   else
   if Op='>=' then Result:= nativeBoolToBooleanObject(LVal >= RVal)
   else
@@ -234,11 +236,11 @@ begin
   else
   if Op='+=' then Result:= TStringObject.Create(LVal + RVal)
   else
-  if Op='<' then Result:= nativeBoolToBooleanObject(LVal < RVal)
+  if Op='<'  then Result:= nativeBoolToBooleanObject(LVal < RVal)
   else
   if Op='<=' then Result:= nativeBoolToBooleanObject(LVal <= RVal)
   else
-  if Op='>' then Result:= nativeBoolToBooleanObject(LVal > RVal)
+  if Op='>'  then Result:= nativeBoolToBooleanObject(LVal > RVal)
   else
   if Op='>=' then Result:= nativeBoolToBooleanObject(LVal >= RVal)
   else
@@ -247,6 +249,51 @@ begin
   if Op='!=' then Result:= nativeBoolToBooleanObject(LVal <> RVal)
   else
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
+end;
+
+function TEvaluator.evalSwitchExpression(node: TASTSwitchExpression; env: TEnvironment): TEvalObject;
+var
+  svalue,cvalue:TEvalObject;
+  ccase:TASTCaseExpression;
+  xvalue:TASTExpression;
+begin
+  Result:= nil;
+  svalue:= Eval(node.Value, env);
+
+  for ccase in node.Choises do
+    if NOT ccase.Default then
+    begin
+      for xvalue in ccase.Values do
+      begin
+        cvalue := Eval(xvalue, env);
+        if ((cvalue.ObjectType=svalue.ObjectType) and (cvalue.Inspect=svalue.Inspect)) then
+        begin
+          Result := Eval(ccase.Body, env);
+          Exit(Result);
+        end;
+      end;
+    end;
+
+  if Result=nil then
+    for ccase in node.Choises do
+      if ccase.Default then
+      begin
+        Result := Eval(ccase.Body, env);
+        Break;
+      end;
+
+end;
+
+function TEvaluator.evalTernaryExpression(node: TASTTernaryExpression; env: TEnvironment): TEvalObject;
+begin
+  Result := nil;
+  if isTruthyWithError(Eval(node.Condition,env), Result) then
+    Result := Eval(node.IfTrue,env)
+  else
+  begin
+    if NOT isError(Result) then
+      Result := Eval(node.IfFalse,env);
+  end;
 end;
 
 function TEvaluator.evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -650,8 +697,14 @@ begin
   if node is TASTBlockStatement then
     Result := evalBlockStatements(node as TASTBlockStatement, env)
   else
+  if node is TASTSwitchExpression then
+    Result := evalSwitchExpression(node as TASTSwitchExpression, env)
+  else
   if node is TASTIfExpression then
     Result := evalIfExpression(node as TASTIfExpression, env)
+  else
+  if node is TASTTernaryExpression then
+    Result := evalTernaryExpression(node as TASTTernaryExpression, env)
   else
   if node is TASTWhileExpression then
     Result := evalWhileExpression(node as TASTWhileExpression, env)

@@ -194,6 +194,30 @@ begin
       Describe(TASTIfExpression(node).Alternative, N);
     end
     else
+    if node is TASTSwitchExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTSwitchExpression(node).Value, N);
+      for i := 0 to TASTSwitchExpression(node).Choises.Count-1 do
+        Describe(TASTSwitchExpression(node).Choises[i], N);
+    end
+    else
+    if node is TASTCaseExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      for i := 0 to TASTCaseExpression(node).Values.Count-1 do
+        Describe(TASTCaseExpression(node).Values[i], N);
+      Describe(TASTCaseExpression(node).Body, N);
+    end
+    else
+    if node is TASTTernaryExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTTernaryExpression(node).Condition, N);
+      Describe(TASTTernaryExpression(node).IfTrue, N);
+      Describe(TASTTernaryExpression(node).IfFalse, N);
+    end
+    else
     if node is TASTWhileExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
