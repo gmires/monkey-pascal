@@ -179,6 +179,12 @@ begin
       Describe(TASTInfixExpression(node).Right, N);
     end
     else
+    if node is TASTPostfixExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTPostfixExpression(node).Left, N);
+    end
+    else
     if node is TASTAssignExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
@@ -192,6 +198,30 @@ begin
       Describe(TASTIfExpression(node).Condition, N);
       Describe(TASTIfExpression(node).Consequence, N);
       Describe(TASTIfExpression(node).Alternative, N);
+    end
+    else
+    if node is TASTSwitchExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTSwitchExpression(node).Value, N);
+      for i := 0 to TASTSwitchExpression(node).Choises.Count-1 do
+        Describe(TASTSwitchExpression(node).Choises[i], N);
+    end
+    else
+    if node is TASTCaseExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      for i := 0 to TASTCaseExpression(node).Values.Count-1 do
+        Describe(TASTCaseExpression(node).Values[i], N);
+      Describe(TASTCaseExpression(node).Body, N);
+    end
+    else
+    if node is TASTTernaryExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTTernaryExpression(node).Condition, N);
+      Describe(TASTTernaryExpression(node).IfTrue, N);
+      Describe(TASTTernaryExpression(node).IfFalse, N);
     end
     else
     if node is TASTWhileExpression then
@@ -253,6 +283,7 @@ begin
     or (node is TASTStringLiteral)
     or (node is TASTBoolean)
     or (node is TASTIdentifier)
+    or (node is TASTNullLiteral)
     then
       TVAST.Items.AddChild(SParent, node.toString);
   end;

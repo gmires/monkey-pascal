@@ -52,6 +52,19 @@ type
     , ttFOR    // = "FOR"
     , ttVARASSIGN // = ":="
     , ttIMPORT // = "IMPORT"
+    // -- new token -- //
+    , ttCONST // = "CONST"
+    , ttNULL  // = "NULL"
+    , ttPLUSASSIGN  // = "+="
+    , ttASTERISKASSIGN  // = "*="
+    , ttSLASHASSIGN // = "/="
+    , ttMINUSASSIGN // = "-="
+    , ttQUESTION // = "?"
+    , ttSWITCH // = "SWITCH"
+    , ttCASE // = "CASE"
+    , ttDEFAULT // = "DEFAULT"
+    , ttPLUSPLUS // = "++"
+    , ttMINUSMINUS // = "++"
   );
 
 
@@ -121,6 +134,18 @@ const
     , 'FOR'
     , 'VARASSIGN'
     , 'IMPORT'
+    , 'CONST'
+    , 'NULL'
+    , 'PLUSASSIGN'
+    , 'ASTERISKASSIGN'
+    , 'SLASHASSIGN'
+    , 'MINUSASSIGN'
+    , 'QUESTION'
+    , 'SWITCH'
+    , 'CASE'
+    , 'DEFAULT'
+    , 'PLUSPLUS'
+    , 'MINUSMINUS'
   );
 begin
   Result := TTypeStr[value];
@@ -157,6 +182,11 @@ begin
   keywords.Add('while', ttWHILE);
   keywords.Add('for', ttFOR);
   keywords.Add('import', ttIMPORT);
+  keywords.Add('const', ttCONST);
+  keywords.Add('null', ttNULL);
+  keywords.Add('switch', ttSWITCH);
+  keywords.Add('case', ttCASE);
+  keywords.Add('default', ttDEFAULT);
 end;
 
 procedure deinit;
