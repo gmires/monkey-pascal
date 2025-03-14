@@ -151,7 +151,7 @@ begin
     end
     else
     if node is TASTImportStatement then
-      N:= TVAST.Items.AddChild(SParent, node.toString)
+      TVAST.Items.AddChild(SParent, node.toString)
     else
     if node is TASTReturnStatement then
     begin
@@ -237,6 +237,16 @@ begin
       Describe(TASTForExpression(node).Condition, N);
       Describe(TASTForExpression(node).Expression, N);
       Describe(TASTForExpression(node).Body, N);
+    end
+    else
+    if node is TASTForEachExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      if TASTForEachExpression(node).index<>'' then
+        TVAST.Items.AddChild(SParent, 'index = ' + TASTForEachExpression(node).index);
+      TVAST.Items.AddChild(SParent, 'ident = ' + TASTForEachExpression(node).ident);
+      Describe(TASTForEachExpression(node).Expression, N);
+      Describe(TASTForEachExpression(node).Body, N);
     end
     else
     if node is TASTCallExpression then

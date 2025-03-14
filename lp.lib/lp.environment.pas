@@ -26,9 +26,11 @@ type
     FStore: TDictionary<string,TEvalObject>;
     FConst: TStringList;
     FOuter: TEnvironment;
+    FAllowedIdent: TStringList;
   public
     constructor Create; overload;
     constructor Create(AOuter:TEnvironment); overload;
+    constructor Create(AOuter:TEnvironment; AllowedIdent:TStringList); overload;
     destructor Destroy; override;
     property Store: TDictionary<string,TEvalObject> read FStore;
     property Outer: TEnvironment read FOuter write FOuter;
@@ -42,9 +44,15 @@ type
 
   TEvalObject = class
   public
+    IIndex: Integer;
     function ObjectType:TEvalObjectType; virtual;
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
+
+    function  isIterable:Boolean; virtual;
+    function  Next:TEvalObject; virtual;
+    function  CurrentIndex:TEvalObject; virtual;
+    procedure Reset; virtual;
   public
     { ** for GC (mark and sweep) ** }
     GcNext:TEvalObject;
@@ -91,6 +99,10 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+
+    function isIterable:Boolean; override;
+    function Next:TEvalObject; override;
+    function CurrentIndex:TEvalObject; override;
   public
     constructor Create(AValue: string);
   end;
@@ -154,7 +166,12 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+
+    function isIterable:Boolean; override;
+    function Next:TEvalObject; override;
+    function CurrentIndex:TEvalObject; override;
   public
+    constructor Create;
     destructor Destroy; override;
   end;
 
@@ -173,6 +190,10 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+
+    function isIterable:Boolean; override;
+    function Next:TEvalObject; override;
+    function CurrentIndex:TEvalObject; override;
   public
     destructor Destroy; override;
   end;
@@ -199,6 +220,12 @@ constructor TEvalObject.Create;
 begin
   GcNext := nil;
   GcMark := False;
+  Reset;
+end;
+
+function TEvalObject.CurrentIndex: TEvalObject;
+begin
+  Result := nil;
 end;
 
 function TEvalObject.Inspect: string;
@@ -206,9 +233,24 @@ begin
   Result := '';
 end;
 
+function TEvalObject.isIterable: Boolean;
+begin
+  Result := false;
+end;
+
+function TEvalObject.Next: TEvalObject;
+begin
+  Result := nil;
+end;
+
 function TEvalObject.ObjectType: TEvalObjectType;
 begin
   Result := '';
+end;
+
+procedure TEvalObject.Reset;
+begin
+  IIndex:=0;
 end;
 
 { TNumberObject }
@@ -396,6 +438,7 @@ constructor TEnvironment.Create;
 begin
   FStore := TDictionary<string,TEvalObject>.Create;
   FConst := TStringList.Create;
+  FAllowedIdent:= TStringList.Create;
   FOuter := nil;
 end;
 
@@ -403,6 +446,12 @@ constructor TEnvironment.Create(AOuter: TEnvironment);
 begin
   Create;
   FOuter := AOuter;
+end;
+
+constructor TEnvironment.Create(AOuter: TEnvironment; AllowedIdent: TStringList);
+begin
+  Create(AOuter);
+  FAllowedIdent.Text := AllowedIdent.Text;
 end;
 
 destructor TEnvironment.Destroy;
@@ -415,6 +464,7 @@ begin
 
   FStore.Free;
   FConst.Free;
+  FAllowedIdent.Free;
   inherited;
 end;
 
@@ -426,6 +476,14 @@ begin
 end;
 
 function TEnvironment.SetOrCreateValue(name: string; value: TEvalObject; IsConst:Boolean): TEvalObject;
+
+  function isAllowed:Boolean;
+  begin
+    Result := (FAllowedIdent.Count = 0);
+    if NOT Result then
+      Result := FAllowedIdent.IndexOf(name)>=0;
+  end;
+
 begin
   Result := value;
   if FStore.ContainsKey(name) then
@@ -437,9 +495,15 @@ begin
   end
   else
   begin
-    FStore.Add(name, Result);
-    if IsConst then
-      FConst.Add(name);
+    if isAllowed then
+    begin
+      FStore.Add(name, Result);
+      if IsConst then
+        FConst.Add(name);
+    end
+    else
+    if Assigned(Outer) then
+      Outer.SetOrCreateValue(name, value, IsConst);
   end;
 end;
 
@@ -490,9 +554,30 @@ begin
   Value := AValue;
 end;
 
+function TStringObject.CurrentIndex: TEvalObject;
+begin
+  Result := TNumberObject.Create(IIndex+1);
+end;
+
 function TStringObject.Inspect: string;
 begin
   Result := Value;
+end;
+
+function TStringObject.isIterable: Boolean;
+begin
+  Result := True;
+end;
+
+function TStringObject.Next: TEvalObject;
+begin
+  Result := nil;
+  if IIndex<length(Value) then
+  begin
+    Result := TStringObject.Create(Value[IIndex+1]);
+    Inc(IIndex);
+  end;
+
 end;
 
 function TStringObject.ObjectType: TEvalObjectType;
@@ -536,6 +621,16 @@ begin
     TArrayObject(Result).Elements.Add(Elements[i].Clone);
 end;
 
+constructor TArrayObject.Create;
+begin
+  inherited Create;
+end;
+
+function TArrayObject.CurrentIndex: TEvalObject;
+begin
+  Result := TNumberObject.Create(IIndex-1);
+end;
+
 destructor TArrayObject.Destroy;
 //var
 //  i : Integer;
@@ -567,6 +662,23 @@ begin
     end;
 
   Result := Result + ']';
+end;
+
+function TArrayObject.isIterable: Boolean;
+begin
+  Result := True;
+end;
+
+function TArrayObject.Next: TEvalObject;
+begin
+  Result := nil;
+
+  if Assigned(Elements) then
+    if (IIndex<Elements.Count) then
+    begin
+      Result := Elements[IIndex];
+      Inc(IIndex);
+    end;
 end;
 
 function TArrayObject.ObjectType: TEvalObjectType;
@@ -652,6 +764,11 @@ begin
   end;
 end;
 
+function THashObject.CurrentIndex: TEvalObject;
+begin
+  Result := Pairs.ToArray[IIndex-1].Value.Key;
+end;
+
 destructor THashObject.Destroy;
 var
   hkey: THashkey;
@@ -684,6 +801,24 @@ begin
     Result := Copy(Result,1,length(Result)-1);
   end;
   Result := Result + '}';
+end;
+
+function THashObject.isIterable: Boolean;
+begin
+  Result := True;
+end;
+
+function THashObject.Next: TEvalObject;
+begin
+  Result := nil;
+
+  if Assigned(Pairs) then
+    if (IIndex<Pairs.Count) then
+    begin
+      Result := Pairs.ToArray[IIndex].Value.Value;
+      Inc(IIndex);
+    end;
+
 end;
 
 function THashObject.ObjectType: TEvalObjectType;

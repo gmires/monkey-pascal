@@ -11,7 +11,7 @@ let q = [{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"},{"CFGVAL":"XXX","CFGMO
 let q = {"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"};
 ```
 
-# Loop and conditional
+# Loop While, For, ForEach
 ```
 let q = [{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"},{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD02"}];
 let c = len(q);
@@ -26,7 +26,52 @@ while(i<c){
 
 println(u);
 
+let a = ["a","b"];
+let i = 0;
+for(i<len(a), i++){
+  println(a[i]);
+};
+
+foreach i,v in 1..10 {
+  println("at index " + numtostr(i) + " value = " + numtostr(v) );
+};
+
+foreach i,v in {"nome":"giacomo","cognome":"mola"} {
+  println("key = " + i + ", with value = " + v);
+};
+
+foreach i,v in "string" {
+  println("at index " + numtostr(i) + " value = " + v );
+};
+
 ```
+
+# Conditional if and switch and Ternary Operator (?)
+```
+if (a<b){
+  return a;
+} else {
+  return b;
+};
+
+switch (a) {
+  case "A", "B" {
+    ....
+  }
+  case "C" {
+    ....
+  }
+  default {
+    ....
+  }
+};
+
+foreach i,v in {"name":"james","cognome":"mola", "age": 42} {
+  println(i + " = " + (typeof(v)=="NUMBER" ? numtostr(v) : v) );
+};
+
+```
+
 
 # Closure
 ```

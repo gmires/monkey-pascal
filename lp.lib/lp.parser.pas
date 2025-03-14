@@ -301,6 +301,19 @@ type
     destructor Destroy; override;
   end;
 
+  TASTForEachExpression = class(TASTExpression)
+  public
+    index:string;
+    ident:string;
+    Expression: TASTExpression;
+    Body: TASTBlockStatement;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   TASTFunctionLiteral = class(TASTExpression)
     Parameters:TList<TASTIdentifier>;
     Body: TASTBlockStatement;
@@ -371,6 +384,7 @@ type
     function ParseSwitchExpression:TASTExpression;
     function ParseWhileExpression:TASTExpression;
     function ParseForExpression:TASTExpression;
+    function ParseForEachExpression:TASTExpression;
     function ParseFunctionLiteral:TASTExpression;
     function ParseFunctionParameters:TList<TASTIdentifier>;
     function ParseCallExpression(funct:TASTExpression):TASTExpression;
@@ -445,6 +459,7 @@ begin
 	PrefixFuncts.Add(ttLBRACE, ParseHashLiteral);
 	PrefixFuncts.Add(ttWHILE, ParseWhileExpression);
 	PrefixFuncts.Add(ttFOR, ParseForExpression);
+	PrefixFuncts.Add(ttFOREACH, ParseForEachExpression);
 
   InfixFuncts := TDictionary<TTokenType,TParseInfixExpression>.Create;
   InfixFuncts.Add(ttPLUS, ParseInfixExpression);
@@ -684,6 +699,49 @@ begin
 
   if peekTokenIs(ttSEMICOLON) then
     nextToken;
+end;
+
+function TParser.ParseForEachExpression: TASTExpression;
+begin
+  Result := TASTForEachExpression.Create;
+  Result.Token := CurrToken.Clone;
+
+  nextToken;
+
+  TASTForEachExpression(Result).ident := CurrToken.Literal;
+  if peekTokenIs(ttCOMMA) then
+  begin
+    nextToken;
+    if peekTokenIs(ttIDENT) then
+    begin
+      nextToken;
+      TASTForEachExpression(Result).index := TASTForEachExpression(Result).ident;
+      TASTForEachExpression(Result).ident := CurrToken.Literal;
+    end
+    else
+    begin
+      FreeAndNilAssigned(Result);
+      Exit(Result);
+    end;
+  end;
+
+  if expectPeek(ttIN) then
+  begin
+    nextToken;
+    TASTForEachExpression(Result).Expression := ParseExpression(LOWEST);
+    if NOT Assigned(TASTForEachExpression(Result).Expression) then
+    begin
+      FreeAndNilAssigned(Result);
+      Exit(Result);
+    end;
+    nextToken;
+    TASTForEachExpression(Result).Body := ParseBlockStatement;
+
+
+  end
+  else FreeAndNilAssigned(Result);
+
+
 end;
 
 function TParser.ParseForExpression: TASTExpression;
@@ -1901,6 +1959,37 @@ end;
 function TASTPostfixExpression.toString: string;
 begin
   Result := 'Postfix Operator = ' + op;
+end;
+
+{ TASTForEach }
+
+function TASTForEachExpression.Clone: TASTNode;
+begin
+  Result := TASTForEachExpression.Create;
+  TASTForEachExpression(Result).index := index;
+  TASTForEachExpression(Result).ident := ident;
+  TASTForEachExpression(Result).Expression:= Expression.Clone as TASTExpression;
+  TASTForEachExpression(Result).Body := Body.Clone as TASTBlockStatement;
+end;
+
+constructor TASTForEachExpression.Create;
+begin
+  index:='';
+  ident:='';
+  Expression:=nil;
+  Body:=nil;
+end;
+
+destructor TASTForEachExpression.Destroy;
+begin
+  FreeAndNilAssigned(Expression);
+  FreeAndNilAssigned(Body);
+  inherited;
+end;
+
+function TASTForEachExpression.toString: string;
+begin
+  Result := 'foreach';
 end;
 
 end.

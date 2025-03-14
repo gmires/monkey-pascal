@@ -67,6 +67,8 @@ type
     , ttMINUSMINUS // = "++"
     , ttDOT // = "."
     , ttDOTDOT // = ".."
+    , ttFOREACH // = "FOREACH"
+    , ttIN // = "IN"
   );
 
 
@@ -150,6 +152,8 @@ const
     , 'MINUSMINUS'
     , 'DOT'
     , 'DOTDOT'
+    , 'FOREACH'
+    , 'IN'
   );
 begin
   Result := TTypeStr[value];
@@ -191,6 +195,8 @@ begin
   keywords.Add('switch', ttSWITCH);
   keywords.Add('case', ttCASE);
   keywords.Add('default', ttDEFAULT);
+  keywords.Add('foreach', ttFOREACH);
+  keywords.Add('in', ttIN);
 end;
 
 procedure deinit;
