@@ -14,6 +14,8 @@ type
 	  , LESSGREATER
 	  , SUM
 	  , PRODUCT
+    , NUMPOWER
+    , MODULE
 	  , PREFIX
 	  , CALL
 	  , DOTDOT
@@ -441,6 +443,9 @@ begin
   Precedences.Add(ttLOGICALAND, LOGICAL);
   Precedences.Add(ttLOGICALOR, LOGICAL);
   Precedences.Add(ttDOTDOT, DOTDOT);
+  Precedences.Add(ttPOWER, NUMPOWER);
+  Precedences.Add(ttMOD, MODULE);
+  Precedences.Add(ttMODASSIGN, MODULE);
 
   PrefixFuncts:= TDictionary<TTokenType,TParsePrefixExpression>.Create;
   PrefixFuncts.Add(ttIDENT, ParseIdentifier);
@@ -481,8 +486,11 @@ begin
 	InfixFuncts.Add(ttMINUSASSIGN, ParseAssignExpression);
 	InfixFuncts.Add(ttASTERISKASSIGN, ParseAssignExpression);
 	InfixFuncts.Add(ttSLASHASSIGN, ParseAssignExpression);
+	InfixFuncts.Add(ttMODASSIGN, ParseAssignExpression);
 	InfixFuncts.Add(ttQUESTION, ParseTernaryExpression);
 	InfixFuncts.Add(ttDOTDOT, ParseInfixExpression);
+	InfixFuncts.Add(ttPOWER, ParseInfixExpression);
+	InfixFuncts.Add(ttMOD, ParseInfixExpression);
 
   PostfixFuncts := TDictionary<TTokenType,TParsePostfixExpression>.Create;
 	PostfixFuncts.Add(ttPLUSPLUS, ParsePostfixExpression);

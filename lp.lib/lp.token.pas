@@ -69,6 +69,9 @@ type
     , ttDOTDOT // = ".."
     , ttFOREACH // = "FOREACH"
     , ttIN // = "IN"
+    , ttPOWER // = "**"
+    , ttMOD // = "%"
+    , ttMODASSIGN // = "%="
   );
 
 
@@ -154,6 +157,9 @@ const
     , 'DOTDOT'
     , 'FOREACH'
     , 'IN'
+    , 'POWER'
+    , 'MOD'
+    , 'MODASSIGN'
   );
 begin
   Result := TTypeStr[value];

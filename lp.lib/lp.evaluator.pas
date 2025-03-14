@@ -2,7 +2,7 @@ unit lp.evaluator;
 
 interface
 
-uses classes, SysUtils, Generics.Collections, Variants
+uses classes, SysUtils, Generics.Collections, Variants, Math
 
   , lp.environment
   , lp.parser;
@@ -225,6 +225,8 @@ begin
   else
   if Op='<'  then Result:= nativeBoolToBooleanObject(LVal < RVal)
   else
+  if Op='%'  then Result:= TNumberObject.Create(Trunc(LVal) mod Trunc(RVal))
+  else
   if Op='<=' then Result:= nativeBoolToBooleanObject(LVal <= RVal)
   else
   if Op='>'  then Result:= nativeBoolToBooleanObject(LVal > RVal)
@@ -242,6 +244,10 @@ begin
   if Op='*=' then Result:= TNumberObject.Create(LVal * RVal)
   else
   if Op='/=' then Result:= TNumberObject.Create(LVal / RVal)
+  else
+  if Op='%=' then Result:= TNumberObject.Create(Trunc(LVal) mod Trunc(RVal))
+  else
+  if Op='**' then Result:= TNumberObject.Create(Power(LVal, RVal))
   else
   if Op='..' then
   begin
@@ -926,7 +932,8 @@ begin
       if (TASTAssignExpression(node).Op='+=')
       or (TASTAssignExpression(node).Op='-=')
       or (TASTAssignExpression(node).Op='*=')
-      or (TASTAssignExpression(node).Op='/=') then
+      or (TASTAssignExpression(node).Op='/=')
+      or (TASTAssignExpression(node).Op='%=') then
       begin
         val := evalInfixExpression(TASTAssignExpression(node).Op, Eval(TASTAssignExpression(node).Name, env), val);
       end;

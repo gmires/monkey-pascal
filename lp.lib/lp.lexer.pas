@@ -91,6 +91,12 @@ begin
         ReadChar;
         Result := TToken.create(ttASTERISKASSIGN, '*=');
       end
+      else
+      if (PeekChar='*') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttPOWER, '**');
+      end
       else Result := TToken.create(ttASTERISK, ch);
     end;
     '/' : begin
@@ -109,6 +115,15 @@ begin
         Result := TToken.create(ttVARASSIGN, ':=');
       end
       else Result := TToken.create(ttCOLON, ch);
+    end;
+    '%' :
+    begin
+      if (PeekChar='=') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttMODASSIGN, '%=');
+      end
+      else Result := TToken.create(ttMOD, ch);
     end;
     '.' :
     begin
