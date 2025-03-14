@@ -209,6 +209,8 @@ function TEvaluator.evalIntegerInfixExpression(Op: string; left, right: TEvalObj
 var
   LVal,
   RVal:Double;
+  Step,
+  Len,i,IVal:Integer;
 begin
   LVal:= TNumberObject(left).Value;
   RVal:= TNumberObject(right).Value;
@@ -240,7 +242,29 @@ begin
   else
   if Op='/=' then Result:= TNumberObject.Create(LVal / RVal)
   else
-    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType]);
+  if Op='..' then
+  begin
+    { -- operator range begin -- }
+    IVal:= Trunc(Abs(LVal));
+    Len := Trunc(Abs(RVal-LVal)) + 1;
+    Step:= 1;
+    if (RVal<LVal) then
+      Step:=-Step;
+
+    if Len>0 then
+    begin
+      Result:= TArrayObject.Create;
+      TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+      for i := 0 to Len-1 do
+      begin
+        TArrayObject(Result).Elements.Add(TNumberObject.Create(IVal));
+        IVal := IVal + Step;
+      end;
+    end
+    else Result := TErrorObject.newError('invalid len of range = 0', []);
+    { -- operator range end -- }
+  end
+  else  Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType]);
 end;
 
 function TEvaluator.evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;

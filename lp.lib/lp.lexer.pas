@@ -22,7 +22,7 @@ type
     function  ReadString: string;
   public
     constructor Create(AInput:string);
-    function  NextToken: TToken;
+    function NextToken: TToken;
   end;
 
 implementation
@@ -39,17 +39,15 @@ end;
 
 function TLexer.isDigit(value: char): Boolean;
 begin
-  Result := ch in ['0'..'9'];
+  Result := CharInSet(ch, ['0'..'9']);
 end;
 
 function TLexer.isLetter(value: char): Boolean;
 begin
-  Result := ch in ['a'..'z','A'..'Z','_'];
+  Result := CharInSet(ch, ['a'..'z','A'..'Z','_']);
 end;
 
 function TLexer.NextToken: TToken;
-var
-  S:string;
 begin
   Result := nil;
   SkipWhiteSpace;
@@ -112,7 +110,15 @@ begin
       end
       else Result := TToken.create(ttCOLON, ch);
     end;
-
+    '.' :
+    begin
+      if (PeekChar='.') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttDOTDOT, '..');
+      end
+      else Result := TToken.create(ttDOT, ch);
+    end;
     '(' : Result := TToken.create(ttLPAREN, ch);
     ')' : Result := TToken.create(ttRPAREN, ch);
     '{' : Result := TToken.create(ttLBRACE, ch);
@@ -229,12 +235,17 @@ begin
 end;
 
 function TLexer.ReadNumber: string;
+
+  function dotdot: Boolean;
+  begin
+    Result := ((ch='.') and (PeekChar='.'));
+  end;
+
 var
   CurrentPos:Integer;
 begin
   CurrentPos := Position;
-  while (ch in ['0'..'9', '.']) do ReadChar;
-
+  while CharInSet(ch, ['0'..'9', '.']) and NOT dotdot do ReadChar;
 	Result := Copy(Input, CurrentPos, Position-CurrentPos);
 end;
 
@@ -243,7 +254,7 @@ var
   CurrentPos:Integer;
 begin
   CurrentPos := Position;
-  while NOT (ch in ['"', #0]) do ReadChar;
+  while NOT CharInSet(ch, ['"', #0]) do ReadChar;
 
 	Result := Copy(Input, CurrentPos, Position-CurrentPos);
 end;
@@ -260,7 +271,7 @@ end;
 
 procedure TLexer.SkipWhiteSpace;
 begin
-  while (ch in [' ', #13, #10, #8]) do ReadChar;
+  while CharInSet(ch, [' ', #13, #10, #8]) do ReadChar;
 end;
 
 end.

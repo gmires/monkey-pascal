@@ -65,6 +65,8 @@ type
     , ttDEFAULT // = "DEFAULT"
     , ttPLUSPLUS // = "++"
     , ttMINUSMINUS // = "++"
+    , ttDOT // = "."
+    , ttDOTDOT // = ".."
   );
 
 
@@ -146,6 +148,8 @@ const
     , 'DEFAULT'
     , 'PLUSPLUS'
     , 'MINUSMINUS'
+    , 'DOT'
+    , 'DOTDOT'
   );
 begin
   Result := TTypeStr[value];

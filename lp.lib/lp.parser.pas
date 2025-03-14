@@ -16,6 +16,7 @@ type
 	  , PRODUCT
 	  , PREFIX
 	  , CALL
+	  , DOTDOT
 	  , INDEX
     , HIGHEST
   );
@@ -425,6 +426,7 @@ begin
   Precedences.Add(ttLBRACKET, INDEX);
   Precedences.Add(ttLOGICALAND, LOGICAL);
   Precedences.Add(ttLOGICALOR, LOGICAL);
+  Precedences.Add(ttDOTDOT, DOTDOT);
 
   PrefixFuncts:= TDictionary<TTokenType,TParsePrefixExpression>.Create;
   PrefixFuncts.Add(ttIDENT, ParseIdentifier);
@@ -465,6 +467,7 @@ begin
 	InfixFuncts.Add(ttASTERISKASSIGN, ParseAssignExpression);
 	InfixFuncts.Add(ttSLASHASSIGN, ParseAssignExpression);
 	InfixFuncts.Add(ttQUESTION, ParseTernaryExpression);
+	InfixFuncts.Add(ttDOTDOT, ParseInfixExpression);
 
   PostfixFuncts := TDictionary<TTokenType,TParsePostfixExpression>.Create;
 	PostfixFuncts.Add(ttPLUSPLUS, ParsePostfixExpression);
