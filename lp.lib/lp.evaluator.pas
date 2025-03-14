@@ -50,6 +50,7 @@ type
     function evalTernaryExpression(node:TASTTernaryExpression; env :TEnvironment):TEvalObject;
     function evalWhileExpression(node:TASTWhileExpression; env :TEnvironment):TEvalObject;
     function evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
+    function evalForEachExpression(node:TASTForEachExpression; env :TEnvironment):TEvalObject;
     function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
     function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
     function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
@@ -401,6 +402,64 @@ begin
   Result := nil;
   while isTruthyWithError(Eval(TASTWhileExpression(node).Condition, env), Result) do
     Result := Eval(TASTWhileExpression(node).Body, env)
+end;
+
+function TEvaluator.evalForEachExpression(node: TASTForEachExpression;  env: TEnvironment): TEvalObject;
+var
+  iterable,
+  current,
+  index, ret:TEvalObject;
+  FEachEnv:TEnvironment;
+  L:TStringList;
+begin
+  Result:= nil;
+  iterable:= Eval(TASTForEachExpression(node).Expression, env);
+  if NOT iterable.isIterable then
+  begin
+    Result := CreateErrorObj('%s object doesn''t implement the Iterable interface', [iterable.ObjectType]);
+    Exit(Result);
+  end
+  else
+  begin
+    L:=TStringList.Create;
+    try
+      L.Add(TASTForEachExpression(node).ident);
+      if TASTForEachExpression(node).index<>'' then
+        L.Add(TASTForEachExpression(node).index);
+
+      FEachEnv:= TEnvironment.Create(env, L);
+      if FFunctEnv.IndexOf(FEachEnv)<0 then
+        FFunctEnv.Add(FEachEnv);
+
+      current := gc.Add(iterable.Next);
+
+      while Assigned(current) do
+      begin
+        FEachEnv.SetOrCreateValue(TASTForEachExpression(node).ident, current, false);
+        if TASTForEachExpression(node).index<>'' then
+          FEachEnv.SetOrCreateValue(TASTForEachExpression(node).index, gc.Add(iterable.CurrentIndex), false);
+
+        ret := Eval(TASTForEachExpression(node).Body, FEachEnv);
+        if Assigned(ret) then
+          if isError(ret) then
+          begin
+            Result := ret;
+            Break;
+          end
+          else
+          if ((ret.ObjectType=RETURN_VALUE_OBJ) and isError(TReturnValueObject(ret).Value)) then
+          begin
+            Result := TReturnValueObject(ret).Value;
+            Break;
+          end;
+
+        current := iterable.Next;
+      end;
+
+    finally
+      L.Free;
+    end;
+  end;
 end;
 
 function TEvaluator.evalForExpression(node:TASTForExpression; env :TEnvironment):TEvalObject;
@@ -795,6 +854,9 @@ begin
   else
   if node is TASTForExpression then
     Result := evalForExpression(node as TASTForExpression, env)
+  else
+  if node is TASTForEachExpression then
+    Result := evalForEachExpression(node as TASTForEachExpression, env)
   else
   if node is TASTReturnStatement then
   begin
