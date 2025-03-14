@@ -63,6 +63,12 @@ begin
         ReadChar;
         Result := TToken.create(ttPLUSASSIGN, '+=');
       end
+      else
+      if (PeekChar='+') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttPLUSPLUS, '++');
+      end
       else Result := TToken.create(ttPLUS, ch);
     end;
     '-' :
@@ -71,6 +77,12 @@ begin
       begin
         ReadChar;
         Result := TToken.create(ttMINUSASSIGN, '-=');
+      end
+      else
+      if (PeekChar='-') then
+      begin
+        ReadChar;
+        Result := TToken.create(ttMINUSMINUS, '--');
       end
       else Result := TToken.create(ttMINUS, ch);
     end;

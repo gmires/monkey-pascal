@@ -63,6 +63,8 @@ type
     , ttSWITCH // = "SWITCH"
     , ttCASE // = "CASE"
     , ttDEFAULT // = "DEFAULT"
+    , ttPLUSPLUS // = "++"
+    , ttMINUSMINUS // = "++"
   );
 
 
@@ -142,6 +144,8 @@ const
     , 'SWITCH'
     , 'CASE'
     , 'DEFAULT'
+    , 'PLUSPLUS'
+    , 'MINUSMINUS'
   );
 begin
   Result := TTypeStr[value];

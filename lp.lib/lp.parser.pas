@@ -145,6 +145,17 @@ type
     destructor Destroy; override;
   end;
 
+  TASTPostfixExpression = class(TASTExpression)
+  public
+    Left: TASTExpression;
+    Op:string;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   TASTAssignExpression = class(TASTExpression)
   public
     Name: TASTExpression;
@@ -311,16 +322,19 @@ type
 
   TParsePrefixExpression = function:TASTExpression of object;
   TParseInfixExpression = function(AExpression:TASTExpression):TASTExpression of object;
+  TParsePostfixExpression = function(AExpression:TASTExpression):TASTExpression of object;
 
   TParser = class
     FInTernary:Boolean;
     FErrors: TStringList;
     Lexer: TLexer;
+    PrecToken:TToken;
     CurrToken:TToken;
     PeekToken:TToken;
     Precedences: TDictionary<TTokenType,TEXPrecedence>;
     PrefixFuncts: TDictionary<TTokenType,TParsePrefixExpression>;
     InfixFuncts: TDictionary<TTokenType,TParseInfixExpression>;
+    PostfixFuncts: TDictionary<TTokenType,TParsePostfixExpression>;
     procedure AddError(Value:string);
     procedure nextToken;
     function  peekTokenIs(TType:TTokenType): Boolean;
@@ -348,6 +362,7 @@ type
     function ParseTernaryExpression(condition:TASTExpression):TASTExpression;
     function ParsePrefixExpression:TASTExpression;
     function ParseInfixExpression(left:TASTExpression):TASTExpression;
+    function ParsePostfixExpression(left:TASTExpression):TASTExpression;
     function ParseGroupExpression:TASTExpression;
     function ParseIdentifier:TASTExpression;
     function ParseBoolean:TASTExpression;
@@ -451,7 +466,12 @@ begin
 	InfixFuncts.Add(ttSLASHASSIGN, ParseAssignExpression);
 	InfixFuncts.Add(ttQUESTION, ParseTernaryExpression);
 
+  PostfixFuncts := TDictionary<TTokenType,TParsePostfixExpression>.Create;
+	PostfixFuncts.Add(ttPLUSPLUS, ParsePostfixExpression);
+	PostfixFuncts.Add(ttMINUSMINUS, ParsePostfixExpression);
+
   Lexer := ALexer;
+  PrecToken:=nil;
   CurrToken:=nil;
   PeekToken:=nil;
 
@@ -474,11 +494,13 @@ end;
 
 destructor TParser.Destroy;
 begin
+  FreeAndNilAssigned(PrecToken);
   FreeAndNilAssigned(CurrToken);
   FreeAndNilAssigned(PeekToken);
 
   PrefixFuncts.Free;
   InfixFuncts.Free;
+  PostfixFuncts.Free;
   Precedences.Free;
 
   FErrors.Free;
@@ -495,8 +517,9 @@ end;
 
 procedure TParser.nextToken;
 begin
-  FreeAndNilAssigned(CurrToken);
+  FreeAndNilAssigned(PrecToken);
 
+  PrecToken := CurrToken;
   CurrToken := PeekToken;
   PeekToken := Lexer.NextToken;
 end;
@@ -602,11 +625,18 @@ function TParser.ParseExpression(APrecedence:TEXPrecedence): TASTExpression;
 var
   prefixFn: TParsePrefixExpression;
   infixFn: TParseInfixExpression;
+  postfixFn: TParsePostfixExpression;
 begin
   Result:= nil;
   if PrefixFuncts.TryGetValue(CurrToken.TokenType, prefixFn) then
   begin
     Result := prefixFn();
+    if PostfixFuncts.TryGetValue(PeekToken.TokenType, postfixFn) then
+    begin
+      nextToken;
+      Result := postfixFn(Result);
+    end;
+
     while NOT peekTokenIs(ttSEMICOLON) and (APrecedence<peekPrecedence) do
     begin
       if InfixFuncts.TryGetValue(PeekToken.TokenType, infixFn) then
@@ -896,6 +926,14 @@ begin
   TASTNumberLiteral(Result).Value := StrToFloatDef(StringReplace(CurrToken.Literal,'.',FormatSettings.DecimalSeparator,[]),0);
 end;
 
+function TParser.ParsePostfixExpression(left:TASTExpression): TASTExpression;
+begin
+  Result:= TASTPostfixExpression.Create;
+  Result.Token := CurrToken.Clone;
+  TASTPostfixExpression(Result).Op := CurrToken.Literal;
+  TASTPostfixExpression(Result).Left := left;
+end;
+
 function TParser.ParsePrefixExpression: TASTExpression;
 begin
   Result := TASTPrefixExpression.Create;
@@ -1119,6 +1157,7 @@ begin
 end;
 
 { TASTStatement }
+
 
 constructor TASTStatement.Create;
 begin
@@ -1834,6 +1873,31 @@ end;
 function TASTSwitchExpression.toString: string;
 begin
   Result := 'switch';
+end;
+
+{ TASTPostfixExpression }
+
+function TASTPostfixExpression.Clone: TASTNode;
+begin
+  Result:= TASTPostfixExpression.Create;
+  TASTPostfixExpression(Result).Op := Op;
+  TASTPostfixExpression(Result).Left := Left.Clone as TASTExpression;
+end;
+
+constructor TASTPostfixExpression.Create;
+begin
+  Op := '';
+end;
+
+destructor TASTPostfixExpression.Destroy;
+begin
+  FreeAndNilAssigned(Left);
+  inherited;
+end;
+
+function TASTPostfixExpression.toString: string;
+begin
+  Result := 'Postfix Operator = ' + op;
 end;
 
 end.

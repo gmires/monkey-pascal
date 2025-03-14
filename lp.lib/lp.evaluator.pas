@@ -40,6 +40,7 @@ type
     function evalBangOperatorExpression(right: TEvalObject):TEvalObject;
     function evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
     function evalPrefixExpression(Op:string; right:TEvalObject):TEvalObject;
+    function evalPostfixExpression(Op:string; left:TEvalObject):TEvalObject;
     function evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
     function evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
     function evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -53,13 +54,15 @@ type
     function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
     function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
     function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
-    function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
     function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
-    function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
     function evalIndexExpression(left, index:TEvalObject):TEvalObject;
     function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
     function unwrapReturnValue(obj:TEvalObject):TEvalObject;
     function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
+    // -- assign function -- //
+    function assignExpression(node: TASTNode; AValue: TEvalObject; env: TEnvironment):TEvalObject;
+    function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
+    function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
     // -- utils function -- //
     function CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
     function CreateNullObj: TNullObject;
@@ -183,6 +186,21 @@ begin
   if Op='-' then Result := evalMinusPrefixOperatorExpression(right)
   else
     Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjectType]);
+
+  FGarbageCollector.Add(Result);
+end;
+
+function TEvaluator.evalPostfixExpression(Op: string;  left: TEvalObject): TEvalObject;
+begin
+  if left.ObjectType=NUMBER_OBJ then
+  begin
+    if Op='++' then Result := TNumberObject.Create(TNumberObject(left).Value+1)
+    else
+    if Op='--' then Result := TNumberObject.Create(TNumberObject(left).Value-1)
+    else
+      Result := TErrorObject.newError('unknown operator: %s%s', [left.ObjectType, Op]);
+  end
+  else Result := TErrorObject.newError('unknown type operator: %s%s', [left.ObjectType, Op]);
 
   FGarbageCollector.Add(Result);
 end;
@@ -474,6 +492,37 @@ begin
   end;
 end;
 
+function TEvaluator.assignExpression(node: TASTNode; AValue: TEvalObject; env: TEnvironment): TEvalObject;
+var
+  enobj,
+  index: TEvalObject;
+begin
+  if node is TASTIdentifier then
+    Result := env.SetValue(TASTIdentifier(node).Value, AValue)
+  else
+  if node is TASTIndexExpression then
+  begin
+    enobj := Eval(TASTIndexExpression(node).Left, env);
+    if NOT isError(AValue) then
+    begin
+      index := Eval(TASTIndexExpression(node).Index, env);
+      if NOT isError(AValue) then
+      begin
+        if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
+          Result := assignArrayIndexExpression(enobj, index, AValue)
+        else
+        if (enobj.ObjectType=HASH_OBJ) then
+          Result := assignHashIndexExpression(enobj, index, AValue)
+        else
+          Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]);
+      end
+      else Result := AValue;
+    end
+    else Result := AValue;
+  end
+  else Result := AValue;
+end;
+
 function TEvaluator.evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
 var
   HO:THashObject;
@@ -614,7 +663,7 @@ end;
 
 function TEvaluator.Eval(node: TASTNode; env: TEnvironment): TEvalObject;
 var
-  val,enobj,index:TEvalObject;
+  val,index:TEvalObject;
   args:TList<TEvalObject>;
 begin
   Result := nil;
@@ -671,6 +720,17 @@ begin
       index := Eval(TASTIndexExpression(node).Index, env);
       if NOT isError(val) then
         Result := evalIndexExpression(val, index);
+    end;
+  end
+  else
+  if node is TASTPostfixExpression then
+  begin
+    Result := Eval(TASTPostfixExpression(node).Left, env);
+		if NOT isError(Result) then
+    begin
+  		Result := evalPostfixExpression(TASTPostfixExpression(node).Op, Result);
+      if NOT isError(Result) then
+        Result := assignExpression(TASTPostfixExpression(node).Left, Result, env);
     end;
   end
   else
@@ -787,7 +847,8 @@ begin
 
       if NOT isError(val) then
       begin
-
+        Result := assignExpression(TASTAssignExpression(node).Name, val, env);
+        (*
         if TASTAssignExpression(node).Name is TASTIdentifier then
           Result := env.SetValue(TASTIdentifier(TASTAssignExpression(node).Name).Value, val)
         else
@@ -811,6 +872,7 @@ begin
           end
           else Result := val;
         end;
+        *)
 
       end
       else Result := val;

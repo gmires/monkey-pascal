@@ -179,6 +179,12 @@ begin
       Describe(TASTInfixExpression(node).Right, N);
     end
     else
+    if node is TASTPostfixExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTPostfixExpression(node).Left, N);
+    end
+    else
     if node is TASTAssignExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
