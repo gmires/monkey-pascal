@@ -9,6 +9,7 @@ type
     Input:string;
     Position: Integer;
     ReadPosition: Integer;
+    Line: Integer;
     ch: Char;
     function  isLetter(value:char):Boolean;
     function  isDigit(value:char):Boolean;
@@ -34,6 +35,7 @@ begin
   Input:=AInput;
   Position:=0;
   ReadPosition:=1;
+  Line:=1;
   ReadChar;
 end;
 
@@ -53,125 +55,125 @@ begin
   SkipWhiteSpace;
   SkipComment;
   case ch of
-     #0 : Result := TToken.create(ttEOF, '');
+     #0 : Result := TToken.create(ttEOF, '', Line);
     '+' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttPLUSASSIGN, '+=');
+        Result := TToken.create(ttPLUSASSIGN, '+=', Line);
       end
       else
       if (PeekChar='+') then
       begin
         ReadChar;
-        Result := TToken.create(ttPLUSPLUS, '++');
+        Result := TToken.create(ttPLUSPLUS, '++', Line);
       end
-      else Result := TToken.create(ttPLUS, ch);
+      else Result := TToken.create(ttPLUS, ch, Line);
     end;
     '-' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttMINUSASSIGN, '-=');
+        Result := TToken.create(ttMINUSASSIGN, '-=', Line);
       end
       else
       if (PeekChar='-') then
       begin
         ReadChar;
-        Result := TToken.create(ttMINUSMINUS, '--');
+        Result := TToken.create(ttMINUSMINUS, '--', Line);
       end
-      else Result := TToken.create(ttMINUS, ch);
+      else Result := TToken.create(ttMINUS, ch, Line);
     end;
     '*' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttASTERISKASSIGN, '*=');
+        Result := TToken.create(ttASTERISKASSIGN, '*=', Line);
       end
       else
       if (PeekChar='*') then
       begin
         ReadChar;
-        Result := TToken.create(ttPOWER, '**');
+        Result := TToken.create(ttPOWER, '**', Line);
       end
-      else Result := TToken.create(ttASTERISK, ch);
+      else Result := TToken.create(ttASTERISK, ch, Line);
     end;
     '/' : begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttSLASHASSIGN, '/=');
+        Result := TToken.create(ttSLASHASSIGN, '/=', Line);
       end
-      else Result := TToken.create(ttSLASH, ch);
+      else Result := TToken.create(ttSLASH, ch, Line);
     end;
     ':' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttVARASSIGN, ':=');
+        Result := TToken.create(ttVARASSIGN, ':=', Line);
       end
-      else Result := TToken.create(ttCOLON, ch);
+      else Result := TToken.create(ttCOLON, ch, Line);
     end;
     '%' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttMODASSIGN, '%=');
+        Result := TToken.create(ttMODASSIGN, '%=', Line);
       end
-      else Result := TToken.create(ttMOD, ch);
+      else Result := TToken.create(ttMOD, ch, Line);
     end;
     '.' :
     begin
       if (PeekChar='.') then
       begin
         ReadChar;
-        Result := TToken.create(ttDOTDOT, '..');
+        Result := TToken.create(ttDOTDOT, '..', Line);
       end
-      else Result := TToken.create(ttDOT, ch);
+      else Result := TToken.create(ttDOT, ch, Line);
     end;
-    '(' : Result := TToken.create(ttLPAREN, ch);
-    ')' : Result := TToken.create(ttRPAREN, ch);
-    '{' : Result := TToken.create(ttLBRACE, ch);
-    '}' : Result := TToken.create(ttRBRACE, ch);
-    '[' : Result := TToken.create(ttLBRACKET, ch);
-    ']' : Result := TToken.create(ttRBRACKET, ch);
-    ';' : Result := TToken.create(ttSEMICOLON, ch);
-    ',' : Result := TToken.create(ttCOMMA, ch);
-    '?' : Result := TToken.create(ttQUESTION, ch);
+    '(' : Result := TToken.create(ttLPAREN, ch, Line);
+    ')' : Result := TToken.create(ttRPAREN, ch, Line);
+    '{' : Result := TToken.create(ttLBRACE, ch, Line);
+    '}' : Result := TToken.create(ttRBRACE, ch, Line);
+    '[' : Result := TToken.create(ttLBRACKET, ch, Line);
+    ']' : Result := TToken.create(ttRBRACKET, ch, Line);
+    ';' : Result := TToken.create(ttSEMICOLON, ch, Line);
+    ',' : Result := TToken.create(ttCOMMA, ch, Line);
+    '?' : Result := TToken.create(ttQUESTION, ch, Line);
     '=' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttEQ, '==');
+        Result := TToken.create(ttEQ, '==', Line);
       end
-      else Result := TToken.create(ttASSIGN, ch);
+      else Result := TToken.create(ttASSIGN, ch, Line);
     end;
     '!' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttBANG, '!=');
+        Result := TToken.create(ttBANG, '!=', Line);
       end
-      else Result := TToken.create(ttBANG, ch);
+      else Result := TToken.create(ttBANG, ch, Line);
     end;
     '"' :
     begin
       ReadChar;
-      Result := TToken.create(ttSTRING, ReadString);
+      Result := TToken.create(ttSTRING, ReadString, Line);
     end;
     '&' :
     begin
       if (PeekChar='&') then
       begin
         ReadChar;
-        Result := TToken.create(ttLOGICALAND, '&&');
+        Result := TToken.create(ttLOGICALAND, '&&', Line);
       end
     end;
     '|' :
@@ -179,7 +181,7 @@ begin
       if (PeekChar='|') then
       begin
         ReadChar;
-        Result := TToken.create(ttLOGICALOR, '||');
+        Result := TToken.create(ttLOGICALOR, '||', Line);
       end
     end;
     '<' :
@@ -187,35 +189,35 @@ begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttLE, '<=');
+        Result := TToken.create(ttLE, '<=', Line);
       end
-      else Result := TToken.create(ttLT, ch);
+      else Result := TToken.create(ttLT, ch, Line);
     end;
     '>' :
     begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttGE, '>=');
+        Result := TToken.create(ttGE, '>=', Line);
       end
-      else Result := TToken.create(ttGT, ch);
+      else Result := TToken.create(ttGT, ch, Line);
     end
   else
     if isDigit(ch) then
     begin
-      Result := TToken.create(ttNUMBER, ReadNumber);
+      Result := TToken.create(ttNUMBER, ReadNumber, Line);
       Exit;
     end
     else
     if isLetter(ch) then
     begin
-      Result :=  TToken.create(ttIDENT, ReadIdentifier);
+      Result :=  TToken.create(ttIDENT, ReadIdentifier, Line);
       Result.TokenType := LookupIdent(Result.Literal);
       Exit;
     end;
   end;
   if Result=nil then
-    Result := TToken.create(ttILLEGAL, '');
+    Result := TToken.create(ttILLEGAL, '', Line);
 
   ReadChar;
 end;
@@ -286,7 +288,13 @@ end;
 
 procedure TLexer.SkipWhiteSpace;
 begin
-  while CharInSet(ch, [' ', #13, #10, #8]) do ReadChar;
+  while CharInSet(ch, [' ', #13, #10, #8]) do
+  begin
+    if ((ch=#13) and (PeekChar=#10)) then
+      Inc(Line);
+
+    ReadChar;
+  end;
 end;
 
 end.

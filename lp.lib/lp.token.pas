@@ -72,17 +72,20 @@ type
     , ttPOWER // = "**"
     , ttMOD // = "%"
     , ttMODASSIGN // = "%="
+    , ttBREAK // = "%="
+    , ttCONTINUE // = "%="
   );
 
 
   TToken = class
   public
-    constructor create(ATokenType:TTokenType; ALiteral:string);
+    constructor create(ATokenType:TTokenType; ALiteral:string; ALine: Integer);
     function toString:string;
     function Clone:TToken;
   public
     TokenType:TTokenType;
     Literal:string;
+    Line:Integer;
   end;
 
 function LookupIdent(value:string): TTokenType;
@@ -160,6 +163,8 @@ const
     , 'POWER'
     , 'MOD'
     , 'MODASSIGN'
+    , 'BREAK'
+    , 'CONTINUE'
   );
 begin
   Result := TTypeStr[value];
@@ -169,13 +174,14 @@ end;
 
 function TToken.Clone: TToken;
 begin
-  Result := TToken.create(TokenType, Literal);
+  Result := TToken.create(TokenType, Literal, Line);
 end;
 
-constructor TToken.create(ATokenType: TTokenType; ALiteral: string);
+constructor TToken.create(ATokenType: TTokenType; ALiteral: string; ALine:Integer);
 begin
   TokenType := ATokenType;
   Literal := ALiteral;
+  Line := ALine;
 end;
 
 function TToken.toString: string;
@@ -203,6 +209,8 @@ begin
   keywords.Add('default', ttDEFAULT);
   keywords.Add('foreach', ttFOREACH);
   keywords.Add('in', ttIN);
+  keywords.Add('break', ttBREAK);
+  keywords.Add('continue', ttCONTINUE);
 end;
 
 procedure deinit;

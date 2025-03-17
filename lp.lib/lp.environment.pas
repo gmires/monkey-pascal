@@ -17,6 +17,11 @@ const
 	BUILTIN_OBJ      = 'BUILTIN';
 	ARRAY_OBJ        = 'ARRAY';
 	HASH_OBJ         = 'HASH';
+	LOOP_OBJ         = 'LOOP';
+
+const
+  LOOP_TYPE_BREAK  = 'break';
+  LOOP_TYPE_CONTINUE  = 'continue';
 
 type
   TEvalObject = class;
@@ -112,6 +117,16 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+  end;
+
+  TLoopObject = class(TEvalObject)
+  public
+    LoopType: string;
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create(ALoopType: string);
   end;
 
   TReturnValueObject = class(TEvalObject)
@@ -824,6 +839,28 @@ end;
 function THashObject.ObjectType: TEvalObjectType;
 begin
   Result := HASH_OBJ;
+end;
+
+{ TLoopObject }
+
+function TLoopObject.Clone: TEvalObject;
+begin
+  Result := TLoopObject.Create(LoopType);
+end;
+
+constructor TLoopObject.Create(ALoopType: string);
+begin
+  LoopType := ALoopType;
+end;
+
+function TLoopObject.Inspect: string;
+begin
+  Result := 'Loop Object ' + LoopType;
+end;
+
+function TLoopObject.ObjectType: TEvalObjectType;
+begin
+  Result := LOOP_OBJ;
 end;
 
 end.

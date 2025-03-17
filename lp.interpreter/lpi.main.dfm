@@ -150,6 +150,7 @@ object LPMain: TLPMain
         Height = 135
         Align = alBottom
         ItemHeight = 13
+        PopupMenu = pmLog
         TabOrder = 1
       end
     end
@@ -193,6 +194,14 @@ object LPMain: TLPMain
         ExplicitWidth = 121
         ExplicitHeight = 97
       end
+    end
+  end
+  object pmLog: TPopupMenu
+    Left = 872
+    Top = 688
+    object MnuClearLog: TMenuItem
+      Caption = 'Clear Log'
+      OnClick = MnuClearLogClick
     end
   end
 end

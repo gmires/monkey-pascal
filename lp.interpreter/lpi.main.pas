@@ -7,7 +7,8 @@ uses
   Dialogs, xmldom, XMLIntf, msxmldom, XMLDoc, ComCtrls, StdCtrls
 
   ,Generics.Collections, ExtCtrls
-  ,lp.lexer, lp.token, lp.parser, lp.environment , lp.evaluator, lp.builtins
+  ,lp.lexer, lp.token, lp.parser, lp.environment , lp.evaluator, lp.builtins,
+  Menus
   ;
 
 
@@ -26,9 +27,12 @@ type
     TVAST: TTreeView;
     Label3: TLabel;
     SplitLog: TSplitter;
+    pmLog: TPopupMenu;
+    MnuClearLog: TMenuItem;
     procedure BtnDescribeClick(Sender: TObject);
     procedure BtnRunClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure MnuClearLogClick(Sender: TObject);
   private
     { Private declarations }
     procedure Describe(node: TASTNode; SParent:TTreeNode);
@@ -294,6 +298,7 @@ begin
     or (node is TASTBoolean)
     or (node is TASTIdentifier)
     or (node is TASTNullLiteral)
+    or (node is TASTLoopStatement)
     then
       TVAST.Items.AddChild(SParent, node.toString);
   end;
@@ -304,6 +309,11 @@ procedure TLPMain.FormCreate(Sender: TObject);
 begin
   pcMain.TabIndex := 0;
   MLog:= List;
+end;
+
+procedure TLPMain.MnuClearLogClick(Sender: TObject);
+begin
+  MLog.Clear;
 end;
 
 procedure init;

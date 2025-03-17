@@ -223,6 +223,14 @@ type
     destructor Destroy; override;
   end;
 
+  TASTLoopStatement = class(TASTStatement)
+  public
+    LoopType: String;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+  end;
+
   TASTBlockStatement = class(TASTStatement)
     FStatements:TList<TASTStatement>;
     function toString:string; override;
@@ -365,6 +373,7 @@ type
     function ParseConstStatement: TASTConstStatement;
     function ParseImportStatement: TASTImportStatement;
     function ParseReturnStatement: TASTReturnStatement;
+    function ParseLoopStatement: TASTLoopStatement;
     function ParseBlockStatement: TASTBlockStatement;
     // ---------
     function ParseExpression(APrecedence:TEXPrecedence): TASTExpression;
@@ -538,7 +547,7 @@ begin
   if Result then
     nextToken
   else
-    AddError('Error Token : ' + PeekToken.toString  + ', expected : ' + TokenTypeToStr(TType));
+    AddError('Error Token : ' + PeekToken.toString  + ', expected : ' + TokenTypeToStr(TType) + ', line = ' + IntToStr(PeekToken.Line));
 end;
 
 procedure TParser.nextToken;
@@ -593,6 +602,16 @@ begin
   Result := TASTBoolean.Create;
   Result.Token := CurrToken.Clone;
   TASTBoolean(Result).Value:= (CurrToken.TokenType = ttTRUE);
+end;
+
+function TParser.ParseLoopStatement: TASTLoopStatement;
+begin
+  Result := TASTLoopStatement.Create;
+  Result.Token := CurrToken.Clone;
+  Result.LoopType := CurrToken.Literal;
+
+  if peekTokenIs(ttSEMICOLON) then
+    nextToken;
 end;
 
 (*
@@ -1041,6 +1060,9 @@ begin
 
   Result.ReturnValue := ParseExpression(LOWEST);
 
+  if NOT Assigned(Result.ReturnValue) then
+    Result.ReturnValue := TASTNullLiteral.Create;
+
   if peekTokenIs(ttSEMICOLON) then
     nextToken;
 end;
@@ -1056,6 +1078,9 @@ begin
       Result := ParseReturnStatement;
     ttIMPORT:
       Result := ParseImportStatement;
+    ttBREAK,
+    ttCONTINUE:
+      Result := ParseLoopStatement;
   else
     Result := ParseExpressionStatement;
   end;
@@ -1998,6 +2023,19 @@ end;
 function TASTForEachExpression.toString: string;
 begin
   Result := 'foreach';
+end;
+
+{ TASTLoopStatement }
+
+function TASTLoopStatement.Clone: TASTNode;
+begin
+  Result := TASTLoopStatement.Create;
+  TASTLoopStatement(Result).LoopType := LoopType;
+end;
+
+function TASTLoopStatement.toString: string;
+begin
+  Result := 'Loop stmt (' + LoopType + ')';
 end;
 
 end.

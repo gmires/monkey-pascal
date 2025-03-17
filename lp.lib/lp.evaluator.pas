@@ -34,6 +34,7 @@ type
     FGCCounter: Word;
     FGarbageCollector:TGarbageCollector;
     FFunctEnv: TList<TEnvironment>;
+    FModules: TStringList;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
     function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
     function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
@@ -155,7 +156,9 @@ begin
         FGCCounter := 0;
       end;
 
-      if (Result.ObjectType = RETURN_VALUE_OBJ) or (Result.ObjectType = ERROR_OBJ) then
+      if (Result.ObjectType = RETURN_VALUE_OBJ)
+      or (Result.ObjectType = ERROR_OBJ)
+      or (Result.ObjectType = LOOP_OBJ) then
         Break;
     end;
   end;
@@ -407,14 +410,28 @@ function TEvaluator.evalWhileExpression(node:TASTWhileExpression; env :TEnvironm
 begin
   Result := nil;
   while isTruthyWithError(Eval(TASTWhileExpression(node).Condition, env), Result) do
-    Result := Eval(TASTWhileExpression(node).Body, env)
+  begin
+    Result := Eval(TASTWhileExpression(node).Body, env);
+    if Assigned(Result) then
+      if isError(Result) then
+        Break
+      else
+      if ((Result.ObjectType=RETURN_VALUE_OBJ) and isError(TReturnValueObject(Result).Value)) then
+      begin
+        Result := TReturnValueObject(Result).Value;
+        Break;
+      end
+      else
+      if ((Result.ObjectType=LOOP_OBJ) and (TLoopObject(Result).LoopType=LOOP_TYPE_BREAK)) then
+        Break;
+  end;
 end;
 
 function TEvaluator.evalForEachExpression(node: TASTForEachExpression;  env: TEnvironment): TEvalObject;
 var
   iterable,
   current,
-  index, ret:TEvalObject;
+  ret:TEvalObject;
   FEachEnv:TEnvironment;
   L:TStringList;
 begin
@@ -457,7 +474,10 @@ begin
           begin
             Result := TReturnValueObject(ret).Value;
             Break;
-          end;
+          end
+          else
+          if ((ret.ObjectType=LOOP_OBJ) and (TLoopObject(ret).LoopType=LOOP_TYPE_BREAK)) then
+            Break;
 
         current := iterable.Next;
       end;
@@ -473,6 +493,19 @@ begin
   while isTruthyWithError(Eval(TASTForExpression(node).Condition, env), Result) do
   begin
     Result := Eval(TASTForExpression(node).Body, env);
+    if Assigned(Result) then
+      if isError(Result) then
+        Break
+      else
+      if ((Result.ObjectType=RETURN_VALUE_OBJ) and isError(TReturnValueObject(Result).Value)) then
+      begin
+        Result := TReturnValueObject(Result).Value;
+        Break;
+      end
+      else
+      if ((Result.ObjectType=LOOP_OBJ) and (TLoopObject(Result).LoopType=LOOP_TYPE_BREAK)) then
+        Break;
+
     Eval(TASTForExpression(node).Expression, env);
   end;
 end;
@@ -657,6 +690,7 @@ begin
   FGCCounter := 0;
   FGarbageCollector:= TGarbageCollector.Create;
   FFunctEnv := TList<TEnvironment>.Create;
+  FModules := TStringList.Create;
 end;
 
 function TEvaluator.CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
@@ -682,6 +716,7 @@ begin
     current.Free;
 
   FFunctEnv.Free;
+  FModules.Free;
   inherited;
 end;
 
@@ -786,6 +821,12 @@ begin
     FGarbageCollector.Add(Result);
   end
   else
+  if node is TASTLoopStatement then
+  begin
+    Result := TLoopObject.Create(TASTLoopStatement(node).LoopType);
+    FGarbageCollector.Add(Result);
+  end
+  else
   if node is TASTArrayLiteral then
   begin
     Result := TArrayObject.Create;
@@ -877,9 +918,11 @@ begin
   if node is TASTImportStatement then
   begin
     if builtedmodule.ContainsKey(TASTImportStatement(node).Module) then
-      Result := Eval(builtedmodule[TASTImportStatement(node).Module], env)
-    else
-      Result := CreateErrorObj('nmodule %s not found.',[TASTImportStatement(node).Module]);
+    begin
+      if (FModules.IndexOf(TASTImportStatement(node).Module)<0) then
+        Result := Eval(builtedmodule[TASTImportStatement(node).Module], env)
+    end
+    else Result := CreateErrorObj('nmodule %s not found.',[TASTImportStatement(node).Module]);
   end
   else
   if node is TASTConstStatement then

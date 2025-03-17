@@ -46,6 +46,32 @@ foreach i,v in "string" {
 
 ```
 
+# Loop Control
+```
+let i = 0;
+for(i<10; i++){
+  if (i>5) { break; };
+  println(i);
+};
+
+let i = 0;
+for(i<10; i++){
+  if (i==5) { continue; };
+  println(i);
+};
+
+foreach v in [1,2,3,4,5,6,"aaaa",8,9] {
+  if (v=3) {
+    continue;
+  } else {
+    if (typeof(v)="STRING"){
+      break;
+    };
+  };
+};
+
+```
+
 # Conditional if and switch and Ternary Operator (?)
 ```
 if (a<b){
