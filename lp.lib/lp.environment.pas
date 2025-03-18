@@ -269,6 +269,9 @@ begin
   if (method='type') then
     Result := TStringObject.Create(ObjectType)
   else
+  if (method='clone') then
+    Result := Clone
+  else
     Result := TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
 end;
 
@@ -863,7 +866,7 @@ begin
     else
     begin
       Result := Clone;
-      TArrayObject(Result).Elements.Add(args[1]);
+      TArrayObject(Result).Elements.Add(args[0]);
     end;
   end
   else

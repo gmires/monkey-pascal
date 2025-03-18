@@ -36,7 +36,31 @@ end;
 
 const
   M_COUNT = 1;
-  M_ARRAY =' /* MODULE ARRAY BUILTIN */'
+  M_STDLIB =' /* MODULE (STDLIB) */ '
+   +' '+
+   +' function ARRAY.concat = fn(x){ '
+   +'   let r = self.clone(); '
+   +'   if (x.type()=="ARRAY"){ '
+   +'     foreach v in x { '
+   +'       if(v.type()=="ARRAY"){ '
+   +'         foreach k in v { '
+   +'           r := r.push(k); '
+   +'         } '
+   +'       } else { '
+   +'         r := r.push(v); '
+   +'       }; '
+   +'     }; '
+   +'   } else { '
+   +'     r := r.push(x); '
+   +'   } '
+   +'   return r; '
+   +' };'
+   +'   '
+   ;
+
+(*
+
+  ' /* MODULE ARRAY BUILTIN */'
     +'let arrayFilter = fn(x, f) { '
     +'   let r = []; '
     +'   let i = 0; '
@@ -99,10 +123,12 @@ const
     +'  }; '
     +'}; '
     ;
+*)
 var
   MODULES: Array[0..M_COUNT-1, 0..1] of string = (
-    ('array',M_ARRAY)
+    ('stdlib', M_STDLIB)
   );
+
 
 procedure init;
 var
@@ -127,7 +153,6 @@ begin
       L.Free;
     end;
   end;
-
 end;
 
 initialization

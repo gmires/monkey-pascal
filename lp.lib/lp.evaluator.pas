@@ -179,7 +179,10 @@ end;
 function TEvaluator.evalMethodCallExpression(node: TASTMethodCallExpression; env: TEnvironment): TEvalObject;
 var
   args:TList<TEvalObject>;
+  fn:TEvalObject;
+  FEnv:TEnvironment;
 begin
+  fn:=nil;
   Result:= Eval(node.Objc, env);
   if NOT isError(Result) then
   begin
@@ -191,8 +194,24 @@ begin
           Result := args[0]
         else
         begin
-          Result := Result.MethodCall((TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, args, env);
-          FGarbageCollector.Add(Result);
+          if env.GetValue(Result.ObjectType+'.'+(TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, fn) then
+          begin
+            if (fn is TFunctionObject) then
+            begin
+              FEnv := extendFunctionEnv(fn as TFunctionObject, args);
+              FEnv.SetOrCreateValue('self', Result, false);
+              Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
+              Gc.Mark(FEnv);
+              if FFunctEnv.IndexOf(FEnv)<0 then
+                FFunctEnv.Add(FEnv);
+            end
+            else CreateErrorObj('error call object method on %s',[Result.ObjectType]);
+          end
+          else
+          begin
+            Result := Result.MethodCall((TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, args, env);
+            FGarbageCollector.Add(Result);
+          end;
         end;
       finally
         args.Free;
@@ -1000,6 +1019,13 @@ begin
   else
   if node is TASTMethodCallExpression then
     Result := evalMethodCallExpression(node as TASTMethodCallExpression, env)
+  else
+  if node is TASTFunctionDefineStatement then
+  begin
+    Result := Eval(TASTFunctionDefineStatement(node).Funct, env);
+    if NOT isError(Result) then
+      Result := env.SetOrCreateValue(TASTFunctionDefineStatement(node).Indent, Result, True);
+  end
   else
   if node is TASTFunctionLiteral then
   begin

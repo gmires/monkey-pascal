@@ -74,6 +74,7 @@ type
     , ttMODASSIGN // = "%="
     , ttBREAK // = "%="
     , ttCONTINUE // = "%="
+    , ttFUNCTION_DEFINE // = "%="
   );
 
 
@@ -165,6 +166,7 @@ const
     , 'MODASSIGN'
     , 'BREAK'
     , 'CONTINUE'
+    , 'FUNCTION_DEFINE'
   );
 begin
   Result := TTypeStr[value];
@@ -211,6 +213,7 @@ begin
   keywords.Add('in', ttIN);
   keywords.Add('break', ttBREAK);
   keywords.Add('continue', ttCONTINUE);
+  keywords.Add('function', ttFUNCTION_DEFINE);
 end;
 
 procedure deinit;

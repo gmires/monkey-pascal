@@ -260,6 +260,12 @@ begin
       Describe(TASTMethodCallExpression(node).Call, N);
     end
     else
+    if node is TASTFunctionDefineStatement then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTFunctionDefineStatement(node).Funct, N);
+    end
+    else
     if node is TASTCallExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
