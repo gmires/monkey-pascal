@@ -253,6 +253,13 @@ begin
       Describe(TASTForEachExpression(node).Body, N);
     end
     else
+    if node is TASTMethodCallExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTMethodCallExpression(node).Objc, N);
+      Describe(TASTMethodCallExpression(node).Call, N);
+    end
+    else
     if node is TASTCallExpression then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);

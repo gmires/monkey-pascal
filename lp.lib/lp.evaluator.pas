@@ -58,6 +58,7 @@ type
     function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
     function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
     function evalIndexExpression(left, index:TEvalObject):TEvalObject;
+    function evalMethodCallExpression(node:TASTMethodCallExpression; env: TEnvironment):TEvalObject;
     function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
     function unwrapReturnValue(obj:TEvalObject):TEvalObject;
     function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
@@ -80,7 +81,7 @@ type
 
 var
   builtins: TDictionary<string,TBuiltinObject>;
-  builtedmodule: TDictionary<string,TASTProgram>;
+  builtedmodules: TDictionary<string,TASTProgram>;
 
 implementation
 
@@ -173,6 +174,32 @@ begin
     Result := TBooleanObject.Create(NOT TBooleanObject(right).Value)
   else
     Result :=  TBooleanObject.Create(False);
+end;
+
+function TEvaluator.evalMethodCallExpression(node: TASTMethodCallExpression; env: TEnvironment): TEvalObject;
+var
+  args:TList<TEvalObject>;
+begin
+  Result:= Eval(node.Objc, env);
+  if NOT isError(Result) then
+  begin
+    if (node.Call is TASTCallExpression) then
+    begin
+      args:= evalExpressions(TASTCallExpression(node.Call).Args, env);
+      try
+        if ((args.Count=1) and (isError(args[0]))) then
+          Result := args[0]
+        else
+        begin
+          Result := Result.MethodCall((TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, args, env);
+          FGarbageCollector.Add(Result);
+        end;
+      finally
+        args.Free;
+      end;
+    end
+    else Result := CreateErrorObj('Type of Expression error ',[Result.ObjectType]);
+  end;
 end;
 
 function TEvaluator.evalMinusPrefixOperatorExpression(right: TEvalObject): TEvalObject;
@@ -917,10 +944,10 @@ begin
   else
   if node is TASTImportStatement then
   begin
-    if builtedmodule.ContainsKey(TASTImportStatement(node).Module) then
+    if builtedmodules.ContainsKey(TASTImportStatement(node).Module) then
     begin
       if (FModules.IndexOf(TASTImportStatement(node).Module)<0) then
-        Result := Eval(builtedmodule[TASTImportStatement(node).Module], env)
+        Result := Eval(builtedmodules[TASTImportStatement(node).Module], env)
     end
     else Result := CreateErrorObj('nmodule %s not found.',[TASTImportStatement(node).Module]);
   end
@@ -940,29 +967,6 @@ begin
     begin
       if TASTLetStatement(node).Name is TASTIdentifier then
         Result := env.SetOrCreateValue(TASTIdentifier(TASTLetStatement(node).Name).Value, val, False);
-  {
-      else
-      if TASTLetStatement(node).Name is TASTIndexExpression then
-      begin
-        enobj := Eval(TASTIndexExpression(TASTLetStatement(node).Name).Left, env);
-        if NOT isError(val) then
-        begin
-          index := Eval(TASTIndexExpression(TASTLetStatement(node).Name).Index, env);
-          if NOT isError(val) then
-          begin
-            if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
-              Result := assignArrayIndexExpression(enobj, index, val)
-            else
-            if (enobj.ObjectType=HASH_OBJ) then
-              Result := assignHashIndexExpression(enobj, index, val)
-            else
-              Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]);
-          end
-          else Result := val;
-        end
-        else Result := val;
-      end;
-}
     end
     else Result := val;
   end
@@ -984,32 +988,6 @@ begin
       if NOT isError(val) then
       begin
         Result := assignExpression(TASTAssignExpression(node).Name, val, env);
-        (*
-        if TASTAssignExpression(node).Name is TASTIdentifier then
-          Result := env.SetValue(TASTIdentifier(TASTAssignExpression(node).Name).Value, val)
-        else
-        if TASTAssignExpression(node).Name is TASTIndexExpression then
-        begin
-          enobj := Eval(TASTIndexExpression(TASTAssignExpression(node).Name).Left, env);
-          if NOT isError(val) then
-          begin
-            index := Eval(TASTIndexExpression(TASTAssignExpression(node).Name).Index, env);
-            if NOT isError(val) then
-            begin
-              if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
-                Result := assignArrayIndexExpression(enobj, index, val)
-              else
-              if (enobj.ObjectType=HASH_OBJ) then
-                Result := assignHashIndexExpression(enobj, index, val)
-              else
-                Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]);
-            end
-            else Result := val;
-          end
-          else Result := val;
-        end;
-        *)
-
       end
       else Result := val;
 
@@ -1019,6 +997,9 @@ begin
   else
   if node is TASTIdentifier then
     Result := evalIdentifier(node as TASTIdentifier, env)
+  else
+  if node is TASTMethodCallExpression then
+    Result := evalMethodCallExpression(node as TASTMethodCallExpression, env)
   else
   if node is TASTFunctionLiteral then
   begin
@@ -1247,13 +1228,13 @@ end;
 procedure init;
 begin
   builtins := TDictionary<string,TBuiltinObject>.Create;
-  builtedmodule := TDictionary<string,TASTProgram>.Create;
+  builtedmodules := TDictionary<string,TASTProgram>.Create;
 end;
 
 procedure deinit;
 begin
   builtins.Free;
-  builtedmodule.Free;
+  builtedmodules.Free;
 end;
 
 initialization
