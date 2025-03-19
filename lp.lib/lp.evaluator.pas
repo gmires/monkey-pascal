@@ -73,6 +73,7 @@ type
     constructor Create;
     destructor Destroy; override;
 
+    function  Run(node: TASTNode; env: TEnvironment): TEvalObject;
     function  Eval(node: TASTNode; env: TEnvironment): TEvalObject;
     procedure Sweep(env: TEnvironment);
 
@@ -179,13 +180,14 @@ end;
 function TEvaluator.evalMethodCallExpression(node: TASTMethodCallExpression; env: TEnvironment): TEvalObject;
 var
   args:TList<TEvalObject>;
-  fn:TEvalObject;
+  ObjCall:TEvalObject;
   FEnv:TEnvironment;
+  method:string;
 begin
-  fn:=nil;
   Result:= Eval(node.Objc, env);
   if NOT isError(Result) then
   begin
+    ObjCall:= Result;
     if (node.Call is TASTCallExpression) then
     begin
       args:= evalExpressions(TASTCallExpression(node.Call).Args, env);
@@ -194,6 +196,25 @@ begin
           Result := args[0]
         else
         begin
+          method := (TASTCallExpression(node.Call).Funct as TASTIdentifier).Value;
+          Result := Result.MethodCall(method, args, env);
+          if (Result is TFunctionObject) then
+          begin
+            FEnv := extendFunctionEnv(Result as TFunctionObject, args);
+            FEnv.SetOrCreateValue('self', ObjCall, false);
+            Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
+            Gc.Mark(FEnv);
+            if FFunctEnv.IndexOf(FEnv)<0 then
+              FFunctEnv.Add(FEnv);
+          end
+          else
+          if Result=nil then
+            Result := CreateErrorObj('Error call object method <%s> on <%s>', [method, ObjCall.ObjectType])
+          else
+            FGarbageCollector.Add(Result);
+
+
+          {
           if env.GetValue(Result.ObjectType+'.'+(TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, fn) then
           begin
             if (fn is TFunctionObject) then
@@ -212,6 +233,7 @@ begin
             Result := Result.MethodCall((TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, args, env);
             FGarbageCollector.Add(Result);
           end;
+          }
         end;
       finally
         args.Free;
@@ -784,6 +806,20 @@ begin
   Result := TEnvironment.Create(fn.Env);
   for i := 0 to fn.Parameters.Count-1 do
     Result.SetOrCreateValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone), False);
+end;
+
+function TEvaluator.Run(node: TASTNode; env: TEnvironment): TEvalObject;
+var
+  sModule:string;
+begin
+  for sModule in builtedmodules.Keys do
+    if (FModules.IndexOf(sModule)<0) then
+    begin
+      Result := Eval(builtedmodules[sModule], env);
+      FModules.Add(sModule);
+    end;
+
+  Result := Eval(node, env);
 end;
 
 procedure TEvaluator.Sweep(env: TEnvironment);

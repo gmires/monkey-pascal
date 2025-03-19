@@ -56,6 +56,7 @@ type
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
+    function MethodInline(method:string; env: TEnvironment):TEvalObject; virtual;
 
     function  isIterable:Boolean; virtual;
     function  Next:TEvalObject; virtual;
@@ -272,7 +273,16 @@ begin
   if (method='clone') then
     Result := Clone
   else
-    Result := TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
+    Result := MethodInline(ObjectType+'.'+method, env);
+
+  if Result=nil then
+    TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
+end;
+
+function TEvalObject.MethodInline(method: string; env: TEnvironment): TEvalObject;
+begin
+  Result:= nil;
+  env.GetValue(method, Result);
 end;
 
 function TEvalObject.Next: TEvalObject;
@@ -320,7 +330,10 @@ begin
     else
       Result := TStringObject.Create(FormatFloat(TStringObject(args[0]).Value, Value));
   end
-  else Result := inherited MethodCall(method, args, env);
+  else Result := MethodInline(ObjectType+'.'+method, env);
+
+  if (Result=nil) then
+    Result := inherited MethodCall(method, args, env);
 end;
 
 function TNumberObject.ObjectType: TEvalObjectType;
@@ -711,7 +724,10 @@ begin
       end;
     end;
   end
-  else Result := inherited MethodCall(method, args, env);
+  else Result := MethodInline(ObjectType+'.'+method, env);
+
+  if (Result=nil) then
+    Result := inherited MethodCall(method, args, env);
 end;
 
 function TStringObject.Next: TEvalObject;
@@ -930,7 +946,10 @@ begin
           TArrayObject(Result).Elements.Add(Elements[i].Clone);
     end;
   end
-  else Result := inherited MethodCall(method, args, env);
+  else Result := MethodInline(ObjectType+'.'+method, env);
+
+  if (Result=nil) then
+    Result := inherited MethodCall(method, args, env);
 end;
 
 function TArrayObject.Next: TEvalObject;
@@ -1123,7 +1142,10 @@ begin
       end;
     end;
   end
-  else Result := inherited MethodCall(method, args, env);
+  else Result := MethodInline(ObjectType+'.'+method, env);
+
+  if (Result=nil) then
+    Result := inherited MethodCall(method, args, env);
 end;
 
 function THashObject.Next: TEvalObject;

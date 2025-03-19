@@ -106,7 +106,7 @@ begin
             List.Items.AddStrings(P.Errors)
           else
           begin
-            O := Ev.Eval(Prg, E);
+            O := Ev.Run(Prg, E);
             if O<>nil then
               List.Items.Add(O.Inspect)
           end;
