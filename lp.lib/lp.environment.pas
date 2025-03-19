@@ -67,6 +67,7 @@ type
     GcNext:TEvalObject;
     GcMark:Boolean;
     constructor Create;
+    destructor Destroy; override;
   end;
 
   THashkey = class
@@ -252,6 +253,12 @@ begin
   Result := nil;
 end;
 
+destructor TEvalObject.Destroy;
+begin
+    //
+  inherited;
+end;
+
 function TEvalObject.Inspect: string;
 begin
   Result := '';
@@ -406,8 +413,6 @@ end;
 
 destructor TReturnValueObject.Destroy;
 begin
-{  if (Value<>nil) then
-    FreeAndNil(Value);}
   inherited;
 end;
 
@@ -793,16 +798,7 @@ begin
 end;
 
 destructor TArrayObject.Destroy;
-//var
-//  i : Integer;
 begin
-{
-  for i := 0 to Elements.Count-1 do
-  begin
-    Elements[i].Free;
-    Elements[i]:=nil;
-  end;
-}
   Elements.Clear;
   FreeAndNil(Elements);
   inherited;
@@ -844,7 +840,7 @@ begin
       Result := TErrorObject.newError('wrong number of arguments. got=%d, want=0', [args.Count])
     else
     if Elements.Count>0 then
-      Result := Elements[0]
+      Result := Elements[0].Clone
     else
       Result := TNullObject.Create;
   end
@@ -855,7 +851,7 @@ begin
       Result := TErrorObject.newError('wrong number of arguments. got=%d, want=0', [args.Count])
     else
     if Elements.Count>0 then
-      Result := Elements[Elements.Count-1]
+      Result := Elements[Elements.Count-1].Clone
     else
       Result := TNullObject.Create;
   end
@@ -882,7 +878,7 @@ begin
     else
     begin
       Result := Clone;
-      TArrayObject(Result).Elements.Add(args[0]);
+      TArrayObject(Result).Elements.Add(args[0].Clone);
     end;
   end
   else
@@ -901,7 +897,7 @@ begin
       else
       begin
         Result := Clone;
-        TArrayObject(Result).Elements.Insert(i, args[0]);
+        TArrayObject(Result).Elements.Insert(i, args[0].Clone);
       end;
     end;
   end
@@ -1060,8 +1056,6 @@ begin
   begin
     Pairs[hkey].Free;
     hkey.Free;
-    //Pairs[hkey].Key.Free;
-    //Pairs[hkey].Value.Free;
   end;
   Pairs.Clear;
   FreeAndNil(Pairs);

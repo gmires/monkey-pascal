@@ -2,7 +2,7 @@ unit lp.evaluator;
 
 interface
 
-uses classes, SysUtils, Generics.Collections, Variants, Math
+uses classes, SysUtils, Generics.Collections, Variants, Math, SyncObjs
 
   , lp.environment
   , lp.parser;
@@ -11,6 +11,7 @@ type
   TGarbageCollector = class
     // -- FHead: TEvalObject;
     // -- FElemCount: Integer;
+    FLock: TCriticalSection;
     FObjects: TList<TEvalObject>;
     FTrashObjects: TList<TEvalObject>;
     function GetElemCount: Integer;
@@ -155,6 +156,7 @@ begin
       begin
         FGarbageCollector.Mark(env);
         FGarbageCollector.Sweep;
+        // -- FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
         FGCCounter := 0;
       end;
 
@@ -815,7 +817,7 @@ begin
   for sModule in builtedmodules.Keys do
     if (FModules.IndexOf(sModule)<0) then
     begin
-      Result := Eval(builtedmodules[sModule], env);
+      Eval(builtedmodules[sModule], env);
       FModules.Add(sModule);
     end;
 
@@ -1097,8 +1099,13 @@ begin
   Result := AObject;
   if Assigned(AObject) then
   begin
-    if FObjects.IndexOf(AObject)<0 then
-      FObjects.Add(AObject);
+    FLock.Acquire;
+    try
+      if FObjects.IndexOf(AObject)<0 then
+        FObjects.Add(AObject);
+    finally
+      FLock.Release;
+    end;
 
     if AObject.ObjectType=ARRAY_OBJ then
     begin
@@ -1126,6 +1133,7 @@ end;
 
 constructor TGarbageCollector.Create;
 begin
+  FLock:= TCriticalSection.Create;
   FObjects:= TList<TEvalObject>.Create;
   FTrashObjects:= TList<TEvalObject>.Create;
 {  FElemCount := 0;
@@ -1135,32 +1143,58 @@ end;
 destructor TGarbageCollector.Destroy;
 var
   i: Integer;
+  P: Pointer;
 begin
-  for i := 0 to FObjects.Count-1 do
+  P:=nil;
+  FLock.Acquire;
   try
-    FObjects[i].Free;
-  except
-    Continue;
+    FObjects.Sort;
+    for i := 0 to FObjects.Count-1 do
+    try
+      if P<>FObjects[i] then
+      begin
+        P:=FObjects[i];
+        FObjects[i].Free;
+      end;
+
+    except
+      Continue;
+    end;
+    FObjects.Clear;
+  finally
+    FLock.Release;
   end;
-  FObjects.Clear;
 
   FreeAndNil(FTrashObjects);
   FreeAndNil(FObjects);
+  FreeAndNil(FLock);
   inherited;
 end;
 
 procedure TGarbageCollector.EmptyTrash;
 var
   i: Integer;
+  P: Pointer;
 begin
-  for i := 0 to FTrashObjects.Count-1 do
+  P:=nil;
+  FLock.Acquire;
   try
-    FTrashObjects[i].Free;
-  except
-    Continue;
-  end;
+    FTrashObjects.Sort;
+    for i := 0 to FTrashObjects.Count-1 do
+    try
+      if (P<>FTrashObjects[i]) then
+      begin
+        P:=FTrashObjects[i];
+        FTrashObjects[i].Free;
+      end;
+    except
+      Continue;
+    end;
 
-  FTrashObjects.Clear;
+    FTrashObjects.Clear;
+  finally
+    FLock.Release;
+  end;
 end;
 
 function TGarbageCollector.GetElemCount: Integer;
@@ -1220,9 +1254,14 @@ var
 //  node,tmp: TEvalObject;
   i:Integer;
 begin
-  i:= FObjects.IndexOf(AObject);
-  if i>=0 then
-    FObjects.Remove(AObject);
+  FLock.Acquire;
+  try
+    i:= FObjects.IndexOf(AObject);
+    if i>=0 then
+      FObjects.Remove(AObject);
+  finally
+    FLock.Release
+  end;
 
 
 {
@@ -1250,16 +1289,20 @@ var
 //  node, tmp: TEvalObject;
   i:Integer;
 begin
+  FLock.Acquire;
+  try
+    for i := FObjects.Count-1 downto 0 do
+      if NOT FObjects[i].GcMark then
+      begin
+        FTrashObjects.Add(FObjects[i]);
+        FObjects.Remove(FObjects[i]);
+      end;
 
-  for i := FObjects.Count-1 downto 0 do
-    if NOT FObjects[i].GcMark then
-    begin
-      FTrashObjects.Add(FObjects[i]);
-      FObjects.Remove(FObjects[i]);
-    end;
-
-  for i := 0 to FObjects.Count-1 do
-    FObjects[i].GcMark := False;
+    for i := 0 to FObjects.Count-1 do
+      FObjects[i].GcMark := False;
+  finally
+    FLock.Release;
+  end;
 
 
 {
