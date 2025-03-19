@@ -344,6 +344,28 @@ type
     destructor Destroy; override;
   end;
 
+  TASTMethodCallExpression = class(TASTExpression)
+    Objc:TASTExpression;
+    Call:TASTExpression;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  TASTFunctionDefineStatement = class(TASTStatement)
+  public
+    Indent:String;
+    Funct: TASTExpression;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+
   TParsePrefixExpression = function:TASTExpression of object;
   TParseInfixExpression = function(AExpression:TASTExpression):TASTExpression of object;
   TParsePostfixExpression = function(AExpression:TASTExpression):TASTExpression of object;
@@ -375,6 +397,7 @@ type
     function ParseReturnStatement: TASTReturnStatement;
     function ParseLoopStatement: TASTLoopStatement;
     function ParseBlockStatement: TASTBlockStatement;
+    function ParseFunctionDefineStatement: TASTFunctionDefineStatement;
     // ---------
     function ParseExpression(APrecedence:TEXPrecedence): TASTExpression;
     function ParseNumberLiteral:TASTExpression;
@@ -400,6 +423,7 @@ type
     function ParseFunctionParameters:TList<TASTIdentifier>;
     function ParseCallExpression(funct:TASTExpression):TASTExpression;
     function ParseAssignExpression(left:TASTExpression):TASTExpression;
+    function ParseMethodCallExpression(ObjcRef:TASTExpression):TASTExpression;
 //    function ParseCallArguments:TList<TASTExpression>;
     // -----------
   public
@@ -448,6 +472,7 @@ begin
   Precedences.Add(ttASTERISKASSIGN, PRODUCT);
   Precedences.Add(ttLPAREN, CALL);
   Precedences.Add(ttVARASSIGN, CALL);
+  Precedences.Add(ttDOT, CALL);
   Precedences.Add(ttLBRACKET, INDEX);
   Precedences.Add(ttLOGICALAND, LOGICAL);
   Precedences.Add(ttLOGICALOR, LOGICAL);
@@ -500,6 +525,7 @@ begin
 	InfixFuncts.Add(ttDOTDOT, ParseInfixExpression);
 	InfixFuncts.Add(ttPOWER, ParseInfixExpression);
 	InfixFuncts.Add(ttMOD, ParseInfixExpression);
+	InfixFuncts.Add(ttDOT, ParseMethodCallExpression);
 
   PostfixFuncts := TDictionary<TTokenType,TParsePostfixExpression>.Create;
 	PostfixFuncts.Add(ttPLUSPLUS, ParsePostfixExpression);
@@ -612,6 +638,28 @@ begin
 
   if peekTokenIs(ttSEMICOLON) then
     nextToken;
+end;
+
+function TParser.ParseMethodCallExpression(ObjcRef: TASTExpression): TASTExpression;
+var
+  Ident:TASTExpression;
+begin
+   Result := TASTMethodCallExpression.Create;
+   Result.Token := CurrToken.Clone;
+   TASTMethodCallExpression(Result).Objc := ObjcRef;
+   nextToken;
+
+   Ident := ParseIdentifier;
+   if peekTokenIs(ttLPAREN) then
+   begin
+     nextToken;
+     TASTMethodCallExpression(Result).Call := ParseCallExpression(Ident);
+   end
+   else
+   begin
+     Ident.Free;
+     TASTMethodCallExpression(Result).Call := ParseExpression(CALL);
+   end;
 end;
 
 (*
@@ -804,6 +852,33 @@ begin
     else FreeAndNilAssigned(Result);
   end;
 
+end;
+
+function TParser.ParseFunctionDefineStatement: TASTFunctionDefineStatement;
+begin
+  Result := TASTFunctionDefineStatement.Create;
+  Result.Token := CurrToken.Clone;
+
+  if expectPeek(ttIDENT) then
+  begin
+    TASTFunctionDefineStatement(Result).Indent := CurrToken.Literal;
+    if expectPeek(ttDOT) then
+    begin
+      if expectPeek(ttIDENT) then
+      begin
+        TASTFunctionDefineStatement(Result).Indent := TASTFunctionDefineStatement(Result).Indent + '.' + CurrToken.Literal;
+        if expectPeek(ttASSIGN) then
+        begin
+          nextToken;
+          TASTFunctionDefineStatement(Result).Funct := ParseExpression(LOWEST);
+        end
+        else FreeAndNilAssigned(Result);
+      end
+      else FreeAndNilAssigned(Result);
+    end
+    else FreeAndNilAssigned(Result);
+  end
+  else FreeAndNilAssigned(Result);
 end;
 
 function TParser.ParseFunctionLiteral: TASTExpression;
@@ -1078,6 +1153,8 @@ begin
       Result := ParseReturnStatement;
     ttIMPORT:
       Result := ParseImportStatement;
+    ttFUNCTION_DEFINE:
+      Result := ParseFunctionDefineStatement;
     ttBREAK,
     ttCONTINUE:
       Result := ParseLoopStatement;
@@ -2036,6 +2113,59 @@ end;
 function TASTLoopStatement.toString: string;
 begin
   Result := 'Loop stmt (' + LoopType + ')';
+end;
+
+{ TASTMethodCallExpression }
+
+function TASTMethodCallExpression.Clone: TASTNode;
+begin
+  Result := TASTMethodCallExpression.Create;
+  TASTMethodCallExpression(Result).Objc := Objc.Clone as TASTExpression;
+  TASTMethodCallExpression(Result).Call := Call.Clone as TASTExpression;
+end;
+
+constructor TASTMethodCallExpression.Create;
+begin
+  Objc:=nil;
+  Call:=nil;
+end;
+
+destructor TASTMethodCallExpression.Destroy;
+begin
+  FreeAndNilAssigned(Objc);
+  FreeAndNilAssigned(Call);
+  inherited;
+end;
+
+function TASTMethodCallExpression.toString: string;
+begin
+  Result := 'Object Call'
+end;
+
+{ TASTFunctionDefineStatement }
+
+function TASTFunctionDefineStatement.Clone: TASTNode;
+begin
+  Result := TASTFunctionDefineStatement.Create;
+  TASTFunctionDefineStatement(Result).Indent := Indent;
+  TASTFunctionDefineStatement(Result).Funct := Funct.Create as TASTFunctionLiteral;
+end;
+
+constructor TASTFunctionDefineStatement.Create;
+begin
+  Indent := '';
+  Funct := nil;
+end;
+
+destructor TASTFunctionDefineStatement.Destroy;
+begin
+  FreeAndNilAssigned(Funct);
+  inherited;
+end;
+
+function TASTFunctionDefineStatement.toString: string;
+begin
+  Result := 'function define '+Indent;
 end;
 
 end.

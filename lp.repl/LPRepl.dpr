@@ -62,7 +62,7 @@ begin
               end
               else
               begin
-                EvalObj := Eval.Eval(ASTProgram, Env);
+                EvalObj := Eval.Run(ASTProgram, Env);
                 if (EvalObj<>nil) then
                   Writeln(EvalObj.Inspect);
               end;
@@ -84,6 +84,8 @@ begin
     end;
 
   finally
+    Eval.Sweep(Env);
+    Eval.Sweep(Env);
     Eval.Free;
     Env.Free;
   end;

@@ -14,13 +14,13 @@ let q = {"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"};
 # Loop While, For, ForEach
 ```
 let q = [{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD01"},{"CFGVAL":"XXX","CFGMOD":"LPI","CFGKEY":"MOD02"}];
-let c = len(q);
+let c = q.size();
 
 let i = 0;
 let u = [];
 while(i<c){
   let q[i]["CFGVAL"] = "YYYZZZ";
-  let u = push(u, q[i]);
+  let u = u.push(q[i]);
   let i = i +1;
 };
 
@@ -28,12 +28,12 @@ println(u);
 
 let a = ["a","b"];
 let i = 0;
-for(i<len(a), i++){
+for(i<a.size(), i++){
   println(a[i]);
 };
 
 foreach i,v in 1..10 {
-  println("at index " + numtostr(i) + " value = " + numtostr(v) );
+  println("at index " + i.tostring() + " value = " + v.tostring() );
 };
 
 foreach i,v in {"nome":"giacomo","cognome":"mola"} {
@@ -41,7 +41,7 @@ foreach i,v in {"nome":"giacomo","cognome":"mola"} {
 };
 
 foreach i,v in "string" {
-  println("at index " + numtostr(i) + " value = " + v );
+  println("at index " + i.tostring() + " value = " + v );
 };
 
 ```
@@ -64,7 +64,7 @@ foreach v in [1,2,3,4,5,6,"aaaa",8,9] {
   if (v=3) {
     continue;
   } else {
-    if (typeof(v)="STRING"){
+    if (v.type()="STRING"){
       break;
     };
   };
@@ -93,7 +93,7 @@ switch (a) {
 };
 
 foreach i,v in {"name":"james","cognome":"mola", "age": 42} {
-  println(i + " = " + (typeof(v)=="NUMBER" ? numtostr(v) : v) );
+  println(i + " = " + (v.type()=="NUMBER" ? v.tostring() : v) );
 };
 
 ```
@@ -119,15 +119,39 @@ let q = [1, 2, 3, 6, 1, 3, 45, 4];
 
 let filter = fn(x, f) {
   let r = [];
-  for(let i = 0;i < len(x); i := i+1){
+  for(let i = 0;i < x.size(); i := i+1){
     if(f(x[i])){
-      r := push(r, x[i]);
+      r := r.push(x[i]);
     };
   };
   return r;
 };
 
 println(filter(q,fn(x) { return x<10; }));
+```
+
+# Object function definiton
+```
+function ARRAY.sort = fn(f) {
+  if (self.size() <= 1){
+    return self;
+  } else {
+    let left = [];
+    let right = [];
+    let i = 1;
+    while (i < self.size()){
+      if (f(self[i], self[0]) ) {
+        left := left.push(self[i]);
+      } else {
+        right:= right.push(self[i]);
+      };
+      i := i+1;
+    };
+    return left.sort(f).concat([self[0], right.sort(f)]); 
+  };
+};
+
+[3,2,5,7,1].sort(fn(x,y) { return x<y; });
 ```
 
 # expandability

@@ -106,7 +106,7 @@ begin
             List.Items.AddStrings(P.Errors)
           else
           begin
-            O := Ev.Eval(Prg, E);
+            O := Ev.Run(Prg, E);
             if O<>nil then
               List.Items.Add(O.Inspect)
           end;
@@ -251,6 +251,19 @@ begin
       TVAST.Items.AddChild(SParent, 'ident = ' + TASTForEachExpression(node).ident);
       Describe(TASTForEachExpression(node).Expression, N);
       Describe(TASTForEachExpression(node).Body, N);
+    end
+    else
+    if node is TASTMethodCallExpression then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTMethodCallExpression(node).Objc, N);
+      Describe(TASTMethodCallExpression(node).Call, N);
+    end
+    else
+    if node is TASTFunctionDefineStatement then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTFunctionDefineStatement(node).Funct, N);
     end
     else
     if node is TASTCallExpression then
