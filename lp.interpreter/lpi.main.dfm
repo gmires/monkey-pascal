@@ -122,21 +122,27 @@ object LPMain: TLPMain
         Font.Name = 'Consolas'
         Font.Style = []
         Lines.Strings = (
-          'let n = 12;'
+          'import "stdlib";'
           ''
-          'let fibonacci = fn(x) {'
-          '  if (x == 0) {'
-          '    return 0               '
-          '  } else {'
-          '    if (x == 1) {'
-          '      return 1;     '
+          'let main = fn() {'
+          '  let n = 12;'
+          ''
+          '  let fibonacci = fn(x) {'
+          '    if (x == 0) {'
+          '      return 0               '
           '    } else {'
-          '      return fibonacci(x - 1) + fibonacci(x - 2); '
+          '      if (x == 1) {'
+          '        return 1;     '
+          '      } else {'
+          '        return fibonacci(x - 1) + fibonacci(x - 2); '
+          '      }'
           '    }'
-          '  }'
+          '  };'
+          ''
+          '  println(fibonacci(n));'
           '};'
           ''
-          'return fibonacci(n);')
+          'main();')
         ParentFont = False
         TabOrder = 0
         ExplicitLeft = 8
