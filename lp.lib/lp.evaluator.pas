@@ -60,6 +60,7 @@ type
     function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
     function evalIndexExpression(left, index:TEvalObject):TEvalObject;
     function evalMethodCallExpression(node:TASTMethodCallExpression; env: TEnvironment):TEvalObject;
+    function evalMethodCall(AObject: TEvalObject; node:TASTCallExpression; env: TEnvironment):TEvalObject;
     function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
     function unwrapReturnValue(obj:TEvalObject):TEvalObject;
     function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
@@ -179,19 +180,56 @@ begin
     Result :=  TBooleanObject.Create(False);
 end;
 
-function TEvaluator.evalMethodCallExpression(node: TASTMethodCallExpression; env: TEnvironment): TEvalObject;
+function TEvaluator.evalMethodCall(AObject: TEvalObject; node: TASTCallExpression; env: TEnvironment): TEvalObject;
 var
   args:TList<TEvalObject>;
-  ObjCall:TEvalObject;
   FEnv:TEnvironment;
-  method:string;
+  method: string;
+begin
+  args:= evalExpressions(node.Args, env);
+  try
+    if ((args.Count=1) and (isError(args[0]))) then
+      Result := args[0]
+    else
+    begin
+      method := (node.Funct as TASTIdentifier).Value;
+      Result := AObject.MethodCall(method, args, env);
+      if (Result is TFunctionObject) then
+      begin
+        FEnv := extendFunctionEnv(Result as TFunctionObject, args);
+        FEnv.SetOrCreateValue('self', AObject, false);
+        Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
+        Gc.Mark(FEnv);
+        if FFunctEnv.IndexOf(FEnv)<0 then
+          FFunctEnv.Add(FEnv);
+      end
+      else
+      if Result=nil then
+        Result := CreateErrorObj('Error call object method <%s> on <%s>', [method, AObject.ObjectType])
+      else
+        FGarbageCollector.Add(Result);
+    end;
+  finally
+    args.Free;
+  end;
+end;
+
+function TEvaluator.evalMethodCallExpression(node: TASTMethodCallExpression; env: TEnvironment): TEvalObject;
+var
+//  args:TList<TEvalObject>;
+//  ObjCall:TEvalObject;
+//  FEnv:TEnvironment;
+//  method: string;
+  index: TEvalObject;
 begin
   Result:= Eval(node.Objc, env);
   if NOT isError(Result) then
   begin
-    ObjCall:= Result;
+//    ObjCall:= Result;
     if (node.Call is TASTCallExpression) then
     begin
+      Result := evalMethodCall(Result, node.Call as TASTCallExpression, env);
+    {
       args:= evalExpressions(TASTCallExpression(node.Call).Args, env);
       try
         if ((args.Count=1) and (isError(args[0]))) then
@@ -215,31 +253,38 @@ begin
           else
             FGarbageCollector.Add(Result);
 
-
-          {
-          if env.GetValue(Result.ObjectType+'.'+(TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, fn) then
-          begin
-            if (fn is TFunctionObject) then
-            begin
-              FEnv := extendFunctionEnv(fn as TFunctionObject, args);
-              FEnv.SetOrCreateValue('self', Result, false);
-              Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
-              Gc.Mark(FEnv);
-              if FFunctEnv.IndexOf(FEnv)<0 then
-                FFunctEnv.Add(FEnv);
-            end
-            else CreateErrorObj('error call object method on %s',[Result.ObjectType]);
-          end
-          else
-          begin
-            Result := Result.MethodCall((TASTCallExpression(node.Call).Funct as TASTIdentifier).Value, args, env);
-            FGarbageCollector.Add(Result);
-          end;
-          }
         end;
       finally
         args.Free;
       end;
+
+      }
+    end
+    else
+    if (node.Call is TASTIdentifier) then
+    begin
+      Result:= Result.GetIdentifer((node.Call as TASTIdentifier).Value);
+      Gc.Add(Result);
+    end
+    else
+    if (node.Call is TASTIndexExpression) then
+    begin
+      if (((node.Call as TASTIndexExpression).Left) is TASTIdentifier) then
+      begin
+        index:= Eval((node.Call as TASTIndexExpression).Index, env);
+        if NOT isError(index) then
+        begin
+          Result:= Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value,TNumberObject(index).toInt);
+          Gc.Add(Result);
+        end
+        else Result := index;
+      end
+      else Result := CreateErrorObj('Index Expression not an indentifier got=%s',[node.Call.toString]);
+    end
+    else
+    if (node.Call is TASTMethodCallExpression) then
+    begin
+      Result:= evalMethodCallExpression(node as TASTMethodCallExpression, env);
     end
     else Result := CreateErrorObj('Type of Expression error ',[Result.ObjectType]);
   end;
@@ -688,6 +733,8 @@ function TEvaluator.assignExpression(node: TASTNode; AValue: TEvalObject; env: T
 var
   enobj,
   index: TEvalObject;
+  N,P:TASTNode;
+  Q:TQueue<TASTNode>;
 begin
   if node is TASTIdentifier then
     Result := env.SetValue(TASTIdentifier(node).Value, AValue)
@@ -711,6 +758,66 @@ begin
       else Result := AValue;
     end
     else Result := AValue;
+  end
+  else
+  if node is TASTMethodCallExpression then
+  begin
+    Q:= TQueue<TASTNode>.Create;
+    try
+      N:= (node as TASTMethodCallExpression).Objc;
+      while (N is TASTMethodCallExpression) do
+      begin
+        Q.Enqueue((N as TASTMethodCallExpression).Call);
+        N:= (N as TASTMethodCallExpression).Objc;
+      end;
+
+      enobj := Eval(N, env);
+      if NOT isError(enobj) then
+      begin
+        while (Q.Count<>0) do
+        begin
+          P:= Q.Dequeue;
+          if (P is TASTIdentifier) then
+            enobj := enobj.GetIdentifer((P as TASTIdentifier).Value)
+          else
+          if (P is TASTIndexExpression) then
+          begin
+            index := Eval((P as TASTIndexExpression).index,env);
+            enobj := enobj.GetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, TNumberObject(index).toInt);
+          end
+          else
+          if (P is TASTCallExpression) then
+            enobj := evalMethodCall(enobj, P as TASTCallExpression, env)
+          else
+            enobj := CreateErrorObj('Object Type <%s> not supported for dot operator',[P.toString]);
+
+          if isError(enobj) then
+          begin
+            Result := enobj;
+            Break;
+          end;
+        end;
+
+        if NOT isError(enobj) then
+        begin
+          P:= (node as TASTMethodCallExpression).Call;
+          if (P is TASTIdentifier) then
+            Result := enobj.SetIdentifer(TASTIdentifier(P).Value, AValue)
+          else
+          if (P is TASTIndexExpression) then
+          begin
+            index := Eval((P as TASTIndexExpression).index, env);
+            Result:= enobj.SetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, AValue, TNumberObject(index).toInt);
+          end
+          else Result := CreateErrorObj('Object Type <%s> not supported for dot assign operator',[P.toString]);
+        end
+        else Result := enobj;
+
+      end
+      else Result := enobj;
+    finally
+      Q.Free;
+    end;
   end
   else Result := AValue;
 end;
@@ -1234,7 +1341,8 @@ begin
       if AObject.ObjectType=RETURN_VALUE_OBJ then
       begin
         Mark(TReturnValueObject(AObject).Value);
-      end;
+      end
+      ;
     end;
 end;
 

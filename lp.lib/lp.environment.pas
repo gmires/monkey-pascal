@@ -58,6 +58,9 @@ type
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
     function MethodInline(method:string; env: TEnvironment):TEvalObject; virtual;
 
+    function GetIdentifer(name:string; Index:Integer=-1):TEvalObject; virtual;
+    function SetIdentifer(name:string; value:TEvalObject; Index:Integer=-1):TEvalObject; virtual;
+
     function  isIterable:Boolean; virtual;
     function  Next:TEvalObject; virtual;
     function  CurrentIndex:TEvalObject; virtual;
@@ -259,6 +262,14 @@ begin
   inherited;
 end;
 
+function TEvalObject.GetIdentifer(name: string; Index:Integer=-1): TEvalObject;
+begin
+  if Index<0 then
+    Result := TStringObject.Create(name)//  TErrorObject.newError('identifier not supported in object type %s',[ObjectType]);
+  else
+    Result := TStringObject.Create(name+'['+IntToStr(Index)+']');
+end;
+
 function TEvalObject.Inspect: string;
 begin
   Result := '';
@@ -305,6 +316,11 @@ end;
 procedure TEvalObject.Reset;
 begin
   IIndex:=0;
+end;
+
+function TEvalObject.SetIdentifer(name:string; value:TEvalObject; Index:Integer=-1): TEvalObject;
+begin
+  Result := TErrorObject.newError('identifier not supported in object type %s',[ObjectType]);
 end;
 
 { TNumberObject }

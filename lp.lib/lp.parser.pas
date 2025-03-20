@@ -27,6 +27,7 @@ type
   public
     function toString:string; virtual;
     function Clone:TASTNode; virtual;
+    function InspectValue:string; virtual;
   end;
 
   TASTStatement = class(TASTNode)
@@ -60,6 +61,7 @@ type
     Value: Double;
     function toString:string; override;
     function Clone:TASTNode; override;
+    function InspectValue:string; override;
   public
   end;
 
@@ -95,6 +97,7 @@ type
     Index: TASTExpression;
     function toString:string; override;
     function Clone:TASTNode; override;
+    function InspectValue:string; override;
   public
     constructor Create;
     destructor Destroy; override;
@@ -105,6 +108,7 @@ type
     Value: string;
     function toString:string; override;
     function Clone:TASTNode; override;
+    function InspectValue:string; override;
   end;
 
   TASTHashLiteral = class(TASTExpression)
@@ -349,6 +353,7 @@ type
     Call:TASTExpression;
     function toString:string; override;
     function Clone:TASTNode; override;
+    function InspectValue:string; override;
   public
     constructor Create;
     destructor Destroy; override;
@@ -1387,6 +1392,11 @@ begin
   TASTNumberLiteral(Result).Value := Value;
 end;
 
+function TASTNumberLiteral.InspectValue: string;
+begin
+  Result := FloatToStr(Value);
+end;
+
 function TASTNumberLiteral.toString: string;
 begin
   Result := 'Number = ' + FloatToStr(Value);
@@ -1454,6 +1464,11 @@ function TASTIdentifier.Clone: TASTNode;
 begin
   Result := TASTIdentifier.Create;
   TASTIdentifier(Result).Value := Value;
+end;
+
+function TASTIdentifier.InspectValue: string;
+begin
+  Result := Value;
 end;
 
 function TASTIdentifier.toString: string;
@@ -1636,6 +1651,11 @@ begin
   Result := nil; { -- virtual -- }
 end;
 
+function TASTNode.InspectValue: string;
+begin
+  Result := '';
+end;
+
 function TASTNode.toString: string;
 begin
   Result := 'ASTNode'; { -- virtual -- }
@@ -1749,6 +1769,11 @@ begin
   FreeAndNilAssigned(Left);
   FreeAndNilAssigned(Index);
   inherited;
+end;
+
+function TASTIndexExpression.InspectValue: string;
+begin
+  Result := Left.InspectValue+'['+Index.InspectValue+']';
 end;
 
 function TASTIndexExpression.toString: string;
@@ -2135,6 +2160,11 @@ begin
   FreeAndNilAssigned(Objc);
   FreeAndNilAssigned(Call);
   inherited;
+end;
+
+function TASTMethodCallExpression.InspectValue: string;
+begin
+  Result := Objc.InspectValue+'.'+Call.InspectValue;
 end;
 
 function TASTMethodCallExpression.toString: string;
