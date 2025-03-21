@@ -101,7 +101,8 @@ begin
       end
       else Result := TToken.create(ttASTERISK, ch, Line);
     end;
-    '/' : begin
+    '/' :
+    begin
       if (PeekChar='=') then
       begin
         ReadChar;
@@ -159,7 +160,7 @@ begin
       if (PeekChar='=') then
       begin
         ReadChar;
-        Result := TToken.create(ttBANG, '!=', Line);
+        Result := TToken.create(ttNOT_EQ, '!=', Line);
       end
       else Result := TToken.create(ttBANG, ch, Line);
     end;
