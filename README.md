@@ -173,7 +173,8 @@ builtins.Add('println', TBuiltinObject.Create(_PrintLn));
 
 ```
 
-```
+with builtins new object
+```pascal
 unit lp.advobject;
 
 interface
