@@ -58,8 +58,13 @@ type
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
     function MethodInline(method:string; env: TEnvironment):TEvalObject; virtual;
 
-    function GetIdentifer(name:string; Index:Integer=-1):TEvalObject; virtual;
-    function SetIdentifer(name:string; value:TEvalObject; Index:Integer=-1):TEvalObject; virtual;
+    { -- support for object with index (es. array or map Array[index], map[index]) -- }
+    function GetIndex(Index:TEvalObject):TEvalObject; virtual;
+    function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; virtual;
+
+    { -- support for object with property identifier (es. object.property := value) -- }
+    function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; virtual;
+    function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; virtual;
 
     function  isIterable:Boolean; virtual;
     function  Next:TEvalObject; virtual;
@@ -81,7 +86,8 @@ type
     FValueBool: Boolean;
   public
     class function fromObject(Obj: TEvalObject):THashkey;
-    constructor Create(Ref: TEvalObject);
+    constructor Create(Ref: TEvalObjectType); overload;
+    constructor Create(Ref: TEvalObject); overload;
     function Equals(Obj: TObject): Boolean; override;
     function GetHashCode: Integer; override;
   end;
@@ -115,6 +121,9 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
+
+    function GetIndex(Index:TEvalObject):TEvalObject; override;
+    function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
@@ -194,6 +203,9 @@ type
     function Clone:TEvalObject; override;
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
 
+    function GetIndex(Index:TEvalObject):TEvalObject; override;
+    function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
+
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
@@ -218,6 +230,12 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
+
+    function GetIndex(Index:TEvalObject):TEvalObject; override;
+    function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
+
+    function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; override;
+    function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; override;
 
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
@@ -262,12 +280,14 @@ begin
   inherited;
 end;
 
-function TEvalObject.GetIdentifer(name: string; Index:Integer=-1): TEvalObject;
+function TEvalObject.GetIdentifer(name: string; Index:TEvalObject): TEvalObject;
 begin
-  if Index<0 then
-    Result := TStringObject.Create(name)//  TErrorObject.newError('identifier not supported in object type %s',[ObjectType]);
-  else
-    Result := TStringObject.Create(name+'['+IntToStr(Index)+']');
+  Result := TErrorObject.newError('get identifier not supported in object type %s',[ObjectType]);
+end;
+
+function TEvalObject.GetIndex(Index: TEvalObject): TEvalObject;
+begin
+  Result := TErrorObject.newError('get index not supported in object type %s',[ObjectType]);
 end;
 
 function TEvalObject.Inspect: string;
@@ -318,9 +338,14 @@ begin
   IIndex:=0;
 end;
 
-function TEvalObject.SetIdentifer(name:string; value:TEvalObject; Index:Integer=-1): TEvalObject;
+function TEvalObject.SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject): TEvalObject;
 begin
-  Result := TErrorObject.newError('identifier not supported in object type %s',[ObjectType]);
+  Result := TErrorObject.newError('set identifier not supported in object type %s',[ObjectType]);
+end;
+
+function TEvalObject.Setindex(Index, value: TEvalObject): TEvalObject;
+begin
+  Result := TErrorObject.newError('set index not supported in object type %s',[ObjectType]);
 end;
 
 { TNumberObject }
@@ -650,6 +675,19 @@ begin
   Result := TNumberObject.Create(IIndex+1);
 end;
 
+function TStringObject.GetIndex(Index: TEvalObject): TEvalObject;
+begin
+  if Index.ObjectType<>NUMBER_OBJ then
+    Result := TErrorObject.newError('index type <%s> not supported: %s', [Index.ObjectType, ObjectType])
+  else
+  begin
+    if ((TNumberObject(Index).toInt<=0) or (TNumberObject(Index).toInt>Length(Value))) then
+      Result := TNullObject.Create
+    else
+      Result := TStringObject.Create(Value[TNumberObject(Index).toInt]);
+  end;
+end;
+
 function TStringObject.Inspect: string;
 begin
   Result := Value;
@@ -767,6 +805,28 @@ begin
   Result := STRING_OBJ;
 end;
 
+function TStringObject.Setindex(Index, value: TEvalObject): TEvalObject;
+begin
+  if Index.ObjectType<>NUMBER_OBJ then
+    Result := TErrorObject.newError('index type <%s> not supported: %s', [Index.ObjectType, ObjectType])
+  else
+  if value.ObjectType<>STRING_OBJ then
+    Result := TErrorObject.newError('value type <%s> not supported: %s', [value.ObjectType, ObjectType])
+  else
+  begin
+    if ((TNumberObject(Index).toInt<=0) or (TNumberObject(Index).toInt>length(Self.value))) then
+      Exit( TErrorObject.newError('unusable index for string: %s', [TNumberObject(Index).Inspect]))
+    else
+    if (TStringObject(value).Value='') then
+      Exit( TErrorObject.newError('unusable value for string: %s', [TStringObject(value).Inspect]))
+    else
+    begin
+      Self.value[TNumberObject(Index).toInt] := TStringObject(value).Value[1];
+      Result := Self;
+    end;
+  end;
+end;
+
 { TBuiltinObject }
 
 function TBuiltinObject.Clone: TEvalObject;
@@ -818,6 +878,19 @@ begin
   Elements.Clear;
   FreeAndNil(Elements);
   inherited;
+end;
+
+function TArrayObject.GetIndex(Index: TEvalObject): TEvalObject;
+begin
+  if Index.ObjectType<>NUMBER_OBJ then
+    Result := TErrorObject.newError('index type <%s> not supported: %s', [Index.ObjectType, ObjectType])
+  else
+  begin
+    if ((TNumberObject(Index).toInt<0) or (TNumberObject(Index).toInt>Elements.Count - 1)) then
+      Result := TNullObject.Create
+    else
+      Result := Elements[TNumberObject(Index).toInt];
+  end;
 end;
 
 function TArrayObject.Inspect: string;
@@ -981,6 +1054,22 @@ begin
   Result := ARRAY_OBJ;
 end;
 
+function TArrayObject.Setindex(Index, value: TEvalObject): TEvalObject;
+begin
+  if Index.ObjectType<>NUMBER_OBJ then
+    Result := TErrorObject.newError('index type <%s> not supported: %s', [Index.ObjectType, ObjectType])
+  else
+  begin
+    if ((TNumberObject(Index).toInt<0) or (TNumberObject(Index).toInt>Elements.Count - 1)) then
+      Exit( TErrorObject.newError('unusable index for array: %s', [TNumberObject(Index).Inspect]))
+    else
+    begin
+      Elements[TNumberObject(Index).toInt] := Value;
+      Result := Self;
+    end;
+  end;
+end;
+
 { THashkey }
 
 constructor THashkey.Create(Ref: TEvalObject);
@@ -1000,6 +1089,11 @@ begin
     FValueBool := TBooleanObject(Ref).Value
   else
     ObjectType := ERROR_OBJ;
+end;
+
+constructor THashkey.Create(Ref: TEvalObjectType);
+begin
+  ObjectType:= Ref;
 end;
 
 function THashkey.Equals(Obj: TObject): Boolean;
@@ -1076,6 +1170,37 @@ begin
   Pairs.Clear;
   FreeAndNil(Pairs);
   inherited;
+end;
+
+function THashObject.GetIdentifer(name: string; Index: TEvalObject): TEvalObject;
+var
+  HK:THashkey;
+begin
+  HK := THashkey.Create(STRING_OBJ);
+  HK.FValueStr := name;
+
+  if Pairs.ContainsKey(HK) then
+    Result := Pairs[HK].Value
+  else
+    Result := TNullObject.Create;
+
+  FreeAndNil(HK);
+end;
+
+function THashObject.GetIndex(Index: TEvalObject): TEvalObject;
+var
+  HK:THashkey;
+begin
+  HK := THashkey.fromObject(Index);
+  if HK.ObjectType=ERROR_OBJ then
+    Exit(TErrorObject.newError('unusable as hash key: %s', [Index.ObjectType]));
+
+  if Pairs.ContainsKey(HK) then
+    Result := Pairs[HK].Value
+  else
+    Result := TNullObject.Create;
+
+  FreeAndNil(HK);
 end;
 
 function THashObject.Inspect: string;
@@ -1174,6 +1299,44 @@ end;
 function THashObject.ObjectType: TEvalObjectType;
 begin
   Result := HASH_OBJ;
+end;
+
+function THashObject.SetIdentifer(name: string; value,  Index: TEvalObject): TEvalObject;
+var
+  HK:THashkey;
+begin
+  HK := THashkey.Create(STRING_OBJ);
+  HK.FValueStr := name;
+
+  if Pairs.ContainsKey(HK) then
+  begin
+    Pairs[HK].Value := Value;
+    FreeAndNil(HK);
+  end
+  else Pairs.Add(HK,THashPair.Create(TStringObject.Create(name), Value));
+
+  Result := Self;
+end;
+
+function THashObject.Setindex(Index, value: TEvalObject): TEvalObject;
+var
+  HK:THashkey;
+begin
+  HK := THashkey.fromObject(Index);
+  if HK.ObjectType=ERROR_OBJ then
+  begin
+    FreeAndNil(HK);
+    Exit( TErrorObject.newError('unusable as hash key: %s', [Index.ObjectType]));
+  end;
+
+  if Pairs.ContainsKey(HK) then
+  begin
+    Pairs[HK].Value := Value;
+    FreeAndNil(HK);
+  end
+  else Pairs.Add(HK,THashPair.Create(Index, Value));
+
+  Result := Self;
 end;
 
 { TLoopObject }

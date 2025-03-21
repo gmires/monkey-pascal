@@ -56,8 +56,8 @@ type
     function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
     function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
     function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
-    function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
-    function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
+    // -- function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
+    // -- function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
     function evalIndexExpression(left, index:TEvalObject):TEvalObject;
     function evalMethodCallExpression(node:TASTMethodCallExpression; env: TEnvironment):TEvalObject;
     function evalMethodCall(AObject: TEvalObject; node:TASTCallExpression; env: TEnvironment):TEvalObject;
@@ -66,8 +66,8 @@ type
     function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
     // -- assign function -- //
     function assignExpression(node: TASTNode; AValue: TEvalObject; env: TEnvironment):TEvalObject;
-    function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
-    function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
+    // -- function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
+    // -- function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
     // -- utils function -- //
     function CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
     function CreateNullObj: TNullObject;
@@ -263,7 +263,7 @@ begin
     else
     if (node.Call is TASTIdentifier) then
     begin
-      Result:= Result.GetIdentifer((node.Call as TASTIdentifier).Value);
+      Result:= Result.GetIdentifer((node.Call as TASTIdentifier).Value, nil);
       Gc.Add(Result);
     end
     else
@@ -274,7 +274,7 @@ begin
         index:= Eval((node.Call as TASTIndexExpression).Index, env);
         if NOT isError(index) then
         begin
-          Result:= Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value,TNumberObject(index).toInt);
+          Result:= Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value, index);
           Gc.Add(Result);
         end
         else Result := index;
@@ -699,8 +699,7 @@ begin
       Result.Add(val);
     end;
 end;
-
-function TEvaluator.evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
+{function TEvaluator.evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
 var
   idx, max: Integer;
 begin
@@ -711,9 +710,9 @@ begin
     Result := CreateNullObj
   else
     Result := TArrayObject(AArray).Elements[idx];
-end;
+end;}
 
-function TEvaluator.assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
+{function TEvaluator.assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
 var
   idx, max: Integer;
 begin
@@ -727,7 +726,7 @@ begin
     TArrayObject(AArray).Elements[idx] := AValue;
     Result := AArray;
   end;
-end;
+end;}
 
 function TEvaluator.assignExpression(node: TASTNode; AValue: TEvalObject; env: TEnvironment): TEvalObject;
 var
@@ -747,13 +746,15 @@ begin
       index := Eval(TASTIndexExpression(node).Index, env);
       if NOT isError(AValue) then
       begin
-        if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
+        Result := enobj.Setindex(index, AValue);
+        Gc.Add(Result);
+        { if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
           Result := assignArrayIndexExpression(enobj, index, AValue)
         else
         if (enobj.ObjectType=HASH_OBJ) then
           Result := assignHashIndexExpression(enobj, index, AValue)
         else
-          Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]);
+          Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]); }
       end
       else Result := AValue;
     end
@@ -778,12 +779,12 @@ begin
         begin
           P:= Q.Dequeue;
           if (P is TASTIdentifier) then
-            enobj := enobj.GetIdentifer((P as TASTIdentifier).Value)
+            enobj := enobj.GetIdentifer((P as TASTIdentifier).Value, nil)
           else
           if (P is TASTIndexExpression) then
           begin
             index := Eval((P as TASTIndexExpression).index,env);
-            enobj := enobj.GetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, TNumberObject(index).toInt);
+            enobj := enobj.GetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, index);
           end
           else
           if (P is TASTCallExpression) then
@@ -802,12 +803,12 @@ begin
         begin
           P:= (node as TASTMethodCallExpression).Call;
           if (P is TASTIdentifier) then
-            Result := enobj.SetIdentifer(TASTIdentifier(P).Value, AValue)
+            Result := enobj.SetIdentifer(TASTIdentifier(P).Value, AValue, nil)
           else
           if (P is TASTIndexExpression) then
           begin
             index := Eval((P as TASTIndexExpression).index, env);
-            Result:= enobj.SetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, AValue, TNumberObject(index).toInt);
+            Result:= enobj.SetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, AValue, index);
           end
           else Result := CreateErrorObj('Object Type <%s> not supported for dot assign operator',[P.toString]);
         end
@@ -822,7 +823,7 @@ begin
   else Result := AValue;
 end;
 
-function TEvaluator.evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
+{function TEvaluator.evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
 var
   HO:THashObject;
   HK:THashkey;
@@ -836,9 +837,9 @@ begin
     Result := HO.Pairs[HK].Value
   else
     Result := CreateNullObj;
-end;
+end;}
 
-function TEvaluator.assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
+{function TEvaluator.assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
 var
   HO:THashObject;
   HK:THashkey;
@@ -860,7 +861,7 @@ begin
     HO.Pairs.Add(HK,THashPair.Create(AIndex, AValue));
 
   Result := AHash;
-end;
+end;}
 
 constructor TEvaluator.Create;
 begin
@@ -899,13 +900,15 @@ end;
 
 function TEvaluator.evalIndexExpression(left, index:TEvalObject):TEvalObject;
 begin
-  if (left.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
+  Result := left.GetIndex(index);
+  Gc.Add(Result);
+  { if (left.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
     Result := evalArrayIndexExpression(left, index)
   else
   if (left.ObjectType=HASH_OBJ) then
     Result := evalHashIndexExpression(left, index)
   else
-    Result := CreateErrorObj('index operator not supported: %s', [left.ObjectType]);
+    Result := CreateErrorObj('index operator not supported: %s', [left.ObjectType]); }
 end;
 
 function TEvaluator.extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
