@@ -58,6 +58,7 @@
 			<DCCReference Include="..\..\lp.lib\lp.parser.pas"/>
 			<DCCReference Include="..\..\lp.lib\lp.token.pas"/>
 			<DCCReference Include="..\..\lp.lib\lp.utils.pas"/>
+			<DCCReference Include="..\..\lp.lib\lp.advobject.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
