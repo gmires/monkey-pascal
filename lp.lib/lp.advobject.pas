@@ -84,7 +84,7 @@ begin
   if name='text' then
     Result := TStringObject.Create(InnetList.Text)
   else
-    inherited GetIdentifer(name, Index);
+    Result:= inherited GetIdentifer(name, Index);
 end;
 
 function TStringListObject.GetIndex(Index: TEvalObject): TEvalObject;
@@ -102,7 +102,7 @@ end;
 
 function TStringListObject.Inspect: string;
 begin
-  Result := 'StringList$'+ IntToHex(Integer(@InnetList), 6) +' (' + InnetList.Text + ')';
+  Result := 'StringList$'+ IntToHex(Integer(@InnetList), 6) +' (' + IntToStr(InnetList.Count) + ')';
 end;
 
 function TStringListObject.isIterable: Boolean;
@@ -257,7 +257,7 @@ begin
       Result :=GetIdentifer(name);
     end;
   end
-  else inherited SetIdentifer(name, value, Index);
+  else Result:= inherited SetIdentifer(name, value, Index);
 end;
 
 function TStringListObject.Setindex(Index, value: TEvalObject): TEvalObject;
