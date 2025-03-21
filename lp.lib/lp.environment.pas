@@ -55,6 +55,8 @@ type
     function ObjectType:TEvalObjectType; virtual;
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
+
+    { -- support for object method call -- }
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
     function MethodInline(method:string; env: TEnvironment):TEvalObject; virtual;
 
@@ -66,10 +68,12 @@ type
     function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; virtual;
     function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; virtual;
 
+    { -- support for interble value, index object element (es. foreach v,i in object ) -- }
     function  isIterable:Boolean; virtual;
     function  Next:TEvalObject; virtual;
     function  CurrentIndex:TEvalObject; virtual;
     procedure Reset; virtual;
+
   public
     { ** for GC (mark and sweep) ** }
     GcNext:TEvalObject;
@@ -120,6 +124,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
 
     function GetIndex(Index:TEvalObject):TEvalObject; override;
@@ -201,6 +206,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
 
     function GetIndex(Index:TEvalObject):TEvalObject; override;
@@ -229,6 +235,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+
     function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
 
     function GetIndex(Index:TEvalObject):TEvalObject; override;
