@@ -6,9 +6,16 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, xmldom, XMLIntf, msxmldom, XMLDoc, ComCtrls, StdCtrls
 
-  ,Generics.Collections, ExtCtrls
-  ,lp.lexer, lp.token, lp.parser, lp.environment , lp.evaluator, lp.builtins,
-  Menus
+  ,Generics.Collections, ExtCtrls, Menus
+
+  , lp.lexer
+  , lp.token
+  , lp.parser
+  , lp.environment
+  , lp.evaluator
+  , lp.builtins
+  , lp.advobject
+
   ;
 
 

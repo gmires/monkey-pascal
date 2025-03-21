@@ -569,6 +569,7 @@ begin
       if FFunctEnv.IndexOf(FEachEnv)<0 then
         FFunctEnv.Add(FEachEnv);
 
+      iterable.Reset;
       current := gc.Add(iterable.Next);
 
       while Assigned(current) do
