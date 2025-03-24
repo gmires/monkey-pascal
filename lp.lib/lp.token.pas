@@ -80,13 +80,15 @@ type
 
   TToken = class
   public
-    constructor create(ATokenType:TTokenType; ALiteral:string; ALine: Integer);
+    constructor create(ATokenType:TTokenType; ALiteral:string; ALine,AColn: Integer; AModule:string);
     function toString:string;
     function Clone:TToken;
   public
     TokenType:TTokenType;
     Literal:string;
+    Module:string;
     Line:Integer;
+    Coln:Integer;
   end;
 
 function LookupIdent(value:string): TTokenType;
@@ -176,14 +178,16 @@ end;
 
 function TToken.Clone: TToken;
 begin
-  Result := TToken.create(TokenType, Literal, Line);
+  Result := TToken.create(TokenType, Literal, Line, Coln, Module);
 end;
 
-constructor TToken.create(ATokenType: TTokenType; ALiteral: string; ALine:Integer);
+constructor TToken.create(ATokenType: TTokenType; ALiteral: string; ALine,AColn: Integer; AModule:string);
 begin
   TokenType := ATokenType;
   Literal := ALiteral;
+  Module := AModule;
   Line := ALine;
+  Coln := AColn;
 end;
 
 function TToken.toString: string;

@@ -108,6 +108,9 @@
 					<Source>
 						<Source Name="MainSource">LPRepl.dpr</Source>
 					</Source>
+					<Parameters>
+						<Parameters Name="RunParams">&quot;C:\Users\giacomo\Desktop\LPI Integration\examples\main.lpi&quot;</Parameters>
+					</Parameters>
 				</Delphi.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

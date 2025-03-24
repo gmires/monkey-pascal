@@ -13,18 +13,20 @@ uses
   lp.utils in '..\lp.lib\lp.utils.pas',
   lp.advobject in '..\lp.lib\lp.advobject.pas';
 
+
+procedure StartREPL;
+
+  function isExitCommand(value:string):Boolean;
+  var
+    S:string;
+  begin
+    S:=LowerCase(value);
+    Result := ((S='quit') or (S='q'));
+  end;
+
 const
   HEADER = 'LP Interpreter REPL v.1.0b (JM) --- ';
   PROMPT = '>> ';
-
-function isExitCommand(value:string):Boolean;
-var
-  S:string;
-begin
-  S:=LowerCase(value);
-  Result := ((S='quit') or (S='q'));
-end;
-
 var
   Env: TEnvironment;
   Eval: TEvaluator;
@@ -50,7 +52,7 @@ begin
         Break;
 
       try
-        Lexer:=TLexer.Create(line);
+        Lexer:=TLexer.Create(line, 'main');
         try
           Parser:= TParser.Create(Lexer);
           try
@@ -90,4 +92,16 @@ begin
     Eval.Free;
     Env.Free;
   end;
+end;
+
+begin
+  if ParamCount>0 then
+  begin
+    Writeln(ParamStr(0));
+    Writeln(ParamStr(1));
+
+    Readln;
+
+  end
+  else StartREPL;
 end.

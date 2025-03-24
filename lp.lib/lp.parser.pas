@@ -578,7 +578,12 @@ begin
   if Result then
     nextToken
   else
-    AddError('Error Token : ' + PeekToken.toString  + ', expected : ' + TokenTypeToStr(TType) + ', line = ' + IntToStr(PeekToken.Line));
+    AddError('Error Token : ' + PeekToken.toString
+      + ', expected : ' + TokenTypeToStr(TType)
+      + ', line = ' + IntToStr(PeekToken.Line)
+      + ', Columns = ' + IntToStr(PeekToken.Coln)
+      + ', Module = ' + PeekToken.Module
+    );
 end;
 
 procedure TParser.nextToken;
@@ -1365,6 +1370,7 @@ end;
 function TASTExpressionStatement.Clone: TASTNode;
 begin
   Result := TASTExpressionStatement.Create;
+  TASTExpressionStatement(Result).Token := Token.Clone;
   TASTExpressionStatement(Result).Expression := Expression.Clone as TASTExpression;
 end;
 
@@ -1389,6 +1395,7 @@ end;
 function TASTNumberLiteral.Clone: TASTNode;
 begin
   Result := TASTNumberLiteral.Create;
+  TASTNumberLiteral(Result).Token := Token.Clone;
   TASTNumberLiteral(Result).Value := Value;
 end;
 
@@ -1407,6 +1414,7 @@ end;
 function TASTPrefixExpression.Clone: TASTNode;
 begin
   Result := TASTPrefixExpression.Create;
+  TASTPrefixExpression(Result).Token := Token.Clone;
   TASTPrefixExpression(Result).Op := Op;
   TASTPrefixExpression(Result).Right := Right.Clone as TASTExpression;
 end;
@@ -1434,6 +1442,7 @@ end;
 function TASTInfixExpression.Clone: TASTNode;
 begin
   Result := TASTInfixExpression.Create;
+  TASTInfixExpression(Result).Token := Token.Clone;
   TASTInfixExpression(Result).Left := Left.Clone as TASTExpression;
   TASTInfixExpression(Result).Op   := Op;
   TASTInfixExpression(Result).Right:= Right.Clone as TASTExpression;
@@ -1463,6 +1472,7 @@ end;
 function TASTIdentifier.Clone: TASTNode;
 begin
   Result := TASTIdentifier.Create;
+  TASTIdentifier(Result).Token := Token.Clone;
   TASTIdentifier(Result).Value := Value;
 end;
 
@@ -1481,6 +1491,7 @@ end;
 function TASTLetStatement.Clone: TASTNode;
 begin
   Result := TASTLetStatement.Create;
+  TASTLetStatement(Result).Token := Token.Clone;
   TASTLetStatement(Result).Name := Name.Clone as TASTIdentifier;
   TASTLetStatement(Result).Expression := Expression.Clone as TASTExpression;
 end;
@@ -1508,6 +1519,7 @@ end;
 function TASTReturnStatement.Clone: TASTNode;
 begin
   Result := TASTReturnStatement.Create;
+  TASTReturnStatement(Result).Token := Token.Clone;
   TASTReturnStatement(Result).ReturnValue := ReturnValue.Clone as TASTExpression;
 end;
 
@@ -1532,6 +1544,7 @@ end;
 function TASTBoolean.Clone: TASTNode;
 begin
   Result := TASTBoolean.Create;
+  TASTBoolean(Result).Token := Token.Clone;
   TASTBoolean(Result).Value := Value;
 end;
 
@@ -1550,6 +1563,7 @@ var
   i: Integer;
 begin
   Result := TASTBlockStatement.Create;
+  TASTBlockStatement(Result).Token := Token.Clone;
   for i := 0 to Statements.Count-1 do
     TASTBlockStatement(Result).Statements.Add(Statements[i].Clone as TASTStatement);
 end;
@@ -1579,6 +1593,7 @@ end;
 function TASTIfExpression.Clone: TASTNode;
 begin
   Result := TASTIfExpression.Create;
+  TASTIfExpression(Result).Token := Token.Clone;
   TASTIfExpression(Result).Condition := Condition.Clone as TASTExpression;
   TASTIfExpression(Result).Consequence := Consequence.Clone as TASTBlockStatement;
   if Assigned(Alternative) then
@@ -1612,6 +1627,7 @@ var
   i:Integer;
 begin
   Result := TASTFunctionLiteral.Create;
+  TASTFunctionLiteral(Result).Token := Token.Clone;
   TASTFunctionLiteral(Result).Body := Body.Clone as TASTBlockStatement;
   TASTFunctionLiteral(Result).Parameters := TList<TASTIdentifier>.Create;
   if Assigned(Parameters)  then
@@ -1668,6 +1684,7 @@ var
   i: Integer;
 begin
   Result := TASTCallExpression.Create;
+  TASTCallExpression(Result).Token := Token.Clone;
   TASTCallExpression(Result).Funct:= Funct.Clone as TASTExpression;
   TASTCallExpression(Result).Args := TList<TASTExpression>.create;
   for i := 0 to Args.Count-1 do
@@ -1704,6 +1721,7 @@ end;
 function TASTStringLiteral.Clone: TASTNode;
 begin
   Result := TASTStringLiteral.Create;
+  TASTStringLiteral(Result).Token := Token.Clone;
   TASTStringLiteral(Result).Value := Value;
 end;
 
@@ -1719,6 +1737,7 @@ var
   i: Integer;
 begin
   Result := TASTArrayLiteral.Create;
+  TASTArrayLiteral(Result).Token := Token.Clone;
   TASTArrayLiteral(Result).Elements := TList<TASTExpression>.Create;
   for i := 0 to Elements.Count-1 do
     TASTArrayLiteral(Result).Elements.Add(Elements[i].Clone as TASTExpression);
@@ -1755,6 +1774,7 @@ end;
 function TASTIndexExpression.Clone: TASTNode;
 begin
   Result := TASTIndexExpression.Create;
+  TASTIndexExpression(Result).Token := Token.Clone;
   TASTIndexExpression(Result).Left := Left.Clone as TASTExpression;
   TASTIndexExpression(Result).Index:= Index.Clone as TASTExpression;
 end;
@@ -1788,6 +1808,7 @@ var
   key:TASTExpression;
 begin
   Result := TASTHashLiteral.Create;
+  TASTHashLiteral(Result).Token := Token.Clone;
   TASTHashLiteral(Result).FPairs := TDictionary<TASTExpression,TASTExpression>.Create;
   for key in Pairs.Keys do
     TASTHashLiteral(Result).Pairs.Add(key.Clone as TASTExpression, Pairs[key].Clone as TASTExpression);
@@ -1825,6 +1846,7 @@ end;
 function TASTWhileExpression.Clone: TASTNode;
 begin
   Result := TASTWhileExpression.Create;
+  TASTWhileExpression(Result).Token := Token.Clone;
   TASTWhileExpression(Result).Condition := Condition.Clone as TASTExpression;
   TASTWhileExpression(Result).Body := Body.Clone as TASTBlockStatement;
 end;
@@ -1852,6 +1874,7 @@ end;
 function TASTForExpression.Clone: TASTNode;
 begin
   Result := TASTForExpression.Create;
+  TASTForExpression(Result).Token := Token.Clone;
   TASTForExpression(Result).Condition := Condition.Clone as TASTExpression;
   TASTForExpression(Result).Expression:= Expression.Clone;
   TASTForExpression(Result).Body := Body.Clone as TASTBlockStatement;
@@ -1882,6 +1905,7 @@ end;
 function TASTAssignExpression.Clone: TASTNode;
 begin
   Result := TASTAssignExpression.Create;
+  TASTAssignExpression(Result).Token := Token.Clone;
   TASTAssignExpression(Result).Name := Name.Clone as TASTExpression;
   TASTAssignExpression(Result).Op   := Op;
   TASTAssignExpression(Result).Expression:= Expression.Clone as TASTExpression;
@@ -1911,6 +1935,7 @@ end;
 function TASTImportStatement.Clone: TASTNode;
 begin
   Result := TASTImportStatement.Create;
+  TASTImportStatement(Result).Token := Token.Clone;
   TASTImportStatement(Result).Module := Module;
 end;
 
@@ -1934,6 +1959,7 @@ end;
 function TASTNullLiteral.Clone: TASTNode;
 begin
   Result := TASTNullLiteral.Create;
+  TASTNullLiteral(Result).Token := Token.Clone;
 end;
 
 function TASTNullLiteral.toString: string;
@@ -1946,6 +1972,7 @@ end;
 function TASTConstStatement.Clone: TASTNode;
 begin
   Result := TASTConstStatement.Create;
+  TASTConstStatement(Result).Token := Token.Clone;
   TASTConstStatement(Result).Name := Name.Clone as TASTIdentifier;
   TASTConstStatement(Result).Expression := Expression.Clone as TASTExpression;
 end;
@@ -1973,6 +2000,7 @@ end;
 function TASTTernaryExpression.Clone: TASTNode;
 begin
   Result := TASTTernaryExpression.Create;
+  TASTTernaryExpression(Result).Token := Token.Clone;
   TASTTernaryExpression(Result).Condition := Condition.Clone as TASTExpression;
   TASTTernaryExpression(Result).IfTrue  := IfTrue.Clone as TASTExpression;
   TASTTernaryExpression(Result).IfFalse := IfFalse.Clone as TASTExpression;
@@ -2005,6 +2033,7 @@ var
   current: TASTExpression;
 begin
   Result := TASTCaseExpression.Create;
+  TASTCaseExpression(Result).Token := Token.Clone;
   TASTCaseExpression(Result).Default:= Default;
   TASTCaseExpression(Result).Body   := Body.Clone as TASTBlockStatement;
   for current in Values do
@@ -2044,6 +2073,7 @@ var
   current: TASTExpression;
 begin
   Result := TASTSwitchExpression.Create;
+  TASTSwitchExpression(Result).Token := Token.Clone;
   TASTSwitchExpression(Result).Value:= Value.Clone as TASTExpression;
   for current in Choises do
     TASTSwitchExpression(Result).Choises.Add(current.Clone as TASTCaseExpression);
@@ -2076,6 +2106,7 @@ end;
 function TASTPostfixExpression.Clone: TASTNode;
 begin
   Result:= TASTPostfixExpression.Create;
+  TASTPostfixExpression(Result).Token := Token.Clone;
   TASTPostfixExpression(Result).Op := Op;
   TASTPostfixExpression(Result).Left := Left.Clone as TASTExpression;
 end;
@@ -2101,6 +2132,7 @@ end;
 function TASTForEachExpression.Clone: TASTNode;
 begin
   Result := TASTForEachExpression.Create;
+  TASTForEachExpression(Result).Token := Token.Clone;
   TASTForEachExpression(Result).index := index;
   TASTForEachExpression(Result).ident := ident;
   TASTForEachExpression(Result).Expression:= Expression.Clone as TASTExpression;
@@ -2132,6 +2164,7 @@ end;
 function TASTLoopStatement.Clone: TASTNode;
 begin
   Result := TASTLoopStatement.Create;
+  TASTLoopStatement(Result).Token := Token.Clone;
   TASTLoopStatement(Result).LoopType := LoopType;
 end;
 
@@ -2145,6 +2178,7 @@ end;
 function TASTMethodCallExpression.Clone: TASTNode;
 begin
   Result := TASTMethodCallExpression.Create;
+  TASTMethodCallExpression(Result).Token := Token.Clone;
   TASTMethodCallExpression(Result).Objc := Objc.Clone as TASTExpression;
   TASTMethodCallExpression(Result).Call := Call.Clone as TASTExpression;
 end;
@@ -2177,6 +2211,7 @@ end;
 function TASTFunctionDefineStatement.Clone: TASTNode;
 begin
   Result := TASTFunctionDefineStatement.Create;
+  TASTFunctionDefineStatement(Result).Token := Token.Clone;
   TASTFunctionDefineStatement(Result).Indent := Indent;
   TASTFunctionDefineStatement(Result).Funct := Funct.Create as TASTFunctionLiteral;
 end;

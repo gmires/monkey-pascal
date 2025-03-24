@@ -73,7 +73,7 @@ var
 begin
   TVAST.Items.Clear;
 
-  L:=TLexer.Create(MSouce.Lines.Text);
+  L:=TLexer.Create(MSouce.Lines.Text, 'main');
   try
     P := TParser.Create(L);
     try
@@ -100,7 +100,7 @@ var
   Prg:TASTProgram;
   Ev:TEvaluator;
 begin
-  L:=TLexer.Create(MSouce.Lines.Text);
+  L:=TLexer.Create(MSouce.Lines.Text, 'main');
   try
     P := TParser.Create(L);
     try

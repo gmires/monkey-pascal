@@ -124,7 +124,7 @@ begin
 
   for i := Low(MODULES) to High(MODULES) do
   begin
-    L:=TLexer.Create(MODULES[i][1]);
+    L:=TLexer.Create(MODULES[i][1],MODULES[i][0]);
     try
       P := TParser.Create(L);
       try
