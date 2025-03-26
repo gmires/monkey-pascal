@@ -58,6 +58,7 @@ begin
   Result := nil;
   SkipWhiteSpace;
   SkipComment;
+  SkipWhiteSpace;
   case ch of
      #0 : Result := TToken.create(ttEOF, '', Line, Coln, Module);
     '+' :

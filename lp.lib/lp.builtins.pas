@@ -2,7 +2,7 @@ unit lp.builtins;
 
 interface
 
-uses  classes, SysUtils, Generics.Collections, Variants, StrUtils
+uses  classes, SysUtils, Generics.Collections, Variants, StrUtils, Windows
   , lp.utils
   , lp.lexer
   , lp.parser
@@ -10,6 +10,38 @@ uses  classes, SysUtils, Generics.Collections, Variants, StrUtils
   , lp.evaluator;
 
 implementation
+
+procedure WaitForKeyPressed(KeyCode: Word; const TextMessage: string);
+var
+  Handle: THandle;
+  Buffer: TInputRecord;
+  Counter: Cardinal;
+begin
+  Handle := GetStdHandle(STD_INPUT_HANDLE);
+  if Handle = 0 then
+    RaiseLastOSError;
+  if not (TextMessage = '') then
+    Write(TextMessage);
+  while True do
+  begin
+    Sleep(0);
+    if not GetNumberOfConsoleInputEvents(Handle, Counter) then
+      RaiseLastOSError;
+    if not (Counter = 0) then
+    begin
+      if not ReadConsoleInput(Handle, Buffer, 1, Counter) then
+        RaiseLastOSError;
+      if (Buffer.EventType = KEY_EVENT) and Buffer.Event.KeyEvent.bKeyDown then
+        if (KeyCode = 0) or (KeyCode = Buffer.Event.KeyEvent.wVirtualKeyCode) then
+          Break
+    end;
+  end
+end;
+
+procedure WaitForAnyKeyPressed(const TextMessage: string='');
+begin
+  WaitForKeyPressed(0, TextMessage);
+end;
 
 function _PrintLn(args: TList<TEvalObject>): TEvalObject;
 var
@@ -23,6 +55,16 @@ begin
   end;
 end;
 
+function _Print(args: TList<TEvalObject>): TEvalObject;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to args.Count-1 do
+    Write(args[i].Inspect);
+end;
+
+
 function _ReadLn(args: TList<TEvalObject>): TEvalObject;
 const
   PROMPT = '<< ';
@@ -33,6 +75,16 @@ begin
   Write(PROMPT); Readln(S);
   Result := TStringObject.Create(S);
 end;
+
+function _Wait(args: TList<TEvalObject>): TEvalObject;
+begin
+  Result := nil;
+  if ((args.Count>0) and (args[0].ObjectType=STRING_OBJ)) then
+    WaitForAnyKeyPressed(TStringObject(args[0]).Value)
+  else
+    WaitForAnyKeyPressed;
+end;
+
 
 const
   M_COUNT  = 1;
@@ -119,8 +171,10 @@ var
   P:TParser;
   i:Integer;
 begin
+  builtins.Add('print', TBuiltinObject.Create(_Print));
   builtins.Add('println', TBuiltinObject.Create(_PrintLn));
   builtins.Add('readln', TBuiltinObject.Create(_ReadLn));
+  builtins.Add('wait', TBuiltinObject.Create(_Wait));
 
   for i := Low(MODULES) to High(MODULES) do
   begin

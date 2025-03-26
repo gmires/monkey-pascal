@@ -76,8 +76,9 @@ type
 
   public
     { ** for GC (mark and sweep) ** }
-    GcNext:TEvalObject;
+    //GcNext:TEvalObject;
     GcMark:Boolean;
+    GcManualFree:Boolean;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -217,6 +218,7 @@ type
     function CurrentIndex:TEvalObject; override;
   public
     constructor Create;
+    constructor CreateWithElements;
     destructor Destroy; override;
   end;
 
@@ -271,7 +273,8 @@ end;
 
 constructor TEvalObject.Create;
 begin
-  GcNext := nil;
+  //GcNext := nil;
+  GcManualFree := False;
   GcMark := False;
   Reset;
 end;
@@ -873,6 +876,12 @@ end;
 constructor TArrayObject.Create;
 begin
   inherited Create;
+end;
+
+constructor TArrayObject.CreateWithElements;
+begin
+  Create;
+  Elements := TList<TEvalObject>.Create;
 end;
 
 function TArrayObject.CurrentIndex: TEvalObject;

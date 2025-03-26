@@ -35,6 +35,7 @@ type
     FGCCounter: Word;
     FGarbageCollector:TGarbageCollector;
     FFunctEnv: TList<TEnvironment>;
+    FFunctLck: TCriticalSection;
     FModules: TStringList;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
     function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
@@ -69,8 +70,9 @@ type
     // -- function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
     // -- function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
     // -- utils function -- //
-    function CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
-    function CreateNullObj: TNullObject;
+    function  CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
+    function  CreateNullObj: TNullObject;
+    function AddEnv(AEnv:TEnvironment):TEnvironment;
   public
     constructor Create;
     destructor Destroy; override;
@@ -161,9 +163,9 @@ begin
         FGCCounter := 0;
       end;
 
-      if (Result.ObjectType = RETURN_VALUE_OBJ)
+      if ((Result.ObjectType = RETURN_VALUE_OBJ)
       or (Result.ObjectType = ERROR_OBJ)
-      or (Result.ObjectType = LOOP_OBJ) then
+      or (Result.ObjectType = LOOP_OBJ)) then
         Break;
     end;
   end;
@@ -196,12 +198,10 @@ begin
       Result := AObject.MethodCall(method, args, env);
       if (Result is TFunctionObject) then
       begin
-        FEnv := extendFunctionEnv(Result as TFunctionObject, args);
+        FEnv := AddEnv(extendFunctionEnv(Result as TFunctionObject, args));
         FEnv.SetOrCreateValue('self', AObject, false);
         Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
         Gc.Mark(FEnv);
-        if FFunctEnv.IndexOf(FEnv)<0 then
-          FFunctEnv.Add(FEnv);
       end
       else
       if Result=nil then
@@ -565,9 +565,7 @@ begin
       if TASTForEachExpression(node).index<>'' then
         L.Add(TASTForEachExpression(node).index);
 
-      FEachEnv:= TEnvironment.Create(env, L);
-      if FFunctEnv.IndexOf(FEachEnv)<0 then
-        FFunctEnv.Add(FEachEnv);
+      FEachEnv:= AddEnv(TEnvironment.Create(env, L));
 
       iterable.Reset;
       current := gc.Add(iterable.Next);
@@ -595,7 +593,7 @@ begin
           if ((ret.ObjectType=LOOP_OBJ) and (TLoopObject(ret).LoopType=LOOP_TYPE_BREAK)) then
             Break;
 
-        current := iterable.Next;
+        current := gc.Add(iterable.Next);
       end;
 
     finally
@@ -869,6 +867,7 @@ begin
   FGCCounter := 0;
   FGarbageCollector:= TGarbageCollector.Create;
   FFunctEnv := TList<TEnvironment>.Create;
+  FFunctLck:= TCriticalSection.Create;
   FModules := TStringList.Create;
 end;
 
@@ -894,6 +893,7 @@ begin
   for current in FFunctEnv do
     current.Free;
 
+  FFunctLck.Free;
   FFunctEnv.Free;
   FModules.Free;
   inherited;
@@ -953,22 +953,27 @@ begin
 end;
 
 
+function TEvaluator.AddEnv(AEnv: TEnvironment):TEnvironment;
+begin
+  Result := AEnv;
+  try
+    FFunctLck.Acquire;
+    if FFunctEnv.IndexOf(AEnv)<0 then
+      FFunctEnv.Add(AEnv);
+  finally
+    FFunctLck.Release;
+  end;
+end;
+
 function TEvaluator.applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
 var
   FEnv:TEnvironment;
 begin
   if (fn is TFunctionObject) then
   begin
-    FEnv := extendFunctionEnv(fn as TFunctionObject, args);
-//    try
+    FEnv := AddEnv(extendFunctionEnv(fn as TFunctionObject, args));
     Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
     Gc.Mark(FEnv);
-    if FFunctEnv.IndexOf(FEnv)<0 then
-      FFunctEnv.Add(FEnv);
-
-//    finally
-//      FEnv.Free;
-//    end;
   end
   else
   if (fn is TBuiltinObject) then
@@ -1209,6 +1214,7 @@ var
 begin
   Result := AObject;
   if Assigned(AObject) then
+  if NOT AObject.GcManualFree then
   begin
     FLock.Acquire;
     try
@@ -1263,6 +1269,7 @@ begin
     for i := 0 to FObjects.Count-1 do
     try
       if P<>FObjects[i] then
+      if NOT (FObjects[i].GcManualFree) then
       begin
         P:=FObjects[i];
         FObjects[i].Free;
@@ -1294,6 +1301,7 @@ begin
     for i := 0 to FTrashObjects.Count-1 do
     try
       if (P<>FTrashObjects[i]) then
+      if NOT (FTrashObjects[i].GcManualFree) then
       begin
         P:=FTrashObjects[i];
         FTrashObjects[i].Free;
@@ -1324,30 +1332,31 @@ var
   HKey: THashkey;
 begin
   if Assigned(AObject) then
-    if NOT (AObject.GcMark) then
-    begin
-      AObject.GcMark := True;
-      if AObject.ObjectType=ARRAY_OBJ then
+    if NOT AObject.GcManualFree then
+      if NOT (AObject.GcMark) then
       begin
-        for Element in TArrayObject(AObject).Elements do
-          Mark(Element);
-      end
-      else
-      if AObject.ObjectType=HASH_OBJ then
-      begin
-        for HKey in THashObject(AObject).Pairs.Keys do
+        AObject.GcMark := True;
+        if AObject.ObjectType=ARRAY_OBJ then
         begin
-          Mark(THashObject(AObject).Pairs[HKey].Key);
-          Mark(THashObject(AObject).Pairs[HKey].Value);
-        end;
-      end
-      else
-      if AObject.ObjectType=RETURN_VALUE_OBJ then
-      begin
-        Mark(TReturnValueObject(AObject).Value);
-      end
-      ;
-    end;
+          for Element in TArrayObject(AObject).Elements do
+            Mark(Element);
+        end
+        else
+        if AObject.ObjectType=HASH_OBJ then
+        begin
+          for HKey in THashObject(AObject).Pairs.Keys do
+          begin
+            Mark(THashObject(AObject).Pairs[HKey].Key);
+            Mark(THashObject(AObject).Pairs[HKey].Value);
+          end;
+        end
+        else
+        if AObject.ObjectType=RETURN_VALUE_OBJ then
+        begin
+          Mark(TReturnValueObject(AObject).Value);
+        end
+        ;
+      end;
 end;
 
 procedure TGarbageCollector.Mark(AEnvironment: TEnvironment);
@@ -1401,8 +1410,8 @@ var
 //  node, tmp: TEvalObject;
   i:Integer;
 begin
-  FLock.Acquire;
   try
+    FLock. Acquire;
     for i := FObjects.Count-1 downto 0 do
       if NOT FObjects[i].GcMark then
       begin
@@ -1415,7 +1424,6 @@ begin
   finally
     FLock.Release;
   end;
-
 
 {
   node:= FHead;
