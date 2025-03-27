@@ -182,12 +182,11 @@ type
   public
     Parameters: TList<TASTIdentifier>;
 	  Body: TASTBlockStatement;
-	  Env: TEnvironment;
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
-    constructor Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement; AEnv: TEnvironment);
+    constructor Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement);
     destructor Destroy; override;
   end;
 
@@ -509,11 +508,10 @@ end;
 
 function TFunctionObject.Clone: TEvalObject;
 begin
-  Result := TFunctionObject.Create(Parameters, Body, Env);
+  Result := TFunctionObject.Create(Parameters, Body);
 end;
 
-constructor TFunctionObject.Create(AParameters: TList<TASTIdentifier>;
-  ABody: TASTBlockStatement; AEnv: TEnvironment);
+constructor TFunctionObject.Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement);
 var
   i: Integer;
 begin
@@ -524,7 +522,6 @@ begin
       Parameters.Add(AParameters[i].Clone as TASTIdentifier);
 
   Body := ABody.Clone as TASTBlockStatement;
-  Env := AEnv;
 end;
 
 destructor TFunctionObject.Destroy;

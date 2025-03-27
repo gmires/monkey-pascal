@@ -1,6 +1,6 @@
 object LPMain: TLPMain
-  Left = 331
-  Top = 145
+  Left = 386
+  Top = 141
   Caption = 'LP Interpreter v.1.0'
   ClientHeight = 815
   ClientWidth = 1150
@@ -146,7 +146,6 @@ object LPMain: TLPMain
         ParentFont = False
         TabOrder = 0
         ExplicitLeft = 8
-        ExplicitHeight = 572
       end
       object List: TListBox
         AlignWithMargins = True
