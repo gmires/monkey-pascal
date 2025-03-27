@@ -24,6 +24,7 @@ type
     procedure Remove(AObject: TEvalObject);
     procedure Mark(AObject: TEvalObject); overload;
     procedure Mark(AEnvironment: TEnvironment); overload;
+    procedure MarkSigleEnv(AEnvironment: TEnvironment);
     procedure Sweep;
     procedure EmptyTrash;
 
@@ -139,7 +140,7 @@ end;
 
 function TEvaluator.evalStatements(Statements: TList<TASTStatement>;  env: TEnvironment): TEvalObject;
 var
-  i: Integer;
+  i,y: Integer;
 begin
   Result := nil;
   for i := 0 to Statements.Count-1 do
@@ -157,9 +158,11 @@ begin
       Inc(FGCCounter);
       if (FGCCounter>=100) then
       begin
-        FGarbageCollector.Mark(env);
+        for y := FFunctEnv.Count-1 downto 0 do
+          FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
+
         FGarbageCollector.Sweep;
-        // -- FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
+        FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
         FGCCounter := 0;
       end;
 
@@ -1368,6 +1371,14 @@ begin
 
   if (AEnvironment.Outer<>nil) then
     Mark(AEnvironment.Outer);
+end;
+
+procedure TGarbageCollector.MarkSigleEnv(AEnvironment: TEnvironment);
+var
+  element: string;
+begin
+  for element in AEnvironment.Store.Keys do
+    Mark(AEnvironment.Store[element]);
 end;
 
 procedure TGarbageCollector.Remove(AObject: TEvalObject);
