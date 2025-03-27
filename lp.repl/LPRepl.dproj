@@ -108,6 +108,7 @@
 					<Source>
 						<Source Name="MainSource">LPRepl.dpr</Source>
 					</Source>
+					<Parameters/>
 				</Delphi.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>
