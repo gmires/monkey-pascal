@@ -13,9 +13,7 @@ type
     // -- FElemCount: Integer;
     FLock: TCriticalSection;
     FObjects: TList<TEvalObject>;
-    FTrashObjects: TList<TEvalObject>;
     function GetElemCount: Integer;
-    function GetTrashCount: Integer;
   public
     constructor Create;
     destructor Destroy; override;
@@ -26,10 +24,8 @@ type
     procedure Mark(AEnvironment: TEnvironment); overload;
     procedure MarkSigleEnv(AEnvironment: TEnvironment);
     procedure Sweep;
-    procedure EmptyTrash;
 
     property ElemCount:Integer read GetElemCount;
-    property TrashCount:Integer read GetTrashCount;
   end;
 
   TEvaluator = class
@@ -76,7 +72,6 @@ type
 
     function  Run(node: TASTNode; env: TEnvironment): TEvalObject;
     function  Eval(node: TASTNode; env: TEnvironment): TEvalObject;
-    procedure Sweep(env: TEnvironment);
 
     property Gc: TGarbageCollector read FGarbageCollector;
   end;
@@ -154,11 +149,10 @@ begin
       Inc(FGCCounter);
       if (FGCCounter=100) then
       begin
-        //for y := FFunctEnv.Count-1 downto 0 do
-        //  FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
+        for y := FFunctEnv.Count-1 downto 0 do
+          FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
 
-        //FGarbageCollector.Sweep;
-        //FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
+        FGarbageCollector.Sweep;
         FGCCounter := 0;
       end;
 
@@ -783,7 +777,6 @@ destructor TEvaluator.Destroy;
 var
   current: TEnvironment;
 begin
-  FGarbageCollector.EmptyTrash;
   FGarbageCollector.Free;
 
   for current in FFunctEnv do
@@ -836,12 +829,6 @@ begin
     end;
 
   Result := Eval(node, env);
-end;
-
-procedure TEvaluator.Sweep(env: TEnvironment);
-begin
-  FGarbageCollector.Mark(env);
-  FGarbageCollector.Sweep;
 end;
 
 function TEvaluator.unwrapReturnValue(obj:TEvalObject):TEvalObject;
@@ -1029,7 +1016,7 @@ begin
       if (FModules.IndexOf(TASTImportStatement(node).Module)<0) then
         Result := Eval(builtedmodules[TASTImportStatement(node).Module], env)
     end
-    else Result := CreateErrorObj('nmodule %s not found.',[TASTImportStatement(node).Module]);
+    else Result := CreateErrorObj('module %s not found.',[TASTImportStatement(node).Module]);
   end
   else
   if node is TASTConstStatement then
@@ -1172,7 +1159,6 @@ constructor TGarbageCollector.Create;
 begin
   FLock:= TCriticalSection.Create;
   FObjects:= TList<TEvalObject>.Create;
-  FTrashObjects:= TList<TEvalObject>.Create;
 {  FElemCount := 0;
   FHead := TEvalObject.Create;  }
 end;
@@ -1203,47 +1189,14 @@ begin
     FLock.Release;
   end;
 
-  FreeAndNil(FTrashObjects);
   FreeAndNil(FObjects);
   FreeAndNil(FLock);
   inherited;
 end;
 
-procedure TGarbageCollector.EmptyTrash;
-var
-  i: Integer;
-  P: Pointer;
-begin
-  P:=nil;
-  FLock.Acquire;
-  try
-    FTrashObjects.Sort;
-    for i := 0 to FTrashObjects.Count-1 do
-    try
-      if (P<>FTrashObjects[i]) then
-      if NOT (FTrashObjects[i].GcManualFree) then
-      begin
-        P:=FTrashObjects[i];
-        FTrashObjects[i].Free;
-      end;
-    except
-      Continue;
-    end;
-
-    FTrashObjects.Clear;
-  finally
-    FLock.Release;
-  end;
-end;
-
 function TGarbageCollector.GetElemCount: Integer;
 begin
   Result := FObjects.Count;
-end;
-
-function TGarbageCollector.GetTrashCount: Integer;
-begin
-  Result := FTrashObjects.Count;
 end;
 
 procedure TGarbageCollector.Mark(AObject: TEvalObject);
@@ -1345,6 +1298,7 @@ begin
     for current in FObjects do
       if NOT current.GcMark and NOT current.GcManualFree then
       begin
+
         FObjects.Remove(current);
         current.Free;
       end;

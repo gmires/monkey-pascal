@@ -121,11 +121,6 @@ begin
           FreeAndNil(Prg);
         end;
       finally
-        List.Items.Add('Gc before sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
-        Ev.Sweep(E);
-        List.Items.Add('Gc 1° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
-        Ev.Sweep(E);
-        List.Items.Add('Gc 2° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
         Ev.Free;
         E.Free;
       end;

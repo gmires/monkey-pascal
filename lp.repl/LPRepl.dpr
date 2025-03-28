@@ -87,8 +87,6 @@ begin
     end;
 
   finally
-    Eval.Sweep(Env);
-    Eval.Sweep(Env);
     Eval.Free;
     Env.Free;
   end;
@@ -201,8 +199,6 @@ begin
           Readln;
         end;
       finally
-        Evl.Sweep(Env);
-        Evl.Sweep(Env);
         Evl.Free;
         Env.Free;
       end;
