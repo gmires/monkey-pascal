@@ -19,6 +19,7 @@ const
 	ARRAY_OBJ        = 'ARRAY';
 	HASH_OBJ         = 'HASH';
 	LOOP_OBJ         = 'LOOP';
+	CLOSURE_OBJ      = 'CLOSURE';
 
 const
   LOOP_TYPE_BREAK  = 'break';
@@ -44,6 +45,8 @@ type
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
     function SetOrCreateValue(name:string; value:TEvalObject; IsConst:Boolean ):TEvalObject;
+
+    function Clone:TEnvironment;
   end;
 
   // ---- Object --------------------
@@ -187,6 +190,19 @@ type
     function Clone:TEvalObject; override;
   public
     constructor Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement);
+    destructor Destroy; override;
+  end;
+
+  TClosureObject = class(TEvalObject)
+  public
+    Env: TEnvironment;
+    Funct:TFunctionObject;
+  public
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create(AFunct: TFunctionObject; AEnv:TEnvironment);
     destructor Destroy; override;
   end;
 
@@ -443,22 +459,6 @@ constructor TReturnValueObject.Create(AValue: TEvalObject);
 begin
   Create;
   Value := AValue.Clone;
-  {
-  if AValue is TNumberObject  then Value := TNumberObject.Create(TNumberObject(AValue).Value)
-  else
-  if AValue is TBooleanObject then Value := TBooleanObject.Create(TBooleanObject(AValue).Value)
-  else
-  if AValue is TStringObject then Value := TStringObject.Create(TStringObject(AValue).Value)
-  else
-  if AValue is TNumberObject then Value := TNullObject.Create
-  else
-  if AValue is TErrorObject then Value := TErrorObject.Create(TErrorObject(AValue).ErrMessage)
-  else
-  if AValue is TFunctionObject then
-    Value := TFunctionObject.Create(TFunctionObject(AValue).Parameters
-      ,TFunctionObject(AValue).Body
-      ,TFunctionObject(AValue).Env);
-  }
 end;
 
 destructor TReturnValueObject.Destroy;
@@ -521,7 +521,7 @@ begin
     for i := 0 to AParameters.Count-1 do
       Parameters.Add(AParameters[i].Clone as TASTIdentifier);
 
-  Body := ABody.Clone as TASTBlockStatement;
+  Body:= ABody.Clone as TASTBlockStatement;
 end;
 
 destructor TFunctionObject.Destroy;
@@ -569,6 +569,24 @@ constructor TEnvironment.Create(AOuter: TEnvironment);
 begin
   Create;
   FOuter := AOuter;
+end;
+
+function TEnvironment.Clone: TEnvironment;
+var
+  key :string;
+begin
+  Result := TEnvironment.Create;
+
+  for key in FStore.Keys do
+    Result.Store.Add(key,FStore[key]);
+
+  for key in FConst do
+    Result.FConst.Add(key);
+
+  for key in FAllowedIdent do
+    Result.FAllowedIdent.Add(key);
+
+  Result.Outer := Outer;
 end;
 
 constructor TEnvironment.Create(AOuter: TEnvironment; AllowedIdent: TStringList);
@@ -1372,6 +1390,36 @@ end;
 function TLoopObject.ObjectType: TEvalObjectType;
 begin
   Result := LOOP_OBJ;
+end;
+
+{ TClosureObject }
+
+function TClosureObject.Clone: TEvalObject;
+begin
+  Result := TClosureObject.Create(Funct.Clone as TFunctionObject, Env);
+end;
+
+constructor TClosureObject.Create(AFunct: TFunctionObject; AEnv: TEnvironment);
+begin
+  inherited Create;
+  Funct:=AFunct;
+  Env := AEnv.Clone;
+end;
+
+destructor TClosureObject.Destroy;
+begin
+  if Assigned(Env) then Env.Free;
+  inherited;
+end;
+
+function TClosureObject.Inspect: string;
+begin
+  Result := '<closure> ' + Funct.Inspect;
+end;
+
+function TClosureObject.ObjectType: TEvalObjectType;
+begin
+  Result := CLOSURE_OBJ;
 end;
 
 end.

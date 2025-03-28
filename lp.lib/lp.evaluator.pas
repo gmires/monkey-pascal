@@ -134,7 +134,7 @@ begin
   Result := evalStatements(TASTBlockStatement(node).FStatements, env);
 end;
 
-function TEvaluator.evalStatements(Statements: TList<TASTStatement>;  env: TEnvironment): TEvalObject;
+function TEvaluator.evalStatements(Statements: TList<TASTStatement>; env: TEnvironment): TEvalObject;
 var
   i,y: Integer;
 begin
@@ -154,11 +154,11 @@ begin
       Inc(FGCCounter);
       if (FGCCounter=100) then
       begin
-        for y := FFunctEnv.Count-1 downto 0 do
-          FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
+        //for y := FFunctEnv.Count-1 downto 0 do
+        //  FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
 
-        FGarbageCollector.Sweep;
-        FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
+        //FGarbageCollector.Sweep;
+        //FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
         FGCCounter := 0;
       end;
 
@@ -877,7 +877,6 @@ begin
     FEnv := AddEnv(extendFunctionEnv(fn as TFunctionObject, args, env));
     try
       Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
-      FEnv.SetOrCreateValue(fn.Inspect, Result, false);
     finally
       Gc.Mark(FEnv);
       DelEnv(FEnv);
@@ -1089,6 +1088,16 @@ begin
       Result := env.SetOrCreateValue(TASTFunctionDefineStatement(node).Indent, Result, True);
   end
   else
+  if node is TASTClosureLiteral then
+  begin
+    Result := Eval(TASTClosureLiteral(node).Funct, env);
+    if NOT isError(Result) then
+    begin
+      Result := TClosureObject.Create(Result as TFunctionObject, env);
+      FGarbageCollector.Add(Result);
+    end;
+  end
+  else
   if node is TASTFunctionLiteral then
   begin
     Result := TFunctionObject.Create(TASTFunctionLiteral(node).Parameters,TASTFunctionLiteral(node).Body);
@@ -1104,6 +1113,9 @@ begin
       try
         if ((args.Count=1) and (isError(args[0]))) then
           Result := args[0]
+        else
+        if Result is TClosureObject then
+          Result := applyFunction(TClosureObject(Result).Funct, args, TClosureObject(Result).Env)
         else
           Result := applyFunction(Result, args, env);
       finally
@@ -1260,9 +1272,10 @@ begin
         end
         else
         if AObject.ObjectType=RETURN_VALUE_OBJ then
-        begin
-          Mark(TReturnValueObject(AObject).Value);
-        end
+          Mark(TReturnValueObject(AObject).Value)
+        else
+        if AObject.ObjectType=CLOSURE_OBJ then
+          Mark(TClosureObject(AObject).Env)
         ;
       end;
 end;

@@ -338,6 +338,15 @@ type
     destructor Destroy; override;
   end;
 
+  TASTClosureLiteral = class(TASTExpression)
+    Funct:TASTFunctionLiteral;
+    function toString:string; override;
+    function Clone:TASTNode; override;
+  public
+    constructor Create(AFunct:TASTFunctionLiteral);
+    destructor Destroy; override;
+  end;
+
   TASTCallExpression = class(TASTExpression)
     Funct:TASTExpression;
     Args: TList<TASTExpression>;
@@ -905,7 +914,6 @@ begin
       FreeAndNilAssigned(Result);
   end
   else FreeAndNilAssigned(Result);
-
 end;
 
 function TParser.ParseFunctionParameters: TList<TASTIdentifier>;
@@ -1137,16 +1145,23 @@ begin
 end;
 
 function TParser.ParseReturnStatement: TASTReturnStatement;
+var
+  ReturnValue: TASTExpression;
 begin
   Result := TASTReturnStatement.Create;
   Result.Token := CurrToken.Clone;
 
   nextToken;
 
-  Result.ReturnValue := ParseExpression(LOWEST);
+  ReturnValue := ParseExpression(LOWEST);;
 
-  if NOT Assigned(Result.ReturnValue) then
-    Result.ReturnValue := TASTNullLiteral.Create;
+  if NOT Assigned(ReturnValue) then
+    Result.ReturnValue := TASTNullLiteral.Create
+  else
+  if (ReturnValue is TASTFunctionLiteral) then
+    Result.ReturnValue :=  TASTClosureLiteral.Create(ReturnValue as TASTFunctionLiteral)
+  else
+    Result.ReturnValue := ReturnValue;
 
   if peekTokenIs(ttSEMICOLON) then
     nextToken;
@@ -2231,6 +2246,32 @@ end;
 function TASTFunctionDefineStatement.toString: string;
 begin
   Result := 'function define '+Indent;
+end;
+
+{ TASTClosureLiteral }
+
+function TASTClosureLiteral.Clone: TASTNode;
+begin
+  Result := TASTClosureLiteral.Create(Funct.Clone as TASTFunctionLiteral);
+  TASTClosureLiteral(Result).Token := Token.Clone;
+end;
+
+constructor TASTClosureLiteral.Create(AFunct:TASTFunctionLiteral);
+begin
+  inherited Create;
+  Token := AFunct.Token.Clone;
+  Funct := AFunct;
+end;
+
+destructor TASTClosureLiteral.Destroy;
+begin
+  FreeAndNilAssigned(Funct);
+  inherited;
+end;
+
+function TASTClosureLiteral.toString: string;
+begin
+  Result := 'closure ';
 end;
 
 end.

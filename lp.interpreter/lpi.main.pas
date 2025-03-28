@@ -288,6 +288,12 @@ begin
       Describe(TASTFunctionLiteral(node).Body, N);
     end
     else
+    if node is TASTClosureLiteral then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTClosureLiteral(node).Funct, N);
+    end
+    else
     if node is TASTArrayLiteral then
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
