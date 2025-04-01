@@ -77,9 +77,12 @@ type
     function  CurrentIndex:TEvalObject; virtual;
     procedure Reset; virtual;
 
+    procedure AddRefCount;
+    procedure DecRefCount;
   public
     { ** for GC (mark and sweep) ** }
     //GcNext:TEvalObject;
+    GcRefCount:Integer;
     GcMark:Boolean;
     GcManualFree:Boolean;
     constructor Create;
@@ -265,6 +268,7 @@ type
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
   public
+    constructor Create;
     destructor Destroy; override;
   end;
 
@@ -281,6 +285,11 @@ end;
 
 { TEvalObject }
 
+procedure TEvalObject.AddRefCount;
+begin
+  Inc(GcRefCount);
+end;
+
 function TEvalObject.Clone: TEvalObject;
 begin
   Result := nil; { virtual }
@@ -289,6 +298,7 @@ end;
 constructor TEvalObject.Create;
 begin
   //GcNext := nil;
+  GcRefCount := 0;
   GcManualFree := False;
   GcMark := False;
   Reset;
@@ -297,6 +307,13 @@ end;
 function TEvalObject.CurrentIndex: TEvalObject;
 begin
   Result := nil;
+end;
+
+procedure TEvalObject.DecRefCount;
+begin
+  Dec(GcRefCount);
+  if GcRefCount<0 then
+    GcRefCount:=0;
 end;
 
 destructor TEvalObject.Destroy;
@@ -383,6 +400,7 @@ end;
 constructor TNumberObject.Create(AValue: Double);
 begin
   inherited Create;
+  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -429,6 +447,7 @@ end;
 constructor TBooleanObject.Create(AValue: Boolean);
 begin
   inherited Create;
+  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -561,7 +580,7 @@ constructor TEnvironment.Create;
 begin
   FStore := TDictionary<string,TEvalObject>.Create;
   FConst := TStringList.Create;
-  FAllowedIdent:= TStringList.Create;
+  FAllowedIdent := TStringList.Create;
   FOuter := nil;
 end;
 
@@ -596,13 +615,9 @@ begin
 end;
 
 destructor TEnvironment.Destroy;
-//var
-//  key :string;
+var
+  current:TEvalObject;
 begin
-{
-  for key in FStore.Keys do
-    FStore[key].Free;  }
-
   FStore.Free;
   FConst.Free;
   FAllowedIdent.Free;
@@ -630,9 +645,12 @@ begin
   if FStore.ContainsKey(name) then
   begin
     if FConst.IndexOf(name)<0 then
-      FStore[name] := Result
-    else
-      Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
+    begin
+      FStore[name].GcRefCount := 0;
+      FStore[name].GcMark := False;
+      FStore[name] := Result;
+    end
+    else Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
   end
   else
   begin
@@ -654,9 +672,12 @@ begin
   if FStore.ContainsKey(name) then
   begin
     if FConst.IndexOf(name)<0 then
+    begin
+      FStore[name].GcRefCount := 0;
+      FStore[name].GcMark := False;
       FStore[name] := Result
-    else
-      Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
+    end
+    else Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
   end
   else
   if FOuter<>nil then
@@ -692,6 +713,7 @@ end;
 constructor TStringObject.Create(AValue: string);
 begin
   inherited Create;
+  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -891,6 +913,7 @@ end;
 constructor TArrayObject.Create;
 begin
   inherited Create;
+  GcRefCount := 1;
 end;
 
 constructor TArrayObject.CreateWithElements;
@@ -1182,6 +1205,12 @@ begin
     v := Pairs[key].Value.Clone;
     THashObject(Result).Pairs.Add(THashkey.fromObject(k), THashPair.Create(k,v));
   end;
+end;
+
+constructor THashObject.Create;
+begin
+  inherited Create;
+  GcRefCount := 1;
 end;
 
 function THashObject.CurrentIndex: TEvalObject;

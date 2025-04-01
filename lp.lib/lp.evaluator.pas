@@ -147,7 +147,7 @@ begin
       end;
 
       Inc(FGCCounter);
-      if (FGCCounter>=100) then
+      if (FGCCounter>=1000) then
       begin
         for y := FFunctEnv.Count-1 downto 0 do
           Gc.MarkSigleEnv(FFunctEnv[y]);
@@ -264,6 +264,7 @@ begin
     Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjectType]);
 
   Gc.Add(Result);
+  right.DecRefCount;
 end;
 
 function TEvaluator.evalPostfixExpression(Op: string;  left: TEvalObject): TEvalObject;
@@ -279,6 +280,7 @@ begin
   else Result := TErrorObject.newError('unknown type operator: %s%s', [left.ObjectType, Op]);
 
   Gc.Add(Result);
+  left.DecRefCount;
 end;
 
 function TEvaluator.evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -461,6 +463,9 @@ begin
 		Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType]);
 
   Gc.Add(Result);
+
+  left.DecRefCount;
+  right.DecRefCount;
 end;
 
 function TEvaluator.evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
@@ -1274,7 +1279,8 @@ begin
       end;}
 
     for i := 0 to FObjects.Count-1 do
-      FObjects[i].GcMark := False;
+      if FObjects[i].GcRefCount<=0 then
+        FObjects[i].GcMark := False;
   finally
     FLock.Release;
   end;
