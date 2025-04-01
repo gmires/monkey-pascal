@@ -121,11 +121,6 @@ begin
           FreeAndNil(Prg);
         end;
       finally
-        List.Items.Add('Gc before sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
-        Ev.Sweep(E);
-        List.Items.Add('Gc 1° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
-        Ev.Sweep(E);
-        List.Items.Add('Gc 2° after sweep Object = ' + IntToStr(Ev.Gc.ElemCount) + ', in trash = ' + IntToStr(Ev.Gc.TrashCount));
         Ev.Free;
         E.Free;
       end;
@@ -286,6 +281,12 @@ begin
     begin
       N:= TVAST.Items.AddChild(SParent, node.toString);
       Describe(TASTFunctionLiteral(node).Body, N);
+    end
+    else
+    if node is TASTClosureLiteral then
+    begin
+      N:= TVAST.Items.AddChild(SParent, node.toString);
+      Describe(TASTClosureLiteral(node).Funct, N);
     end
     else
     if node is TASTArrayLiteral then

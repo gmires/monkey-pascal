@@ -1,6 +1,6 @@
 object LPMain: TLPMain
-  Left = 331
-  Top = 145
+  Left = 386
+  Top = 141
   Caption = 'LP Interpreter v.1.0'
   ClientHeight = 815
   ClientWidth = 1150
@@ -84,7 +84,7 @@ object LPMain: TLPMain
       object Label1: TLabel
         AlignWithMargins = True
         Left = 3
-        Top = 582
+        Top = 440
         Width = 1130
         Height = 13
         Margins.Top = 0
@@ -97,12 +97,13 @@ object LPMain: TLPMain
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
+        ExplicitTop = 582
         ExplicitWidth = 67
       end
       object SplitLog: TSplitter
         AlignWithMargins = True
         Left = 3
-        Top = 598
+        Top = 456
         Width = 1130
         Height = 3
         Cursor = crVSplit
@@ -114,7 +115,7 @@ object LPMain: TLPMain
         Left = 3
         Top = 16
         Width = 1130
-        Height = 563
+        Height = 421
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -146,16 +147,23 @@ object LPMain: TLPMain
         ParentFont = False
         TabOrder = 0
         ExplicitLeft = 8
-        ExplicitHeight = 572
+        ExplicitHeight = 563
       end
       object List: TListBox
         AlignWithMargins = True
         Left = 3
-        Top = 607
+        Top = 465
         Width = 1130
-        Height = 135
+        Height = 277
         Align = alBottom
+        Color = clBlack
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -11
+        Font.Name = 'Consolas'
+        Font.Style = []
         ItemHeight = 13
+        ParentFont = False
         PopupMenu = pmLog
         TabOrder = 1
       end

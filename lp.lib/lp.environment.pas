@@ -19,6 +19,7 @@ const
 	ARRAY_OBJ        = 'ARRAY';
 	HASH_OBJ         = 'HASH';
 	LOOP_OBJ         = 'LOOP';
+	CLOSURE_OBJ      = 'CLOSURE';
 
 const
   LOOP_TYPE_BREAK  = 'break';
@@ -44,6 +45,8 @@ type
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
     function SetOrCreateValue(name:string; value:TEvalObject; IsConst:Boolean ):TEvalObject;
+
+    function Clone:TEnvironment;
   end;
 
   // ---- Object --------------------
@@ -74,9 +77,12 @@ type
     function  CurrentIndex:TEvalObject; virtual;
     procedure Reset; virtual;
 
+    procedure AddRefCount;
+    procedure DecRefCount;
   public
     { ** for GC (mark and sweep) ** }
     //GcNext:TEvalObject;
+    GcRefCount:Integer;
     GcMark:Boolean;
     GcManualFree:Boolean;
     constructor Create;
@@ -182,12 +188,24 @@ type
   public
     Parameters: TList<TASTIdentifier>;
 	  Body: TASTBlockStatement;
-	  Env: TEnvironment;
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   public
-    constructor Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement; AEnv: TEnvironment);
+    constructor Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement);
+    destructor Destroy; override;
+  end;
+
+  TClosureObject = class(TEvalObject)
+  public
+    Env: TEnvironment;
+    Funct:TFunctionObject;
+  public
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create(AFunct: TFunctionObject; AEnv:TEnvironment);
     destructor Destroy; override;
   end;
 
@@ -250,6 +268,7 @@ type
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
   public
+    constructor Create;
     destructor Destroy; override;
   end;
 
@@ -266,6 +285,11 @@ end;
 
 { TEvalObject }
 
+procedure TEvalObject.AddRefCount;
+begin
+  Inc(GcRefCount);
+end;
+
 function TEvalObject.Clone: TEvalObject;
 begin
   Result := nil; { virtual }
@@ -274,6 +298,7 @@ end;
 constructor TEvalObject.Create;
 begin
   //GcNext := nil;
+  GcRefCount := 0;
   GcManualFree := False;
   GcMark := False;
   Reset;
@@ -282,6 +307,13 @@ end;
 function TEvalObject.CurrentIndex: TEvalObject;
 begin
   Result := nil;
+end;
+
+procedure TEvalObject.DecRefCount;
+begin
+  Dec(GcRefCount);
+  if GcRefCount<0 then
+    GcRefCount:=0;
 end;
 
 destructor TEvalObject.Destroy;
@@ -368,6 +400,7 @@ end;
 constructor TNumberObject.Create(AValue: Double);
 begin
   inherited Create;
+  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -414,6 +447,7 @@ end;
 constructor TBooleanObject.Create(AValue: Boolean);
 begin
   inherited Create;
+  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -444,22 +478,6 @@ constructor TReturnValueObject.Create(AValue: TEvalObject);
 begin
   Create;
   Value := AValue.Clone;
-  {
-  if AValue is TNumberObject  then Value := TNumberObject.Create(TNumberObject(AValue).Value)
-  else
-  if AValue is TBooleanObject then Value := TBooleanObject.Create(TBooleanObject(AValue).Value)
-  else
-  if AValue is TStringObject then Value := TStringObject.Create(TStringObject(AValue).Value)
-  else
-  if AValue is TNumberObject then Value := TNullObject.Create
-  else
-  if AValue is TErrorObject then Value := TErrorObject.Create(TErrorObject(AValue).ErrMessage)
-  else
-  if AValue is TFunctionObject then
-    Value := TFunctionObject.Create(TFunctionObject(AValue).Parameters
-      ,TFunctionObject(AValue).Body
-      ,TFunctionObject(AValue).Env);
-  }
 end;
 
 destructor TReturnValueObject.Destroy;
@@ -509,11 +527,10 @@ end;
 
 function TFunctionObject.Clone: TEvalObject;
 begin
-  Result := TFunctionObject.Create(Parameters, Body, Env);
+  Result := TFunctionObject.Create(Parameters, Body);
 end;
 
-constructor TFunctionObject.Create(AParameters: TList<TASTIdentifier>;
-  ABody: TASTBlockStatement; AEnv: TEnvironment);
+constructor TFunctionObject.Create(AParameters: TList<TASTIdentifier>; ABody: TASTBlockStatement);
 var
   i: Integer;
 begin
@@ -523,8 +540,7 @@ begin
     for i := 0 to AParameters.Count-1 do
       Parameters.Add(AParameters[i].Clone as TASTIdentifier);
 
-  Body := ABody.Clone as TASTBlockStatement;
-  Env := AEnv;
+  Body:= ABody.Clone as TASTBlockStatement;
 end;
 
 destructor TFunctionObject.Destroy;
@@ -564,7 +580,7 @@ constructor TEnvironment.Create;
 begin
   FStore := TDictionary<string,TEvalObject>.Create;
   FConst := TStringList.Create;
-  FAllowedIdent:= TStringList.Create;
+  FAllowedIdent := TStringList.Create;
   FOuter := nil;
 end;
 
@@ -574,6 +590,24 @@ begin
   FOuter := AOuter;
 end;
 
+function TEnvironment.Clone: TEnvironment;
+var
+  key :string;
+begin
+  Result := TEnvironment.Create;
+
+  for key in FStore.Keys do
+    Result.Store.Add(key,FStore[key]);
+
+  for key in FConst do
+    Result.FConst.Add(key);
+
+  for key in FAllowedIdent do
+    Result.FAllowedIdent.Add(key);
+
+  Result.Outer := Outer;
+end;
+
 constructor TEnvironment.Create(AOuter: TEnvironment; AllowedIdent: TStringList);
 begin
   Create(AOuter);
@@ -581,13 +615,9 @@ begin
 end;
 
 destructor TEnvironment.Destroy;
-//var
-//  key :string;
+var
+  current:TEvalObject;
 begin
-{
-  for key in FStore.Keys do
-    FStore[key].Free;  }
-
   FStore.Free;
   FConst.Free;
   FAllowedIdent.Free;
@@ -615,9 +645,12 @@ begin
   if FStore.ContainsKey(name) then
   begin
     if FConst.IndexOf(name)<0 then
-      FStore[name] := Result
-    else
-      Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
+    begin
+      FStore[name].GcRefCount := 0;
+      FStore[name].GcMark := False;
+      FStore[name] := Result;
+    end
+    else Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
   end
   else
   begin
@@ -639,9 +672,12 @@ begin
   if FStore.ContainsKey(name) then
   begin
     if FConst.IndexOf(name)<0 then
+    begin
+      FStore[name].GcRefCount := 0;
+      FStore[name].GcMark := False;
       FStore[name] := Result
-    else
-      Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
+    end
+    else Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
   end
   else
   if FOuter<>nil then
@@ -677,6 +713,7 @@ end;
 constructor TStringObject.Create(AValue: string);
 begin
   inherited Create;
+  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -876,6 +913,7 @@ end;
 constructor TArrayObject.Create;
 begin
   inherited Create;
+  GcRefCount := 1;
 end;
 
 constructor TArrayObject.CreateWithElements;
@@ -1169,6 +1207,12 @@ begin
   end;
 end;
 
+constructor THashObject.Create;
+begin
+  inherited Create;
+  GcRefCount := 1;
+end;
+
 function THashObject.CurrentIndex: TEvalObject;
 begin
   Result := Pairs.ToArray[IIndex-1].Value.Key;
@@ -1375,6 +1419,36 @@ end;
 function TLoopObject.ObjectType: TEvalObjectType;
 begin
   Result := LOOP_OBJ;
+end;
+
+{ TClosureObject }
+
+function TClosureObject.Clone: TEvalObject;
+begin
+  Result := TClosureObject.Create(Funct.Clone as TFunctionObject, Env);
+end;
+
+constructor TClosureObject.Create(AFunct: TFunctionObject; AEnv: TEnvironment);
+begin
+  inherited Create;
+  Funct:=AFunct;
+  Env := AEnv.Clone;
+end;
+
+destructor TClosureObject.Destroy;
+begin
+  if Assigned(Env) then Env.Free;
+  inherited;
+end;
+
+function TClosureObject.Inspect: string;
+begin
+  Result := '<closure> ' + Funct.Inspect;
+end;
+
+function TClosureObject.ObjectType: TEvalObjectType;
+begin
+  Result := CLOSURE_OBJ;
 end;
 
 end.

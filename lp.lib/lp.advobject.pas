@@ -265,7 +265,7 @@ begin
   if Index.ObjectType<>NUMBER_OBJ then
     Result := TErrorObject.newError('index type <%s> not supported: %s', [Index.ObjectType, ObjectType])
   else
-  if value.ObjectType<>NUMBER_OBJ then
+  if value.ObjectType<>STRING_OBJ then
     Result := TErrorObject.newError('value type <%s> not supported: %s', [value.ObjectType, ObjectType])
   else
   begin

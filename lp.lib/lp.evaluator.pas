@@ -13,9 +13,7 @@ type
     // -- FElemCount: Integer;
     FLock: TCriticalSection;
     FObjects: TList<TEvalObject>;
-    FTrashObjects: TList<TEvalObject>;
     function GetElemCount: Integer;
-    function GetTrashCount: Integer;
   public
     constructor Create;
     destructor Destroy; override;
@@ -26,10 +24,8 @@ type
     procedure Mark(AEnvironment: TEnvironment); overload;
     procedure MarkSigleEnv(AEnvironment: TEnvironment);
     procedure Sweep;
-    procedure EmptyTrash;
 
     property ElemCount:Integer read GetElemCount;
-    property TrashCount:Integer read GetTrashCount;
   end;
 
   TEvaluator = class
@@ -58,29 +54,24 @@ type
     function evalIdentifier(node: TASTIdentifier; env :TEnvironment):TEvalObject;
     function evalHashLiteral(node:TASTHashLiteral; env :TEnvironment):TEvalObject;
     function evalExpressions(exps:TList<TASTExpression>; env:TEnvironment):TList<TEvalObject>;
-    // -- function evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
-    // -- function evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
     function evalIndexExpression(left, index:TEvalObject):TEvalObject;
     function evalMethodCallExpression(node:TASTMethodCallExpression; env: TEnvironment):TEvalObject;
     function evalMethodCall(AObject: TEvalObject; node:TASTCallExpression; env: TEnvironment):TEvalObject;
-    function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
+    function extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>; env:TEnvironment):TEnvironment;
     function unwrapReturnValue(obj:TEvalObject):TEvalObject;
-    function applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
-    // -- assign function -- //
+    function applyFunction(fn: TEvalObject; args: TList<TEvalObject>; env:TEnvironment):TEvalObject;
     function assignExpression(node: TASTNode; AValue: TEvalObject; env: TEnvironment):TEvalObject;
-    // -- function assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
-    // -- function assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
     // -- utils function -- //
     function  CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
     function  CreateNullObj: TNullObject;
-    function AddEnv(AEnv:TEnvironment):TEnvironment;
+    function  AddEnv(AEnv:TEnvironment):TEnvironment;
+    procedure DelEnv(AEnv:TEnvironment);
   public
     constructor Create;
     destructor Destroy; override;
 
     function  Run(node: TASTNode; env: TEnvironment): TEvalObject;
     function  Eval(node: TASTNode; env: TEnvironment): TEvalObject;
-    procedure Sweep(env: TEnvironment);
 
     property Gc: TGarbageCollector read FGarbageCollector;
   end;
@@ -138,7 +129,7 @@ begin
   Result := evalStatements(TASTBlockStatement(node).FStatements, env);
 end;
 
-function TEvaluator.evalStatements(Statements: TList<TASTStatement>;  env: TEnvironment): TEvalObject;
+function TEvaluator.evalStatements(Statements: TList<TASTStatement>; env: TEnvironment): TEvalObject;
 var
   i,y: Integer;
 begin
@@ -148,21 +139,20 @@ begin
     Result := Eval(Statements[i], env);
     if (Result<>nil) then
     begin
-      FGarbageCollector.Mark(Result);
+      Gc.Mark(Result);
       if (Result.ObjectType = RETURN_VALUE_OBJ) then
       begin
-        FGarbageCollector.Add(TReturnValueObject(Result).Value);
-        FGarbageCollector.Mark(TReturnValueObject(Result).Value);
+        Gc.Add(TReturnValueObject(Result).Value);
+        Gc.Mark(TReturnValueObject(Result).Value);
       end;
 
       Inc(FGCCounter);
-      if (FGCCounter>=100) then
+      if (FGCCounter>=1000) then
       begin
         for y := FFunctEnv.Count-1 downto 0 do
-          FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
+          Gc.MarkSigleEnv(FFunctEnv[y]);
 
-        FGarbageCollector.Sweep;
-        FGarbageCollector.EmptyTrash; // -- check for delete unused object -- //
+        GC.Sweep;
         FGCCounter := 0;
       end;
 
@@ -201,16 +191,20 @@ begin
       Result := AObject.MethodCall(method, args, env);
       if (Result is TFunctionObject) then
       begin
-        FEnv := AddEnv(extendFunctionEnv(Result as TFunctionObject, args));
-        FEnv.SetOrCreateValue('self', AObject, false);
-        Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
-        Gc.Mark(FEnv);
+        FEnv := AddEnv(extendFunctionEnv(Result as TFunctionObject, args, env));
+        try
+          FEnv.SetOrCreateValue('self', AObject, false);
+          Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
+        finally
+          Gc.Mark(FEnv);
+          DelEnv(FEnv);
+        end;
       end
       else
       if Result=nil then
         Result := CreateErrorObj('Error call object method <%s> on <%s>', [method, AObject.ObjectType])
       else
-        FGarbageCollector.Add(Result);
+        Gc.Add(Result);
     end;
   finally
     args.Free;
@@ -219,56 +213,18 @@ end;
 
 function TEvaluator.evalMethodCallExpression(node: TASTMethodCallExpression; env: TEnvironment): TEvalObject;
 var
-//  args:TList<TEvalObject>;
-//  ObjCall:TEvalObject;
-//  FEnv:TEnvironment;
-//  method: string;
   index: TEvalObject;
 begin
   Result:= Eval(node.Objc, env);
   if NOT isError(Result) then
   begin
-//    ObjCall:= Result;
     if (node.Call is TASTCallExpression) then
     begin
       Result := evalMethodCall(Result, node.Call as TASTCallExpression, env);
-    {
-      args:= evalExpressions(TASTCallExpression(node.Call).Args, env);
-      try
-        if ((args.Count=1) and (isError(args[0]))) then
-          Result := args[0]
-        else
-        begin
-          method := (TASTCallExpression(node.Call).Funct as TASTIdentifier).Value;
-          Result := Result.MethodCall(method, args, env);
-          if (Result is TFunctionObject) then
-          begin
-            FEnv := extendFunctionEnv(Result as TFunctionObject, args);
-            FEnv.SetOrCreateValue('self', ObjCall, false);
-            Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
-            Gc.Mark(FEnv);
-            if FFunctEnv.IndexOf(FEnv)<0 then
-              FFunctEnv.Add(FEnv);
-          end
-          else
-          if Result=nil then
-            Result := CreateErrorObj('Error call object method <%s> on <%s>', [method, ObjCall.ObjectType])
-          else
-            FGarbageCollector.Add(Result);
-
-        end;
-      finally
-        args.Free;
-      end;
-
-      }
     end
     else
     if (node.Call is TASTIdentifier) then
-    begin
-      Result:= Result.GetIdentifer((node.Call as TASTIdentifier).Value, nil);
-      Gc.Add(Result);
-    end
+      Result:= Gc.Add(Result.GetIdentifer((node.Call as TASTIdentifier).Value, nil))
     else
     if (node.Call is TASTIndexExpression) then
     begin
@@ -276,11 +232,9 @@ begin
       begin
         index:= Eval((node.Call as TASTIndexExpression).Index, env);
         if NOT isError(index) then
-        begin
-          Result:= Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value, index);
-          Gc.Add(Result);
-        end
-        else Result := index;
+          Result:= Gc.Add(Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value, index))
+        else
+          Result := index;
       end
       else Result := CreateErrorObj('Index Expression not an indentifier got=%s',[node.Call.toString]);
     end
@@ -309,7 +263,8 @@ begin
   else
     Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjectType]);
 
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
+  right.DecRefCount;
 end;
 
 function TEvaluator.evalPostfixExpression(Op: string;  left: TEvalObject): TEvalObject;
@@ -324,7 +279,8 @@ begin
   end
   else Result := TErrorObject.newError('unknown type operator: %s%s', [left.ObjectType, Op]);
 
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
+  left.DecRefCount;
 end;
 
 function TEvaluator.evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -506,7 +462,10 @@ begin
   else
 		Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType]);
 
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
+
+  left.DecRefCount;
+  right.DecRefCount;
 end;
 
 function TEvaluator.evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
@@ -569,34 +528,37 @@ begin
         L.Add(TASTForEachExpression(node).index);
 
       FEachEnv:= AddEnv(TEnvironment.Create(env, L));
-
-      iterable.Reset;
-      current := gc.Add(iterable.Next);
-
-      while Assigned(current) do
-      begin
-        FEachEnv.SetOrCreateValue(TASTForEachExpression(node).ident, current, false);
-        if TASTForEachExpression(node).index<>'' then
-          FEachEnv.SetOrCreateValue(TASTForEachExpression(node).index, gc.Add(iterable.CurrentIndex), false);
-
-        ret := Eval(TASTForEachExpression(node).Body, FEachEnv);
-        if Assigned(ret) then
-          if isError(ret) then
-          begin
-            Result := ret;
-            Break;
-          end
-          else
-          if ((ret.ObjectType=RETURN_VALUE_OBJ) and isError(TReturnValueObject(ret).Value)) then
-          begin
-            Result := TReturnValueObject(ret).Value;
-            Break;
-          end
-          else
-          if ((ret.ObjectType=LOOP_OBJ) and (TLoopObject(ret).LoopType=LOOP_TYPE_BREAK)) then
-            Break;
-
+      try
+        iterable.Reset;
         current := gc.Add(iterable.Next);
+
+        while Assigned(current) do
+        begin
+          FEachEnv.SetOrCreateValue(TASTForEachExpression(node).ident, current, false);
+          if TASTForEachExpression(node).index<>'' then
+            FEachEnv.SetOrCreateValue(TASTForEachExpression(node).index, gc.Add(iterable.CurrentIndex), false);
+
+          ret := Eval(TASTForEachExpression(node).Body, FEachEnv);
+          if Assigned(ret) then
+            if isError(ret) then
+            begin
+              Result := ret;
+              Break;
+            end
+            else
+            if ((ret.ObjectType=RETURN_VALUE_OBJ) and isError(TReturnValueObject(ret).Value)) then
+            begin
+              Result := TReturnValueObject(ret).Value;
+              Break;
+            end
+            else
+            if ((ret.ObjectType=LOOP_OBJ) and (TLoopObject(ret).LoopType=LOOP_TYPE_BREAK)) then
+              Break;
+
+          current := gc.Add(iterable.Next);
+        end;
+      finally
+        DelEnv(FEachEnv);
       end;
 
     finally
@@ -701,34 +663,6 @@ begin
       Result.Add(val);
     end;
 end;
-{function TEvaluator.evalArrayIndexExpression(AArray, AIndex: TEvalObject):TEvalObject;
-var
-  idx, max: Integer;
-begin
-  idx := Trunc(TNumberObject(AIndex).Value);
-  max := TArrayObject(AArray).Elements.Count - 1;
-
-  if ((idx<0) or (idx>max)) then
-    Result := CreateNullObj
-  else
-    Result := TArrayObject(AArray).Elements[idx];
-end;}
-
-{function TEvaluator.assignArrayIndexExpression(AArray, AIndex, AValue: TEvalObject):TEvalObject;
-var
-  idx, max: Integer;
-begin
-  idx := Trunc(TNumberObject(AIndex).Value);
-  max := TArrayObject(AArray).Elements.Count - 1;
-
-  if ((idx<0) or (idx>max)) then
-    Exit(CreateErrorObj('unusable index for array: %s', [TNumberObject(AIndex).Inspect]))
-  else
-  begin
-    TArrayObject(AArray).Elements[idx] := AValue;
-    Result := AArray;
-  end;
-end;}
 
 function TEvaluator.assignExpression(node: TASTNode; AValue: TEvalObject; env: TEnvironment): TEvalObject;
 var
@@ -747,18 +681,9 @@ begin
     begin
       index := Eval(TASTIndexExpression(node).Index, env);
       if NOT isError(AValue) then
-      begin
-        Result := enobj.Setindex(index, AValue);
-        Gc.Add(Result);
-        { if (enobj.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
-          Result := assignArrayIndexExpression(enobj, index, AValue)
-        else
-        if (enobj.ObjectType=HASH_OBJ) then
-          Result := assignHashIndexExpression(enobj, index, AValue)
-        else
-          Result := CreateErrorObj('index operator not supported: %s', [enobj.ObjectType]); }
-      end
-      else Result := AValue;
+        Result := Gc.Add(enobj.Setindex(index, AValue))
+      else
+        Result := AValue;
     end
     else Result := AValue;
   end
@@ -825,46 +750,6 @@ begin
   else Result := AValue;
 end;
 
-{function TEvaluator.evalHashIndexExpression(AHash, AIndex: TEvalObject):TEvalObject;
-var
-  HO:THashObject;
-  HK:THashkey;
-begin
-  HO := AHash as THashObject;
-  HK := THashkey.fromObject(AIndex);
-  if HK.ObjectType=ERROR_OBJ then
-    Exit(TErrorObject.newError('unusable as hash key: %s', [AIndex.ObjectType]));
-
-  if HO.Pairs.ContainsKey(HK) then
-    Result := HO.Pairs[HK].Value
-  else
-    Result := CreateNullObj;
-end;}
-
-{function TEvaluator.assignHashIndexExpression(AHash, AIndex, AValue: TEvalObject):TEvalObject;
-var
-  HO:THashObject;
-  HK:THashkey;
-begin
-  HO := AHash as THashObject;
-  HK := THashkey.fromObject(AIndex);
-  if HK.ObjectType=ERROR_OBJ then
-  begin
-    FreeAndNil(HK);
-    Exit( CreateErrorObj('unusable as hash key: %s', [AIndex.ObjectType]));
-  end;
-
-  if HO.Pairs.ContainsKey(HK) then
-  begin
-    HO.Pairs[HK].Value := AValue;
-    FreeAndNil(HK);
-  end
-  else
-    HO.Pairs.Add(HK,THashPair.Create(AIndex, AValue));
-
-  Result := AHash;
-end;}
-
 constructor TEvaluator.Create;
 begin
   FGCCounter := 0;
@@ -877,20 +762,19 @@ end;
 function TEvaluator.CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
 begin
   Result := TErrorObject.newError(AFormat, Args);
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 function TEvaluator.CreateNullObj: TNullObject;
 begin
   Result := TNullObject.Create;
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 destructor TEvaluator.Destroy;
 var
   current: TEnvironment;
 begin
-  FGarbageCollector.EmptyTrash;
   FGarbageCollector.Free;
 
   for current in FFunctEnv do
@@ -904,24 +788,30 @@ end;
 
 function TEvaluator.evalIndexExpression(left, index:TEvalObject):TEvalObject;
 begin
-  Result := left.GetIndex(index);
-  Gc.Add(Result);
-  { if (left.ObjectType=ARRAY_OBJ) and (index.ObjectType=NUMBER_OBJ) then
-    Result := evalArrayIndexExpression(left, index)
-  else
-  if (left.ObjectType=HASH_OBJ) then
-    Result := evalHashIndexExpression(left, index)
-  else
-    Result := CreateErrorObj('index operator not supported: %s', [left.ObjectType]); }
+  Result := Gc.Add(left.GetIndex(index));
 end;
 
-function TEvaluator.extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>):TEnvironment;
+function TEvaluator.extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>; env:TEnvironment):TEnvironment;
 var
   i: Integer;
 begin
-  Result := TEnvironment.Create(fn.Env);
+  Result := TEnvironment.Create(env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetOrCreateValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone), False);
+    Result.SetOrCreateValue(fn.Parameters[i].Value, Gc.Add(args[i].Clone), False);
+end;
+
+procedure TEvaluator.DelEnv(AEnv: TEnvironment);
+begin
+  if Assigned(AEnv) then
+  try
+    FFunctLck.Acquire;
+    if FFunctEnv.IndexOf(AEnv)>=0 then
+      FFunctEnv.Remove(AEnv);
+
+    AEnv.Free;
+  finally
+    FFunctLck.Release;
+  end;
 end;
 
 function TEvaluator.Run(node: TASTNode; env: TEnvironment): TEvalObject;
@@ -936,12 +826,6 @@ begin
     end;
 
   Result := Eval(node, env);
-end;
-
-procedure TEvaluator.Sweep(env: TEnvironment);
-begin
-  FGarbageCollector.Mark(env);
-  FGarbageCollector.Sweep;
 end;
 
 function TEvaluator.unwrapReturnValue(obj:TEvalObject):TEvalObject;
@@ -968,21 +852,24 @@ begin
   end;
 end;
 
-function TEvaluator.applyFunction(fn: TEvalObject; args: TList<TEvalObject>):TEvalObject;
+function TEvaluator.applyFunction(fn: TEvalObject; args: TList<TEvalObject>; env:TEnvironment):TEvalObject;
 var
   FEnv:TEnvironment;
 begin
   if (fn is TFunctionObject) then
   begin
-    FEnv := AddEnv(extendFunctionEnv(fn as TFunctionObject, args));
-    Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
-    Gc.Mark(FEnv);
+    FEnv := AddEnv(extendFunctionEnv(fn as TFunctionObject, args, env));
+    try
+      Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
+    finally
+      Gc.Mark(FEnv);
+      DelEnv(FEnv);
+    end;
   end
   else
   if (fn is TBuiltinObject) then
   begin
-    Result := TBuiltinObject(fn).BuiltinFunction(args);
-    FGarbageCollector.Add(Result);
+    Result := Gc.Add(TBuiltinObject(fn).BuiltinFunction(args));
   end
   else Result := CreateErrorObj('not a function: %s', [fn.ObjectType])
 end;
@@ -1001,49 +888,31 @@ begin
     Result := Eval(TASTExpressionStatement(node).Expression, env)
   else
   if node is TASTNumberLiteral then
-  begin
-    Result := TNumberObject.Create(TASTNumberLiteral(node).Value);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TNumberObject.Create(TASTNumberLiteral(node).Value))
   else
   if node is TASTBoolean then
-  begin
-    Result := nativeBoolToBooleanObject(TASTBoolean(node).Value);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(nativeBoolToBooleanObject(TASTBoolean(node).Value))
   else
   if node is TASTStringLiteral then
-  begin
-    Result := TStringObject.Create(TASTStringLiteral(node).Value);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TStringObject.Create(TASTStringLiteral(node).Value))
   else
   if node is TASTNullLiteral then
-  begin
-    Result := TNullObject.Create;
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TNullObject.Create)
   else
   if node is TASTLoopStatement then
-  begin
-    Result := TLoopObject.Create(TASTLoopStatement(node).LoopType);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TLoopObject.Create(TASTLoopStatement(node).LoopType))
   else
   if node is TASTArrayLiteral then
   begin
     Result := TArrayObject.Create;
     TArrayObject(Result).Elements := evalExpressions(TASTArrayLiteral(node).Elements, env);
-    FGarbageCollector.Add(Result);
+    Gc.Add(Result);
     if ((TArrayObject(Result).Elements.Count=1) and (isError(TArrayObject(Result).Elements[0]))) then
       Result := TArrayObject(Result).Elements[0];
   end
   else
   if node is TASTHashLiteral then
-  begin
-    Result := evalHashLiteral(TASTHashLiteral(node), env);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(evalHashLiteral(TASTHashLiteral(node), env))
   else
   if node is TASTIndexExpression then
   begin
@@ -1112,10 +981,7 @@ begin
   begin
     Result := Eval(TASTReturnStatement(node).ReturnValue, env);
 		if NOT isError(Result) then
-    begin
-      Result := TReturnValueObject.Create(Result);
-      FGarbageCollector.Add(Result);
-    end;
+      Result := Gc.Add(TReturnValueObject.Create(Result))
   end
   else
   if node is TASTImportStatement then
@@ -1125,7 +991,7 @@ begin
       if (FModules.IndexOf(TASTImportStatement(node).Module)<0) then
         Result := Eval(builtedmodules[TASTImportStatement(node).Module], env)
     end
-    else Result := CreateErrorObj('nmodule %s not found.',[TASTImportStatement(node).Module]);
+    else Result := CreateErrorObj('module %s not found.',[TASTImportStatement(node).Module]);
   end
   else
   if node is TASTConstStatement then
@@ -1184,11 +1050,15 @@ begin
       Result := env.SetOrCreateValue(TASTFunctionDefineStatement(node).Indent, Result, True);
   end
   else
-  if node is TASTFunctionLiteral then
+  if node is TASTClosureLiteral then
   begin
-    Result := TFunctionObject.Create(TASTFunctionLiteral(node).Parameters,TASTFunctionLiteral(node).Body, env);
-    FGarbageCollector.Add(Result);
+    Result := Eval(TASTClosureLiteral(node).Funct, env);
+    if NOT isError(Result) then
+      Result := Gc.Add(TClosureObject.Create(Result as TFunctionObject, env))
   end
+  else
+  if node is TASTFunctionLiteral then
+    Result := Gc.Add(TFunctionObject.Create(TASTFunctionLiteral(node).Parameters,TASTFunctionLiteral(node).Body))
   else
   if node is TASTCallExpression then
   begin
@@ -1200,7 +1070,10 @@ begin
         if ((args.Count=1) and (isError(args[0]))) then
           Result := args[0]
         else
-          Result := applyFunction(Result, args);
+        if Result is TClosureObject then
+          Result := applyFunction(TClosureObject(Result).Funct, args, TClosureObject(Result).Env)
+        else
+          Result := applyFunction(Result, args, env);
       finally
         args.Free;
       end;
@@ -1255,7 +1128,6 @@ constructor TGarbageCollector.Create;
 begin
   FLock:= TCriticalSection.Create;
   FObjects:= TList<TEvalObject>.Create;
-  FTrashObjects:= TList<TEvalObject>.Create;
 {  FElemCount := 0;
   FHead := TEvalObject.Create;  }
 end;
@@ -1286,47 +1158,14 @@ begin
     FLock.Release;
   end;
 
-  FreeAndNil(FTrashObjects);
   FreeAndNil(FObjects);
   FreeAndNil(FLock);
   inherited;
 end;
 
-procedure TGarbageCollector.EmptyTrash;
-var
-  i: Integer;
-  P: Pointer;
-begin
-  P:=nil;
-  FLock.Acquire;
-  try
-    FTrashObjects.Sort;
-    for i := 0 to FTrashObjects.Count-1 do
-    try
-      if (P<>FTrashObjects[i]) then
-      if NOT (FTrashObjects[i].GcManualFree) then
-      begin
-        P:=FTrashObjects[i];
-        FTrashObjects[i].Free;
-      end;
-    except
-      Continue;
-    end;
-
-    FTrashObjects.Clear;
-  finally
-    FLock.Release;
-  end;
-end;
-
 function TGarbageCollector.GetElemCount: Integer;
 begin
   Result := FObjects.Count;
-end;
-
-function TGarbageCollector.GetTrashCount: Integer;
-begin
-  Result := FTrashObjects.Count;
 end;
 
 procedure TGarbageCollector.Mark(AObject: TEvalObject);
@@ -1355,9 +1194,10 @@ begin
         end
         else
         if AObject.ObjectType=RETURN_VALUE_OBJ then
-        begin
-          Mark(TReturnValueObject(AObject).Value);
-        end
+          Mark(TReturnValueObject(AObject).Value)
+        else
+        if AObject.ObjectType=CLOSURE_OBJ then
+          Mark(TClosureObject(AObject).Env)
         ;
       end;
 end;
@@ -1420,18 +1260,27 @@ procedure TGarbageCollector.Sweep;
 var
 //  node, tmp: TEvalObject;
   i:Integer;
+  current:TEvalObject;
 begin
   try
     FLock. Acquire;
-    for i := FObjects.Count-1 downto 0 do
+    for current in FObjects do
+      if NOT current.GcMark and NOT current.GcManualFree then
+      begin
+        FObjects.Remove(current);
+        current.Free;
+      end;
+
+    {for i := FObjects.Count-1 downto 0 do
       if NOT FObjects[i].GcMark then
       begin
         FTrashObjects.Add(FObjects[i]);
-        FObjects.Remove(FObjects[i]);
-      end;
+        FObjects.Remove(current);
+      end;}
 
     for i := 0 to FObjects.Count-1 do
-      FObjects[i].GcMark := False;
+      if FObjects[i].GcRefCount<=0 then
+        FObjects[i].GcMark := False;
   finally
     FLock.Release;
   end;
