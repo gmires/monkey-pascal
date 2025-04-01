@@ -169,7 +169,7 @@ begin
     end;
   end
   else
-  if (method='savefromfile') then
+  if (method='savetofile') then
   begin
     if (args.Count<>1) then
       Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
