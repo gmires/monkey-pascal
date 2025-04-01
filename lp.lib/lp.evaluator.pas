@@ -139,20 +139,20 @@ begin
     Result := Eval(Statements[i], env);
     if (Result<>nil) then
     begin
-      FGarbageCollector.Mark(Result);
+      Gc.Mark(Result);
       if (Result.ObjectType = RETURN_VALUE_OBJ) then
       begin
-        FGarbageCollector.Add(TReturnValueObject(Result).Value);
-        FGarbageCollector.Mark(TReturnValueObject(Result).Value);
+        Gc.Add(TReturnValueObject(Result).Value);
+        Gc.Mark(TReturnValueObject(Result).Value);
       end;
 
       Inc(FGCCounter);
-      if (FGCCounter=100) then
+      if (FGCCounter>=100) then
       begin
         for y := FFunctEnv.Count-1 downto 0 do
-          FGarbageCollector.MarkSigleEnv(FFunctEnv[y]);
+          Gc.MarkSigleEnv(FFunctEnv[y]);
 
-        FGarbageCollector.Sweep;
+        GC.Sweep;
         FGCCounter := 0;
       end;
 
@@ -204,7 +204,7 @@ begin
       if Result=nil then
         Result := CreateErrorObj('Error call object method <%s> on <%s>', [method, AObject.ObjectType])
       else
-        FGarbageCollector.Add(Result);
+        Gc.Add(Result);
     end;
   finally
     args.Free;
@@ -224,10 +224,7 @@ begin
     end
     else
     if (node.Call is TASTIdentifier) then
-    begin
-      Result:= Result.GetIdentifer((node.Call as TASTIdentifier).Value, nil);
-      Gc.Add(Result);
-    end
+      Result:= Gc.Add(Result.GetIdentifer((node.Call as TASTIdentifier).Value, nil))
     else
     if (node.Call is TASTIndexExpression) then
     begin
@@ -235,11 +232,9 @@ begin
       begin
         index:= Eval((node.Call as TASTIndexExpression).Index, env);
         if NOT isError(index) then
-        begin
-          Result:= Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value, index);
-          Gc.Add(Result);
-        end
-        else Result := index;
+          Result:= Gc.Add(Result.GetIdentifer(TASTIdentifier((node.Call as TASTIndexExpression).Left).Value, index))
+        else
+          Result := index;
       end
       else Result := CreateErrorObj('Index Expression not an indentifier got=%s',[node.Call.toString]);
     end
@@ -268,7 +263,7 @@ begin
   else
     Result := TErrorObject.newError('unknown operator: %s%s', [Op, right.ObjectType]);
 
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 function TEvaluator.evalPostfixExpression(Op: string;  left: TEvalObject): TEvalObject;
@@ -283,7 +278,7 @@ begin
   end
   else Result := TErrorObject.newError('unknown type operator: %s%s', [left.ObjectType, Op]);
 
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 function TEvaluator.evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
@@ -465,7 +460,7 @@ begin
   else
 		Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType]);
 
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 function TEvaluator.evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
@@ -681,11 +676,9 @@ begin
     begin
       index := Eval(TASTIndexExpression(node).Index, env);
       if NOT isError(AValue) then
-      begin
-        Result := enobj.Setindex(index, AValue);
-        Gc.Add(Result);
-      end
-      else Result := AValue;
+        Result := Gc.Add(enobj.Setindex(index, AValue))
+      else
+        Result := AValue;
     end
     else Result := AValue;
   end
@@ -764,13 +757,13 @@ end;
 function TEvaluator.CreateErrorObj(const AFormat: string; const Args: array of const): TErrorObject;
 begin
   Result := TErrorObject.newError(AFormat, Args);
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 function TEvaluator.CreateNullObj: TNullObject;
 begin
   Result := TNullObject.Create;
-  FGarbageCollector.Add(Result);
+  Gc.Add(Result);
 end;
 
 destructor TEvaluator.Destroy;
@@ -790,8 +783,7 @@ end;
 
 function TEvaluator.evalIndexExpression(left, index:TEvalObject):TEvalObject;
 begin
-  Result := left.GetIndex(index);
-  Gc.Add(Result);
+  Result := Gc.Add(left.GetIndex(index));
 end;
 
 function TEvaluator.extendFunctionEnv(fn: TFunctionObject; args: TList<TEvalObject>; env:TEnvironment):TEnvironment;
@@ -800,7 +792,7 @@ var
 begin
   Result := TEnvironment.Create(env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetOrCreateValue(fn.Parameters[i].Value, FGarbageCollector.Add(args[i].Clone), False);
+    Result.SetOrCreateValue(fn.Parameters[i].Value, Gc.Add(args[i].Clone), False);
 end;
 
 procedure TEvaluator.DelEnv(AEnv: TEnvironment);
@@ -872,8 +864,7 @@ begin
   else
   if (fn is TBuiltinObject) then
   begin
-    Result := TBuiltinObject(fn).BuiltinFunction(args);
-    FGarbageCollector.Add(Result);
+    Result := Gc.Add(TBuiltinObject(fn).BuiltinFunction(args));
   end
   else Result := CreateErrorObj('not a function: %s', [fn.ObjectType])
 end;
@@ -892,49 +883,31 @@ begin
     Result := Eval(TASTExpressionStatement(node).Expression, env)
   else
   if node is TASTNumberLiteral then
-  begin
-    Result := TNumberObject.Create(TASTNumberLiteral(node).Value);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TNumberObject.Create(TASTNumberLiteral(node).Value))
   else
   if node is TASTBoolean then
-  begin
-    Result := nativeBoolToBooleanObject(TASTBoolean(node).Value);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(nativeBoolToBooleanObject(TASTBoolean(node).Value))
   else
   if node is TASTStringLiteral then
-  begin
-    Result := TStringObject.Create(TASTStringLiteral(node).Value);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TStringObject.Create(TASTStringLiteral(node).Value))
   else
   if node is TASTNullLiteral then
-  begin
-    Result := TNullObject.Create;
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TNullObject.Create)
   else
   if node is TASTLoopStatement then
-  begin
-    Result := TLoopObject.Create(TASTLoopStatement(node).LoopType);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TLoopObject.Create(TASTLoopStatement(node).LoopType))
   else
   if node is TASTArrayLiteral then
   begin
     Result := TArrayObject.Create;
     TArrayObject(Result).Elements := evalExpressions(TASTArrayLiteral(node).Elements, env);
-    FGarbageCollector.Add(Result);
+    Gc.Add(Result);
     if ((TArrayObject(Result).Elements.Count=1) and (isError(TArrayObject(Result).Elements[0]))) then
       Result := TArrayObject(Result).Elements[0];
   end
   else
   if node is TASTHashLiteral then
-  begin
-    Result := evalHashLiteral(TASTHashLiteral(node), env);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(evalHashLiteral(TASTHashLiteral(node), env))
   else
   if node is TASTIndexExpression then
   begin
@@ -1003,10 +976,7 @@ begin
   begin
     Result := Eval(TASTReturnStatement(node).ReturnValue, env);
 		if NOT isError(Result) then
-    begin
-      Result := TReturnValueObject.Create(Result);
-      FGarbageCollector.Add(Result);
-    end;
+      Result := Gc.Add(TReturnValueObject.Create(Result))
   end
   else
   if node is TASTImportStatement then
@@ -1079,17 +1049,11 @@ begin
   begin
     Result := Eval(TASTClosureLiteral(node).Funct, env);
     if NOT isError(Result) then
-    begin
-      Result := TClosureObject.Create(Result as TFunctionObject, env);
-      FGarbageCollector.Add(Result);
-    end;
+      Result := Gc.Add(TClosureObject.Create(Result as TFunctionObject, env))
   end
   else
   if node is TASTFunctionLiteral then
-  begin
-    Result := TFunctionObject.Create(TASTFunctionLiteral(node).Parameters,TASTFunctionLiteral(node).Body);
-    FGarbageCollector.Add(Result);
-  end
+    Result := Gc.Add(TFunctionObject.Create(TASTFunctionLiteral(node).Parameters,TASTFunctionLiteral(node).Body))
   else
   if node is TASTCallExpression then
   begin
@@ -1298,7 +1262,6 @@ begin
     for current in FObjects do
       if NOT current.GcMark and NOT current.GcManualFree then
       begin
-
         FObjects.Remove(current);
         current.Free;
       end;
