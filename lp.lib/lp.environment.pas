@@ -77,7 +77,7 @@ type
     function  CurrentIndex:TEvalObject; virtual;
     procedure Reset; virtual;
 
-    procedure AddRefCount;
+    procedure IncRefCount;
     procedure DecRefCount;
   public
     { ** for GC (mark and sweep) ** }
@@ -285,7 +285,7 @@ end;
 
 { TEvalObject }
 
-procedure TEvalObject.AddRefCount;
+procedure TEvalObject.IncRefCount;
 begin
   Inc(GcRefCount);
 end;
@@ -400,7 +400,6 @@ end;
 constructor TNumberObject.Create(AValue: Double);
 begin
   inherited Create;
-  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -447,7 +446,6 @@ end;
 constructor TBooleanObject.Create(AValue: Boolean);
 begin
   inherited Create;
-  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -615,8 +613,6 @@ begin
 end;
 
 destructor TEnvironment.Destroy;
-var
-  current:TEvalObject;
 begin
   FStore.Free;
   FConst.Free;
@@ -713,7 +709,6 @@ end;
 constructor TStringObject.Create(AValue: string);
 begin
   inherited Create;
-  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -913,7 +908,6 @@ end;
 constructor TArrayObject.Create;
 begin
   inherited Create;
-  GcRefCount := 1;
 end;
 
 constructor TArrayObject.CreateWithElements;
@@ -1210,7 +1204,6 @@ end;
 constructor THashObject.Create;
 begin
   inherited Create;
-  GcRefCount := 1;
 end;
 
 function THashObject.CurrentIndex: TEvalObject;
