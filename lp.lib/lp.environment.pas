@@ -35,16 +35,20 @@ type
     FConst: TStringList;
     FOuter: TEnvironment;
     FAllowedIdent: TStringList;
+    FReturnRef: TList<TEvalObject>;
   public
     constructor Create; overload;
     constructor Create(AOuter:TEnvironment); overload;
     constructor Create(AOuter:TEnvironment; AllowedIdent:TStringList); overload;
     destructor Destroy; override;
     property Store: TDictionary<string,TEvalObject> read FStore;
+    property ReturnRef: TList<TEvalObject> read FReturnRef write FReturnRef;
     property Outer: TEnvironment read FOuter write FOuter;
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
     function SetOrCreateValue(name:string; value:TEvalObject; IsConst:Boolean ):TEvalObject;
+
+    function AddRef(AObject:TEvalObject):TEvalObject;
 
     function Clone:TEnvironment;
   end;
@@ -77,7 +81,7 @@ type
     function  CurrentIndex:TEvalObject; virtual;
     procedure Reset; virtual;
 
-    procedure AddRefCount;
+    procedure IncRefCount;
     procedure DecRefCount;
   public
     { ** for GC (mark and sweep) ** }
@@ -85,6 +89,9 @@ type
     GcRefCount:Integer;
     GcMark:Boolean;
     GcManualFree:Boolean;
+
+    procedure MarkChild; virtual;
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -285,7 +292,7 @@ end;
 
 { TEvalObject }
 
-procedure TEvalObject.AddRefCount;
+procedure TEvalObject.IncRefCount;
 begin
   Inc(GcRefCount);
 end;
@@ -340,6 +347,11 @@ end;
 function TEvalObject.isIterable: Boolean;
 begin
   Result := false;
+end;
+
+procedure TEvalObject.MarkChild;
+begin
+  { -- virtual method -- }
 end;
 
 function TEvalObject.MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -400,7 +412,6 @@ end;
 constructor TNumberObject.Create(AValue: Double);
 begin
   inherited Create;
-  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -447,7 +458,6 @@ end;
 constructor TBooleanObject.Create(AValue: Boolean);
 begin
   inherited Create;
-  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -477,7 +487,7 @@ end;
 constructor TReturnValueObject.Create(AValue: TEvalObject);
 begin
   Create;
-  Value := AValue.Clone;
+  Value := AValue;// AValue.Clone;
 end;
 
 destructor TReturnValueObject.Destroy;
@@ -581,6 +591,7 @@ begin
   FStore := TDictionary<string,TEvalObject>.Create;
   FConst := TStringList.Create;
   FAllowedIdent := TStringList.Create;
+  FReturnRef:= TList<TEvalObject>.Create;
   FOuter := nil;
 end;
 
@@ -588,6 +599,16 @@ constructor TEnvironment.Create(AOuter: TEnvironment);
 begin
   Create;
   FOuter := AOuter;
+end;
+
+function TEnvironment.AddRef(AObject: TEvalObject): TEvalObject;
+begin
+  Result := AObject;
+  if (Assigned(Outer) and Assigned(AObject)) then
+  begin
+    AObject.IncRefCount;
+    Outer.ReturnRef.Add(AObject);
+  end;
 end;
 
 function TEnvironment.Clone: TEnvironment;
@@ -616,8 +637,13 @@ end;
 
 destructor TEnvironment.Destroy;
 var
-  current:TEvalObject;
+  current: TEvalObject;
 begin
+  for current in FReturnRef do
+    current.DecRefCount;
+
+  FReturnRef.Free;
+
   FStore.Free;
   FConst.Free;
   FAllowedIdent.Free;
@@ -713,7 +739,6 @@ end;
 constructor TStringObject.Create(AValue: string);
 begin
   inherited Create;
-  GcRefCount := 1;
   Value := AValue;
 end;
 
@@ -913,7 +938,6 @@ end;
 constructor TArrayObject.Create;
 begin
   inherited Create;
-  GcRefCount := 1;
 end;
 
 constructor TArrayObject.CreateWithElements;
@@ -1210,7 +1234,6 @@ end;
 constructor THashObject.Create;
 begin
   inherited Create;
-  GcRefCount := 1;
 end;
 
 function THashObject.CurrentIndex: TEvalObject;

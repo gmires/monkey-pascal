@@ -1,5 +1,5 @@
 object LPMain: TLPMain
-  Left = 386
+  Left = 346
   Top = 141
   Caption = 'LP Interpreter v.1.0'
   ClientHeight = 815
@@ -97,7 +97,6 @@ object LPMain: TLPMain
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
-        ExplicitTop = 582
         ExplicitWidth = 67
       end
       object SplitLog: TSplitter

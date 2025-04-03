@@ -438,8 +438,6 @@ type
     function ParseCallExpression(funct:TASTExpression):TASTExpression;
     function ParseAssignExpression(left:TASTExpression):TASTExpression;
     function ParseMethodCallExpression(ObjcRef:TASTExpression):TASTExpression;
-//    function ParseCallArguments:TList<TASTExpression>;
-    // -----------
   public
     constructor Create(ALexer:TLexer);
     destructor Destroy; override;
@@ -681,36 +679,12 @@ begin
    end;
 end;
 
-(*
-function TParser.ParseCallArguments: TList<TASTExpression>;
-begin
-  Result := TList<TASTExpression>.Create;
-
-  if NOT peekTokenIs(ttRPAREN) then
-  begin
-    nextToken;
-    Result.Add(ParseExpression(LOWEST));
-
-    while peekTokenIs(ttCOMMA) do
-    begin
-      nextToken;
-      nextToken;
-
-      Result.Add(ParseExpression(LOWEST));
-    end;
-
-    expectPeek(ttRPAREN);
-  end
-  else nextToken;
-end;
-*)
-
 function TParser.ParseCallExpression(funct: TASTExpression): TASTExpression;
 begin
   Result := TASTCallExpression.Create;
   Result.Token := CurrToken.Clone;
   TASTCallExpression(Result).Funct := funct;
-  TASTCallExpression(Result).Args := ParseExpressionsList(ttRPAREN); // -- ParseCallArguments;
+  TASTCallExpression(Result).Args := ParseExpressionsList(ttRPAREN);
 end;
 
 function TParser.ParseConstStatement: TASTConstStatement;
