@@ -50,7 +50,7 @@ end;
 
 function TStringListObject.Clone: TEvalObject;
 begin
-  Result := TStringListObject.Create;
+  Result := Self;
 end;
 
 constructor TStringListObject.Create;
@@ -102,7 +102,7 @@ end;
 
 function TStringListObject.Inspect: string;
 begin
-  Result := 'StringList$'+ IntToHex(Integer(@InnetList), 6) +' (' + IntToStr(InnetList.Count) + ')';
+  Result := 'StringList$'+ IntToHex(Integer(Pointer(InnetList)), 6) +' (' + IntToStr(InnetList.Count) + ' rows)';
 end;
 
 function TStringListObject.isIterable: Boolean;

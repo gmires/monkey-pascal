@@ -61,7 +61,7 @@ var
 begin
   Result := nil;
   for i := 0 to args.Count-1 do
-    MLog.Items.Add(args[i].Inspect);
+    MLog.Items.Add('>>> ' + args[i].Inspect);
 end;
 
 
@@ -319,8 +319,7 @@ begin
     or (node is TASTBoolean)
     or (node is TASTIdentifier)
     or (node is TASTNullLiteral)
-    or (node is TASTLoopStatement)
-    then
+    or (node is TASTLoopStatement) then
       TVAST.Items.AddChild(SParent, node.toString);
   end;
 end;

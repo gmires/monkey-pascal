@@ -155,7 +155,7 @@ object LPMain: TLPMain
         Width = 1130
         Height = 277
         Align = alBottom
-        Color = clBlack
+        Color = 10485760
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWhite
         Font.Height = -11
