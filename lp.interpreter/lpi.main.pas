@@ -16,7 +16,7 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.builtins
-  , lp.advobject
+  , lp.advobject, ImgList
   { -- lp core uses -- }
   ;
 
@@ -39,6 +39,7 @@ type
     pmLog: TPopupMenu;
     MnuClearLog: TMenuItem;
     BtnRunWithDbg: TButton;
+    ILMain: TImageList;
     procedure BtnDescribeClick(Sender: TObject);
     procedure BtnRunClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);

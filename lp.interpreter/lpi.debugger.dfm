@@ -1,6 +1,6 @@
 object LPDebugger: TLPDebugger
-  Left = 387
-  Top = 123
+  Left = 393
+  Top = 147
   BorderIcons = [biMinimize, biMaximize]
   Caption = 'LPI Debugger'
   ClientHeight = 738
@@ -45,7 +45,6 @@ object LPDebugger: TLPDebugger
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
     ParentFont = False
-    ExplicitTop = 336
     ExplicitWidth = 72
   end
   object Panel1: TPanel
@@ -56,56 +55,68 @@ object LPDebugger: TLPDebugger
     Height = 33
     Align = alTop
     BevelOuter = bvNone
+    Color = clWhite
+    ParentBackground = False
     TabOrder = 0
-    ExplicitWidth = 667
     object BtnStepInto: TButton
+      AlignWithMargins = True
       Left = 0
-      Top = 0
+      Top = 3
       Width = 35
-      Height = 33
+      Height = 27
       Hint = 'Step Into'
+      Margins.Left = 0
       Align = alLeft
       ImageAlignment = iaCenter
       ImageIndex = 0
-      Images = ImageList
+      Images = ILDbg
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
       OnClick = BtnStepIntoClick
+      ExplicitLeft = -10
+      ExplicitTop = 0
+      ExplicitHeight = 33
     end
     object BtnContinue: TButton
-      Left = 35
-      Top = 0
+      AlignWithMargins = True
+      Left = 38
+      Top = 3
       Width = 35
-      Height = 33
+      Height = 27
       Hint = 'Continue'
+      Margins.Left = 0
       Align = alLeft
       ImageAlignment = iaCenter
       ImageIndex = 1
-      Images = ImageList
+      Images = ILDbg
       ParentShowHint = False
       ShowHint = True
       TabOrder = 1
       OnClick = BtnContinueClick
-      ExplicitLeft = 56
-      ExplicitTop = 1
-      ExplicitHeight = 31
+      ExplicitLeft = 35
+      ExplicitTop = 0
+      ExplicitHeight = 33
     end
     object BtnStop: TButton
-      Left = 70
-      Top = 0
+      AlignWithMargins = True
+      Left = 76
+      Top = 3
       Width = 35
-      Height = 33
+      Height = 27
       Hint = 'Stop'
+      Margins.Left = 0
       Align = alLeft
       ImageAlignment = iaCenter
       ImageIndex = 2
-      Images = ImageList
+      Images = ILDbg
       ParentShowHint = False
       ShowHint = True
       TabOrder = 2
       OnClick = BtnStopClick
-      ExplicitLeft = 120
+      ExplicitLeft = 70
+      ExplicitTop = 0
+      ExplicitHeight = 33
     end
   end
   object VLEnv: TValueListEditor
@@ -124,8 +135,6 @@ object LPDebugger: TLPDebugger
     TitleCaptions.Strings = (
       'Name'
       'Value')
-    ExplicitTop = 355
-    ExplicitWidth = 667
     ColWidths = (
       159
       923)
@@ -143,10 +152,6 @@ object LPDebugger: TLPDebugger
     Caption = 'Panel2'
     Enabled = False
     TabOrder = 2
-    ExplicitLeft = 140
-    ExplicitTop = 105
-    ExplicitWidth = 185
-    ExplicitHeight = 41
     object Label2: TLabel
       AlignWithMargins = True
       Left = 3
@@ -156,14 +161,14 @@ object LPDebugger: TLPDebugger
       Margins.Top = 0
       Margins.Bottom = 0
       Align = alTop
-      Caption = 'Source'
+      Caption = 'Debugger Source'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -11
       Font.Name = 'Tahoma'
       Font.Style = [fsBold]
       ParentFont = False
-      ExplicitWidth = 39
+      ExplicitWidth = 97
     end
     object LSrcView: TListBox
       AlignWithMargins = True
@@ -184,11 +189,11 @@ object LPDebugger: TLPDebugger
       OnDrawItem = LSrcViewDrawItem
     end
   end
-  object ImageList: TImageList
+  object ILDbg: TImageList
     Left = 380
     Top = 284
     Bitmap = {
-      494C010103000800440010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800480010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

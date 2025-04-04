@@ -20,7 +20,7 @@ type
     Panel2: TPanel;
     LSrcView: TListBox;
     Label2: TLabel;
-    ImageList: TImageList;
+    ILDbg: TImageList;
     BtnContinue: TButton;
     BtnStop: TButton;
     pmEnv: TPopupMenu;
@@ -83,7 +83,7 @@ end;
 
 procedure TLPDebugger.BtnStopClick(Sender: TObject);
 begin
-  if MessageDlgPos('Vuoi interrompere il debug, Sei sicuro/a ?', mtConfirmation, mbYesNo, 0, 200, 200, mbYes)=mrYes then
+  if MessageDlg('Vuoi interrompere il debug, Sei sicuro/a ?', mtConfirmation, mbYesNo, 0)=mrYes then
     ModalResult := mrCancel;
 end;
 
