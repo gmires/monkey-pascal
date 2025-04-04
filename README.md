@@ -1,4 +1,4 @@
-﻿# monkey pascal interpreter with Garbage Collector mark-and-sweep
+﻿# monkey pascal interpreter with Garbage Collector mark-and-sweep and Debugger
 Code for “Writing an Interpreter in Go” by Thorsten Ball in Pascal.
 
 # Array
@@ -446,3 +446,6 @@ end.
 
 > REPL
 ![Alt text](resources/REPL.png)
+
+> DEBUGGER
+![Alt text](resources/DBG.png)
