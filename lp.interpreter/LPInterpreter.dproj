@@ -59,6 +59,9 @@
 			<DCCReference Include="..\lp.lib\lp.token.pas"/>
 			<DCCReference Include="..\lp.lib\lp.utils.pas"/>
 			<DCCReference Include="..\lp.lib\lp.advobject.pas"/>
+			<DCCReference Include="lpi.debugger.pas">
+				<Form>LPDebugger</Form>
+			</DCCReference>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

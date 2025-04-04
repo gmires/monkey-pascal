@@ -1,5 +1,5 @@
 object LPMain: TLPMain
-  Left = 346
+  Left = 293
   Top = 141
   Caption = 'LP Interpreter v.1.0'
   ClientHeight = 815
@@ -24,26 +24,41 @@ object LPMain: TLPMain
     TabOrder = 0
     object BtnDescribe: TButton
       AlignWithMargins = True
-      Left = 943
+      Left = 930
       Top = 4
-      Width = 100
+      Width = 70
       Height = 28
       Margins.Right = 0
       Align = alRight
       Caption = 'Describe'
       TabOrder = 0
       OnClick = BtnDescribeClick
+      ExplicitLeft = 870
     end
     object BtnRun: TButton
       AlignWithMargins = True
-      Left = 1046
+      Left = 1003
       Top = 4
-      Width = 100
+      Width = 70
       Height = 28
+      Margins.Right = 0
       Align = alRight
       Caption = 'Run'
       TabOrder = 1
       OnClick = BtnRunClick
+      ExplicitLeft = 973
+    end
+    object BtnRunWithDbg: TButton
+      AlignWithMargins = True
+      Left = 1076
+      Top = 4
+      Width = 70
+      Height = 28
+      Align = alRight
+      Caption = 'Run Debug'
+      TabOrder = 2
+      OnClick = BtnRunClick
+      ExplicitLeft = 1066
     end
   end
   object pcMain: TPageControl

@@ -10,7 +10,8 @@ uses
   lp.parser in '..\lp.lib\lp.parser.pas',
   lp.token in '..\lp.lib\lp.token.pas',
   lp.utils in '..\lp.lib\lp.utils.pas',
-  lp.advobject in '..\lp.lib\lp.advobject.pas';
+  lp.advobject in '..\lp.lib\lp.advobject.pas',
+  lpi.debugger in 'lpi.debugger.pas' {LPDebugger};
 
 {$R *.res}
 
