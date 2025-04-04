@@ -8,6 +8,8 @@ uses classes, SysUtils, Generics.Collections, Variants, Math, SyncObjs
   , lp.parser;
 
 type
+  TEvalNotifierEvent = function(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; var AContinue:Boolean):Boolean of object;
+
   TGarbageCollector = class
     FLock: TCriticalSection;
     FObjects: TList<TEvalObject>;
@@ -30,6 +32,7 @@ type
     FFunctEnv: TList<TEnvironment>;
     FFunctLck: TCriticalSection;
     FModules: TStringList;
+    FEvalNotifierEvent: TEvalNotifierEvent;
     function evalProgram(node: TASTNode; env: TEnvironment): TEvalObject;
     function evalStatements(Statements :TList<TASTStatement>; env: TEnvironment): TEvalObject;
     function evalBlockStatements(node :TASTBlockStatement; env: TEnvironment): TEvalObject;
@@ -62,6 +65,8 @@ type
     function  CreateNullObj: TNullObject;
     function  AddEnv(AEnv:TEnvironment):TEnvironment;
     procedure DelEnv(AEnv:TEnvironment);
+
+    function OnEvalNotifier(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; var AContinue:Boolean):Boolean;
   public
     constructor Create;
     destructor Destroy; override;
@@ -70,6 +75,7 @@ type
     function  Eval(node: TASTNode; env: TEnvironment): TEvalObject;
 
     property Gc: TGarbageCollector read FGarbageCollector;
+    property EvalNotifierEvent: TEvalNotifierEvent read FEvalNotifierEvent write FEvalNotifierEvent;
   end;
 
 var
@@ -128,11 +134,18 @@ end;
 function TEvaluator.evalStatements(Statements: TList<TASTStatement>; env: TEnvironment): TEvalObject;
 var
   i: Integer;
+  Continue: Boolean;
 begin
   Result := nil;
   for i := 0 to Statements.Count-1 do
   begin
+    Continue := True;
+    OnEvalNotifier(Statements[i].Token.Module, Statements[i].Token.Line, Statements[i].Token.Coln, env, Continue);
+    if NOT Continue then
+      Exit(CreateErrorObj('interrupted by user',[]));
+
     Result := Eval(Statements[i], env);
+
     if (Result<>nil) then
     begin
       Gc.Mark(Result);
@@ -787,6 +800,13 @@ begin
   Result := TEnvironment.Create(env);
   for i := 0 to fn.Parameters.Count-1 do
     Result.SetOrCreateValue(fn.Parameters[i].Value, Gc.Add(args[i].Clone), False);
+end;
+
+function TEvaluator.OnEvalNotifier(AModule: string; ALine, APos: Integer;  AEnvironment: TEnvironment; var AContinue:Boolean): Boolean;
+begin
+  Result := Assigned(FEvalNotifierEvent);
+  if Result then
+    Result := FEvalNotifierEvent(AModule, ALine, APos, AEnvironment, AContinue);
 end;
 
 procedure TEvaluator.DelEnv(AEnv: TEnvironment);

@@ -8,6 +8,8 @@ uses
 
   ,Generics.Collections, ExtCtrls, Menus
 
+  , lpi.debugger
+  { -- lp core uses -- }
   , lp.lexer
   , lp.token
   , lp.parser
@@ -15,7 +17,7 @@ uses
   , lp.evaluator
   , lp.builtins
   , lp.advobject
-
+  { -- lp core uses -- }
   ;
 
 
@@ -36,12 +38,16 @@ type
     SplitLog: TSplitter;
     pmLog: TPopupMenu;
     MnuClearLog: TMenuItem;
+    BtnRunWithDbg: TButton;
     procedure BtnDescribeClick(Sender: TObject);
     procedure BtnRunClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MnuClearLogClick(Sender: TObject);
+
+    function  EvalNotifer(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; var AContinue:Boolean):Boolean;
   private
     { Private declarations }
+    dbgNext:Boolean;
     procedure Describe(node: TASTNode; SParent:TTreeNode);
   public
     { Public declarations }
@@ -100,6 +106,8 @@ var
   Prg:TASTProgram;
   Ev:TEvaluator;
 begin
+  dbgNext := (Sender = BtnRunWithDbg);
+
   L:=TLexer.Create(MSouce.Lines.Text, 'main');
   try
     P := TParser.Create(L);
@@ -107,6 +115,7 @@ begin
       E:=TEnvironment.Create;
       Ev:=TEvaluator.Create;
       try
+        Ev.EvalNotifierEvent := EvalNotifer;
         Prg:=P.ParseProgram;
         try
           if (P.Errors.Count>0) then
@@ -324,6 +333,12 @@ begin
   end;
 end;
 
+
+function TLPMain.EvalNotifer(AModule: string; ALine, APos: Integer; AEnvironment: TEnvironment; var AContinue:Boolean): Boolean;
+begin
+  if ((AModule='main') and dbgNext) then
+    DebuggerShow(MSouce.Text, ALine, AEnvironment, dbgNext, AContinue);
+end;
 
 procedure TLPMain.FormCreate(Sender: TObject);
 begin
