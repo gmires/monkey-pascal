@@ -16,7 +16,7 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.builtins
-  , lp.advobject, ImgList
+  , lp.advobject, ImgList, lp.edits
   { -- lp core uses -- }
   ;
 
@@ -30,7 +30,6 @@ type
     TabSource: TTabSheet;
     TabAST: TTabSheet;
     Label2: TLabel;
-    MSouce: TMemo;
     Label1: TLabel;
     List: TListBox;
     TVAST: TTreeView;
@@ -40,6 +39,7 @@ type
     MnuClearLog: TMenuItem;
     BtnRunWithDbg: TButton;
     ILMain: TImageList;
+    MSouce: TLPIMemo;
     procedure BtnDescribeClick(Sender: TObject);
     procedure BtnRunClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);

@@ -38,7 +38,6 @@ object LPMain: TLPMain
       ShowHint = True
       TabOrder = 0
       OnClick = BtnDescribeClick
-      ExplicitLeft = 994
     end
     object BtnRun: TButton
       AlignWithMargins = True
@@ -56,7 +55,6 @@ object LPMain: TLPMain
       ShowHint = True
       TabOrder = 1
       OnClick = BtnRunClick
-      ExplicitLeft = 1055
     end
     object BtnRunWithDbg: TButton
       AlignWithMargins = True
@@ -72,7 +70,6 @@ object LPMain: TLPMain
       ShowHint = True
       TabOrder = 2
       OnClick = BtnRunClick
-      ExplicitLeft = 1105
     end
   end
   object pcMain: TPageControl
@@ -138,14 +135,30 @@ object LPMain: TLPMain
         Align = alBottom
         ExplicitTop = 610
       end
-      object MSouce: TMemo
+      object List: TListBox
         AlignWithMargins = True
         Left = 3
-        Top = 16
+        Top = 465
         Width = 1130
-        Height = 421
+        Height = 277
+        Align = alBottom
+        Color = clHotLight
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -11
+        Font.Name = 'Consolas'
+        Font.Style = []
+        ItemHeight = 13
+        ParentFont = False
+        PopupMenu = pmLog
+        TabOrder = 0
+      end
+      object MSouce: TLPIMemo
+        Left = 0
+        Top = 13
+        Width = 1136
+        Height = 427
         Align = alClient
-        Color = clCream
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -13
@@ -174,27 +187,15 @@ object LPMain: TLPMain
           ''
           'main();')
         ParentFont = False
-        TabOrder = 0
-        ExplicitLeft = 8
-        ExplicitHeight = 563
-      end
-      object List: TListBox
-        AlignWithMargins = True
-        Left = 3
-        Top = 465
-        Width = 1130
-        Height = 277
-        Align = alBottom
-        Color = clHotLight
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWhite
-        Font.Height = -11
-        Font.Name = 'Consolas'
-        Font.Style = []
-        ItemHeight = 13
-        ParentFont = False
-        PopupMenu = pmLog
         TabOrder = 1
+        GutterSize = 32
+        BreakPointSize = 16
+        GutterColor = clWindow
+        GutterTextColor = clWindowText
+        ExplicitLeft = 135
+        ExplicitTop = 150
+        ExplicitWidth = 566
+        ExplicitHeight = 106
       end
     end
     object TabAST: TTabSheet
@@ -251,7 +252,7 @@ object LPMain: TLPMain
     Left = 452
     Top = 283
     Bitmap = {
-      494C010103000800140010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C0101030008001C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
