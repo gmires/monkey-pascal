@@ -1,14 +1,14 @@
 object LPMain: TLPMain
-  Left = 356
-  Top = 140
+  Left = 371
+  Top = 98
   Caption = 'LP Interpreter v.1.0'
   ClientHeight = 815
   ClientWidth = 1150
-  Color = clWhite
+  Color = clBlack
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'Tahoma'
+  Font.Name = 'Consolas'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
@@ -21,6 +21,8 @@ object LPMain: TLPMain
     Width = 1150
     Height = 36
     Align = alTop
+    Color = clSilver
+    ParentBackground = False
     TabOrder = 0
     object BtnDescribe: TButton
       AlignWithMargins = True
@@ -73,129 +75,172 @@ object LPMain: TLPMain
     end
   end
   object pcMain: TPageControl
-    AlignWithMargins = True
-    Left = 3
-    Top = 39
-    Width = 1144
-    Height = 773
+    Left = 0
+    Top = 36
+    Width = 1150
+    Height = 779
     ActivePage = TabSource
     Align = alClient
     TabOrder = 1
-    ExplicitTop = 44
-    ExplicitHeight = 768
+    ExplicitLeft = 3
+    ExplicitTop = 39
+    ExplicitWidth = 1144
+    ExplicitHeight = 773
     object TabSource: TTabSheet
       Caption = 'Source'
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 281
       ExplicitHeight = 165
-      object Label2: TLabel
-        AlignWithMargins = True
-        Left = 3
-        Top = 0
-        Width = 1130
-        Height = 13
-        Margins.Top = 0
-        Margins.Bottom = 0
-        Align = alTop
-        Caption = 'LP Source'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = [fsBold]
-        ParentFont = False
-        ExplicitWidth = 55
-      end
-      object Label1: TLabel
-        AlignWithMargins = True
-        Left = 3
-        Top = 440
-        Width = 1130
-        Height = 13
-        Margins.Top = 0
-        Margins.Bottom = 0
-        Align = alBottom
-        Caption = 'Console Log'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = [fsBold]
-        ParentFont = False
-        ExplicitWidth = 67
-      end
       object SplitLog: TSplitter
-        AlignWithMargins = True
-        Left = 3
-        Top = 456
-        Width = 1130
+        Left = 0
+        Top = 483
+        Width = 1142
         Height = 3
         Cursor = crVSplit
         Align = alBottom
+        Color = clSilver
+        ParentColor = False
+        ExplicitLeft = 3
         ExplicitTop = 610
+        ExplicitWidth = 1130
       end
-      object List: TListBox
-        AlignWithMargins = True
-        Left = 3
-        Top = 465
-        Width = 1130
-        Height = 277
-        Align = alBottom
-        Color = clHotLight
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWhite
-        Font.Height = -11
-        Font.Name = 'Consolas'
-        Font.Style = []
-        ItemHeight = 13
-        ParentFont = False
-        PopupMenu = pmLog
-        TabOrder = 0
-      end
-      object MSouce: TLPIMemo
+      object Panel2: TPanel
         Left = 0
-        Top = 13
-        Width = 1136
-        Height = 427
+        Top = 486
+        Width = 1142
+        Height = 265
+        Align = alBottom
+        BevelOuter = bvNone
+        Caption = 'Panel2'
+        Color = clBlack
+        ParentBackground = False
+        TabOrder = 0
+        ExplicitTop = 480
+        ExplicitWidth = 1136
+        object Label1: TLabel
+          AlignWithMargins = True
+          Left = 3
+          Top = 2
+          Width = 1136
+          Height = 13
+          Margins.Top = 2
+          Margins.Bottom = 0
+          Align = alTop
+          Caption = 'Console Log'
+          Color = clWhite
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWhite
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentColor = False
+          ParentFont = False
+          ExplicitLeft = 4
+          ExplicitTop = 1
+          ExplicitWidth = 67
+        end
+        object List: TListBox
+          AlignWithMargins = True
+          Left = 3
+          Top = 18
+          Width = 1136
+          Height = 244
+          Align = alClient
+          BorderStyle = bsNone
+          Color = clHotLight
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWhite
+          Font.Height = -11
+          Font.Name = 'Consolas'
+          Font.Style = []
+          ItemHeight = 13
+          ParentFont = False
+          PopupMenu = pmLog
+          TabOrder = 0
+        end
+      end
+      object Panel3: TPanel
+        Left = 0
+        Top = 0
+        Width = 1142
+        Height = 483
         Align = alClient
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -13
-        Font.Name = 'Consolas'
-        Font.Style = []
-        Lines.Strings = (
-          'import "stdlib";'
-          ''
-          'let main = fn() {'
-          '  let n = 12;'
-          ''
-          '  let fibonacci = fn(x) {'
-          '    if (x == 0) {'
-          '      return 0               '
-          '    } else {'
-          '      if (x == 1) {'
-          '        return 1;     '
-          '      } else {'
-          '        return fibonacci(x - 1) + fibonacci(x - 2); '
-          '      }'
-          '    }'
-          '  };'
-          ''
-          '  println(fibonacci(n));'
-          '};'
-          ''
-          'main();')
-        ParentFont = False
+        BevelOuter = bvNone
+        Color = clBlack
+        ParentBackground = False
         TabOrder = 1
-        GutterSize = 32
-        BreakPointSize = 16
-        GutterColor = clWindow
-        GutterTextColor = clWindowText
-        ExplicitLeft = 135
-        ExplicitTop = 150
-        ExplicitWidth = 566
-        ExplicitHeight = 106
+        ExplicitLeft = 270
+        ExplicitTop = 275
+        ExplicitWidth = 185
+        ExplicitHeight = 41
+        object Label2: TLabel
+          AlignWithMargins = True
+          Left = 3
+          Top = 3
+          Width = 1136
+          Height = 13
+          Align = alTop
+          Caption = 'LP Source'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWhite
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+          ExplicitLeft = 4
+          ExplicitTop = 1
+          ExplicitWidth = 55
+        end
+        object MSouce: TLPIMemo
+          AlignWithMargins = True
+          Left = 1
+          Top = 19
+          Width = 1140
+          Height = 463
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 1
+          Margins.Bottom = 1
+          Align = alClient
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Consolas'
+          Font.Style = []
+          Lines.Strings = (
+            'import "stdlib";'
+            ''
+            'let main = fn() {'
+            '  let n = 12;'
+            ''
+            '  let fibonacci = fn(x) {'
+            '    if (x == 0) {'
+            '      return 0               '
+            '    } else {'
+            '      if (x == 1) {'
+            '        return 1;     '
+            '      } else {'
+            '        return fibonacci(x - 1) + fibonacci(x - 2); '
+            '      }'
+            '    }'
+            '  };'
+            ''
+            '  println(fibonacci(n));'
+            '};'
+            ''
+            'main();')
+          ParentFont = False
+          TabOrder = 0
+          GutterSize = 32
+          BreakPointSize = 16
+          GutterColor = clWindow
+          GutterTextColor = clWindowText
+          ExplicitLeft = 135
+          ExplicitTop = 150
+          ExplicitWidth = 566
+          ExplicitHeight = 106
+        end
       end
     end
     object TabAST: TTabSheet
@@ -205,38 +250,57 @@ object LPMain: TLPMain
       ExplicitTop = 0
       ExplicitWidth = 0
       ExplicitHeight = 0
-      object Label3: TLabel
-        AlignWithMargins = True
-        Left = 3
+      object Panel4: TPanel
+        Left = 0
         Top = 0
-        Width = 1130
-        Height = 13
-        Margins.Top = 0
-        Margins.Bottom = 0
-        Align = alTop
-        Caption = 'AST Tree View'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = [fsBold]
-        ParentFont = False
-        ExplicitWidth = 80
-      end
-      object TVAST: TTreeView
-        AlignWithMargins = True
-        Left = 3
-        Top = 16
-        Width = 1130
-        Height = 726
+        Width = 1142
+        Height = 751
         Align = alClient
-        Indent = 19
-        ReadOnly = True
+        BevelOuter = bvNone
+        Color = clBlack
+        ParentBackground = False
         TabOrder = 0
-        ExplicitLeft = 95
-        ExplicitTop = 160
-        ExplicitWidth = 121
-        ExplicitHeight = 97
+        ExplicitLeft = 325
+        ExplicitTop = 310
+        ExplicitWidth = 185
+        ExplicitHeight = 41
+        object Label3: TLabel
+          AlignWithMargins = True
+          Left = 3
+          Top = 3
+          Width = 1136
+          Height = 13
+          Margins.Bottom = 0
+          Align = alTop
+          Caption = 'AST Tree'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWhite
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+          ExplicitLeft = 4
+          ExplicitTop = 4
+          ExplicitWidth = 51
+        end
+        object TVAST: TTreeView
+          AlignWithMargins = True
+          Left = 1
+          Top = 19
+          Width = 1140
+          Height = 731
+          Margins.Left = 1
+          Margins.Right = 1
+          Margins.Bottom = 1
+          Align = alClient
+          Indent = 19
+          ReadOnly = True
+          TabOrder = 0
+          ExplicitLeft = 95
+          ExplicitTop = 160
+          ExplicitWidth = 121
+          ExplicitHeight = 97
+        end
       end
     end
   end
@@ -252,7 +316,7 @@ object LPMain: TLPMain
     Left = 452
     Top = 283
     Bitmap = {
-      494C0101030008001C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800240010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

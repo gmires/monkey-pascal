@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ExtCtrls, StdCtrls, Grids, ValEdit, ImgList, Menus, ClipBrd
 
-  , lp.environment
+  , lp.environment, lp.edits, lp.evaluator, lp.parser, lp.lexer
 
   ;
 
@@ -15,36 +15,73 @@ type
     Splitter1: TSplitter;
     Panel1: TPanel;
     BtnStepInto: TButton;
-    VLEnv: TValueListEditor;
-    Label1: TLabel;
     Panel2: TPanel;
-    LSrcView: TListBox;
     Label2: TLabel;
     ILDbg: TImageList;
     BtnContinue: TButton;
     BtnStop: TButton;
     pmEnv: TPopupMenu;
     MnuCopyValue: TMenuItem;
+    LSrcView: TLPIListBox;
+    Panel3: TPanel;
+    Panel4: TPanel;
+    edtEval: TEdit;
+    MEvalResult: TMemo;
+    Label3: TLabel;
+    Panel5: TPanel;
+    VLEnv: TValueListEditor;
+    Label1: TLabel;
     procedure BtnStepIntoClick(Sender: TObject);
     procedure BtnContinueClick(Sender: TObject);
     procedure BtnStopClick(Sender: TObject);
-    procedure LSrcViewDrawItem(Control: TWinControl; Index: Integer;
-      Rect: TRect; State: TOwnerDrawState);
+    procedure LSrcViewDrawItem(Control: TWinControl; Index: Integer; Rect: TRect; State: TOwnerDrawState);
     procedure MnuCopyValueClick(Sender: TObject);
     procedure pmEnvPopup(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    function LSrcViewDrawArrow(ACurrentLine: Integer): Boolean;
+    procedure edtEvalKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     { Private declarations }
+    Env:TEnvironment;
   public
     { Public declarations }
   end;
 
 procedure DebuggerShow(ASource:string; ALine:Integer; AEnv:TEnvironment; var ANext:Boolean; var AContinue:Boolean);
+function Eval(value:string; env:TEnvironment):string;
 
 var
   LPDebugger: TLPDebugger;
 
 implementation
+
+function Eval(value:string; env:TEnvironment):string;
+var
+  L:TLexer;
+  P:TParser;
+  E:TEvaluator;
+  R:TEvalObject;
+begin
+  L:=TLexer.Create(value,'');
+  try
+    P:= TParser.Create(L);
+    try
+      E:=TEvaluator.Create;
+      try
+        R := E.Eval(P.ParseProgram, env);
+        if Assigned(R) then
+          Result := R.Inspect;
+      finally
+        E.Free;
+      end;
+    finally
+      P.Free;
+    end;
+  finally
+    L.Free;
+  end;
+end;
 
 procedure DebuggerShow(ASource:string; ALine:Integer; AEnv:TEnvironment; var ANext:Boolean; var AContinue:Boolean);
 var
@@ -55,7 +92,9 @@ begin
   F:= TLPDebugger.Create(nil);
   try
     F.LSrcView.Items.Text := ASource;
+    F.LSrcView.Tag := ALine;
     F.LSrcView.Selected[ALine-1] := True;
+    F.Env := AEnv;
 
     for S in AEnv.Store.Keys do
       F.VLEnv.InsertRow(S,AEnv.Store[S].Inspect, True);
@@ -87,6 +126,13 @@ begin
     ModalResult := mrCancel;
 end;
 
+procedure TLPDebugger.edtEvalKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key=VK_RETURN then
+    MEvalResult.Text := Eval(edtEval.Text, Env);
+end;
+
 procedure TLPDebugger.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
@@ -97,12 +143,17 @@ begin
   if (Key=VK_ESCAPE) then BtnStop.Click;
 end;
 
+function TLPDebugger.LSrcViewDrawArrow(ACurrentLine: Integer): Boolean;
+begin
+  Result := (LSrcView.Tag=ACurrentLine);
+end;
+
 procedure TLPDebugger.LSrcViewDrawItem(Control: TWinControl; Index: Integer;
   Rect: TRect; State: TOwnerDrawState);
 var
-  LB: TListBox;
+  LB: TLPIListBox;
 begin
-  LB := TListBox(Control);
+  LB := TLPIListBox(Control);
 
   if odSelected in State then
   begin

@@ -1,6 +1,6 @@
 object LPDebugger: TLPDebugger
-  Left = 393
-  Top = 147
+  Left = 455
+  Top = 138
   BorderIcons = [biMinimize, biMaximize]
   Caption = 'LPI Debugger'
   ClientHeight = 738
@@ -20,52 +20,36 @@ object LPDebugger: TLPDebugger
   TextHeight = 13
   object Splitter1: TSplitter
     Left = 0
-    Top = 520
+    Top = 517
     Width = 1094
     Height = 3
     Cursor = crVSplit
     Align = alBottom
-    ExplicitLeft = 15
-    ExplicitTop = 264
-    ExplicitWidth = 673
-  end
-  object Label1: TLabel
-    AlignWithMargins = True
-    Left = 3
-    Top = 507
-    Width = 1088
-    Height = 13
-    Margins.Top = 0
-    Margins.Bottom = 0
-    Align = alBottom
-    Caption = 'Environment'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'Tahoma'
-    Font.Style = [fsBold]
-    ParentFont = False
-    ExplicitWidth = 72
+    Color = clSilver
+    ParentColor = False
+    ExplicitLeft = 5
+    ExplicitTop = 560
   end
   object Panel1: TPanel
-    AlignWithMargins = True
-    Left = 3
-    Top = 3
-    Width = 1088
+    Left = 0
+    Top = 0
+    Width = 1094
     Height = 33
     Align = alTop
     BevelOuter = bvNone
-    Color = clWhite
+    Color = clSilver
     ParentBackground = False
     TabOrder = 0
+    ExplicitLeft = 3
+    ExplicitTop = 3
+    ExplicitWidth = 1088
     object BtnStepInto: TButton
       AlignWithMargins = True
-      Left = 0
+      Left = 3
       Top = 3
       Width = 35
       Height = 27
       Hint = 'Step Into'
-      Margins.Left = 0
       Align = alLeft
       ImageAlignment = iaCenter
       ImageIndex = 0
@@ -74,13 +58,11 @@ object LPDebugger: TLPDebugger
       ShowHint = True
       TabOrder = 0
       OnClick = BtnStepIntoClick
-      ExplicitLeft = -10
-      ExplicitTop = 0
-      ExplicitHeight = 33
+      ExplicitLeft = 0
     end
     object BtnContinue: TButton
       AlignWithMargins = True
-      Left = 38
+      Left = 41
       Top = 3
       Width = 35
       Height = 27
@@ -94,13 +76,11 @@ object LPDebugger: TLPDebugger
       ShowHint = True
       TabOrder = 1
       OnClick = BtnContinueClick
-      ExplicitLeft = 35
-      ExplicitTop = 0
-      ExplicitHeight = 33
+      ExplicitLeft = 38
     end
     object BtnStop: TButton
       AlignWithMargins = True
-      Left = 76
+      Left = 79
       Top = 3
       Width = 35
       Height = 27
@@ -114,86 +94,224 @@ object LPDebugger: TLPDebugger
       ShowHint = True
       TabOrder = 2
       OnClick = BtnStopClick
-      ExplicitLeft = 70
-      ExplicitTop = 0
-      ExplicitHeight = 33
+      ExplicitLeft = 76
     end
-  end
-  object VLEnv: TValueListEditor
-    AlignWithMargins = True
-    Left = 3
-    Top = 526
-    Width = 1088
-    Height = 209
-    Align = alBottom
-    DrawingStyle = gdsGradient
-    FixedCols = 1
-    KeyOptions = [keyUnique]
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goRowSelect, goThumbTracking]
-    PopupMenu = pmEnv
-    TabOrder = 1
-    TitleCaptions.Strings = (
-      'Name'
-      'Value')
-    ColWidths = (
-      159
-      923)
-    RowHeights = (
-      18
-      18)
   end
   object Panel2: TPanel
     Left = 0
-    Top = 39
+    Top = 33
     Width = 1094
-    Height = 468
+    Height = 484
     Align = alClient
     BevelOuter = bvNone
     Caption = 'Panel2'
+    Color = clBlack
     Enabled = False
-    TabOrder = 2
+    ParentBackground = False
+    TabOrder = 1
+    ExplicitTop = 39
+    ExplicitHeight = 468
     object Label2: TLabel
       AlignWithMargins = True
       Left = 3
-      Top = 0
+      Top = 3
       Width = 1088
       Height = 13
-      Margins.Top = 0
       Margins.Bottom = 0
       Align = alTop
       Caption = 'Debugger Source'
       Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
+      Font.Color = clWhite
       Font.Height = -11
       Font.Name = 'Tahoma'
       Font.Style = [fsBold]
       ParentFont = False
+      ExplicitTop = 0
       ExplicitWidth = 97
     end
-    object LSrcView: TListBox
+    object LSrcView: TLPIListBox
       AlignWithMargins = True
       Left = 3
-      Top = 16
+      Top = 19
       Width = 1088
-      Height = 449
+      Height = 462
       Style = lbOwnerDrawFixed
       Align = alClient
-      Color = clCream
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -12
       Font.Name = 'Consolas'
       Font.Style = []
+      ItemHeight = 14
       ParentFont = False
       TabOrder = 0
-      OnDrawItem = LSrcViewDrawItem
+      GutterSize = 24
+      ArrowPointSize = 16
+      GutterColor = clWindow
+      GutterTextColor = clWindowText
+      OnDrawArrow = LSrcViewDrawArrow
+      ExplicitLeft = 128
+      ExplicitTop = 91
+      ExplicitHeight = 449
+    end
+  end
+  object Panel3: TPanel
+    Left = 0
+    Top = 520
+    Width = 1094
+    Height = 218
+    Align = alBottom
+    BevelOuter = bvNone
+    Caption = 'Panel3'
+    Color = clBackground
+    ParentBackground = False
+    TabOrder = 2
+    object Panel4: TPanel
+      Left = 807
+      Top = 0
+      Width = 287
+      Height = 218
+      Align = alRight
+      BevelOuter = bvNone
+      Color = clBlack
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentBackground = False
+      ParentFont = False
+      TabOrder = 0
+      ExplicitLeft = 800
+      ExplicitTop = 14
+      ExplicitHeight = 203
+      object Label3: TLabel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 281
+        Height = 13
+        Margins.Bottom = 0
+        Align = alTop
+        Caption = 'Evaluate'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        ParentFont = False
+        ExplicitTop = 0
+        ExplicitWidth = 49
+      end
+      object edtEval: TEdit
+        AlignWithMargins = True
+        Left = 3
+        Top = 19
+        Width = 281
+        Height = 21
+        Margins.Bottom = 0
+        Align = alTop
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Consolas'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 0
+        OnKeyDown = edtEvalKeyDown
+        ExplicitLeft = 45
+        ExplicitTop = 20
+        ExplicitWidth = 121
+      end
+      object MEvalResult: TMemo
+        AlignWithMargins = True
+        Left = 3
+        Top = 43
+        Width = 281
+        Height = 172
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Consolas'
+        Font.Style = []
+        ParentFont = False
+        ReadOnly = True
+        TabOrder = 1
+        ExplicitLeft = 35
+        ExplicitTop = 75
+        ExplicitWidth = 185
+        ExplicitHeight = 89
+      end
+    end
+    object Panel5: TPanel
+      Left = 0
+      Top = 0
+      Width = 807
+      Height = 218
+      Align = alClient
+      BevelOuter = bvNone
+      Caption = 'Panel5'
+      TabOrder = 1
+      ExplicitLeft = -5
+      ExplicitTop = 90
+      ExplicitWidth = 185
+      ExplicitHeight = 41
+      object Label1: TLabel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 801
+        Height = 13
+        Margins.Bottom = 0
+        Align = alTop
+        Caption = 'Environment'
+        Color = clNone
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+        ExplicitLeft = 4
+        ExplicitTop = 1
+        ExplicitWidth = 72
+      end
+      object VLEnv: TValueListEditor
+        AlignWithMargins = True
+        Left = 3
+        Top = 19
+        Width = 801
+        Height = 196
+        Align = alClient
+        DrawingStyle = gdsGradient
+        FixedCols = 1
+        KeyOptions = [keyUnique]
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goRowSelect, goThumbTracking]
+        PopupMenu = pmEnv
+        TabOrder = 0
+        TitleCaptions.Strings = (
+          'Name'
+          'Value')
+        ExplicitLeft = 1
+        ExplicitTop = 14
+        ExplicitWidth = 815
+        ExplicitHeight = 203
+        ColWidths = (
+          159
+          636)
+        RowHeights = (
+          18
+          18)
+      end
     end
   end
   object ILDbg: TImageList
     Left = 380
     Top = 284
     Bitmap = {
-      494C010103000800480010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800700010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -334,8 +452,8 @@ object LPDebugger: TLPDebugger
   end
   object pmEnv: TPopupMenu
     OnPopup = pmEnvPopup
-    Left = 725
-    Top = 595
+    Left = 605
+    Top = 585
     object MnuCopyValue: TMenuItem
       Caption = 'Copy Value'
       OnClick = MnuCopyValueClick
