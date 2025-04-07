@@ -8,7 +8,7 @@ uses classes, SysUtils, Generics.Collections, Variants, Math, SyncObjs
   , lp.parser;
 
 type
-  TEvalNotifierEvent = function(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; var AContinue:Boolean):Boolean of object;
+  TEvaluator = class;
 
   TGarbageCollector = class
     FLock: TCriticalSection;
@@ -25,6 +25,8 @@ type
 
     property ElemCount:Integer read GetElemCount;
   end;
+
+  TEvalNotifierEvent = function(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; AEval:TEvaluator; var AContinue:Boolean):Boolean of object;
 
   TEvaluator = class
     FGCCounter: Word;
@@ -68,7 +70,7 @@ type
 
     function OnEvalNotifier(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; var AContinue:Boolean):Boolean;
   public
-    constructor Create;
+    constructor Create; overload;
     destructor Destroy; override;
 
     function  Run(node: TASTNode; env: TEnvironment): TEvalObject;
@@ -806,7 +808,7 @@ function TEvaluator.OnEvalNotifier(AModule: string; ALine, APos: Integer;  AEnvi
 begin
   Result := Assigned(FEvalNotifierEvent);
   if Result then
-    Result := FEvalNotifierEvent(AModule, ALine, APos, AEnvironment, AContinue);
+    Result := FEvalNotifierEvent(AModule, ALine, APos, AEnvironment, Self, AContinue);
 end;
 
 procedure TEvaluator.DelEnv(AEnv: TEnvironment);

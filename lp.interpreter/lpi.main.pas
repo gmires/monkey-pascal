@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, xmldom, XMLIntf, msxmldom, XMLDoc, ComCtrls, StdCtrls
 
-  ,Generics.Collections, ExtCtrls, Menus
+  ,Generics.Collections, ExtCtrls, Menus, ImgList
 
   , lpi.debugger
   { -- lp core uses -- }
@@ -16,7 +16,8 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.builtins
-  , lp.advobject, ImgList, lp.edits
+  , lp.advobject
+  , lp.edits
   { -- lp core uses -- }
   ;
 
@@ -48,7 +49,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure MnuClearLogClick(Sender: TObject);
 
-    function  EvalNotifer(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; var AContinue:Boolean):Boolean;
+    function  EvalNotifer(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; AEval:TEvaluator; var AContinue:Boolean):Boolean;
   private
     { Private declarations }
     dbgNext:Boolean;
@@ -338,10 +339,10 @@ begin
 end;
 
 
-function TLPMain.EvalNotifer(AModule: string; ALine, APos: Integer; AEnvironment: TEnvironment; var AContinue:Boolean): Boolean;
+function TLPMain.EvalNotifer(AModule: string; ALine, APos: Integer; AEnvironment: TEnvironment; AEval:TEvaluator; var AContinue:Boolean): Boolean;
 begin
   if ((AModule='main') and dbgNext) then
-    DebuggerShow(MSouce.Text, ALine, AEnvironment, dbgNext, AContinue);
+    DebuggerShow(MSouce.Text, ALine, AEnvironment, AEval, dbgNext, AContinue);
 end;
 
 procedure TLPMain.FormCreate(Sender: TObject);

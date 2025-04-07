@@ -39,42 +39,37 @@ type
     procedure pmEnvPopup(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     function LSrcViewDrawArrow(ACurrentLine: Integer): Boolean;
-    procedure edtEvalKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
+    procedure edtEvalKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     Env:TEnvironment;
+    Evl:TEvaluator;
   public
     { Public declarations }
   end;
 
-procedure DebuggerShow(ASource:string; ALine:Integer; AEnv:TEnvironment; var ANext:Boolean; var AContinue:Boolean);
-function Eval(value:string; env:TEnvironment):string;
+procedure DebuggerShow(ASource:string; ALine:Integer; AEnv:TEnvironment; AEval:TEvaluator; var ANext:Boolean; var AContinue:Boolean);
+function  Eval(value:string; Evl:TEvaluator; env:TEnvironment):string;
 
 var
   LPDebugger: TLPDebugger;
 
 implementation
 
-function Eval(value:string; env:TEnvironment):string;
+function Eval(value:string; Evl:TEvaluator; env:TEnvironment):string;
 var
   L:TLexer;
   P:TParser;
-  E:TEvaluator;
   R:TEvalObject;
 begin
   L:=TLexer.Create(value,'');
   try
     P:= TParser.Create(L);
     try
-      E:=TEvaluator.Create;
-      try
-        R := E.Eval(P.ParseProgram, env);
-        if Assigned(R) then
-          Result := R.Inspect;
-      finally
-        E.Free;
-      end;
+      R := Evl.Eval(P.ParseProgram, env);
+      if Assigned(R) then
+        Result := R.Inspect;
     finally
       P.Free;
     end;
@@ -83,7 +78,7 @@ begin
   end;
 end;
 
-procedure DebuggerShow(ASource:string; ALine:Integer; AEnv:TEnvironment; var ANext:Boolean; var AContinue:Boolean);
+procedure DebuggerShow(ASource:string; ALine:Integer; AEnv:TEnvironment; AEval:TEvaluator; var ANext:Boolean; var AContinue:Boolean);
 var
   F:TLPDebugger;
   S:string;
@@ -95,6 +90,7 @@ begin
     F.LSrcView.Tag := ALine;
     F.LSrcView.Selected[ALine-1] := True;
     F.Env := AEnv;
+    F.Evl := AEval;
 
     for S in AEnv.Store.Keys do
       F.VLEnv.InsertRow(S,AEnv.Store[S].Inspect, True);
@@ -130,7 +126,13 @@ procedure TLPDebugger.edtEvalKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   if Key=VK_RETURN then
-    MEvalResult.Text := Eval(edtEval.Text, Env);
+    MEvalResult.Text := Eval(edtEval.Text, Evl, Env);
+end;
+
+procedure TLPDebugger.FormCreate(Sender: TObject);
+begin
+  Env := nil;
+  Evl := nil;
 end;
 
 procedure TLPDebugger.FormKeyDown(Sender: TObject; var Key: Word;

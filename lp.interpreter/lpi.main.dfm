@@ -116,8 +116,6 @@ object LPMain: TLPMain
         Color = clBlack
         ParentBackground = False
         TabOrder = 0
-        ExplicitTop = 480
-        ExplicitWidth = 1136
         object Label1: TLabel
           AlignWithMargins = True
           Left = 3
@@ -136,8 +134,6 @@ object LPMain: TLPMain
           Font.Style = [fsBold]
           ParentColor = False
           ParentFont = False
-          ExplicitLeft = 4
-          ExplicitTop = 1
           ExplicitWidth = 67
         end
         object List: TListBox
@@ -188,8 +184,6 @@ object LPMain: TLPMain
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
-          ExplicitLeft = 4
-          ExplicitTop = 1
           ExplicitWidth = 55
         end
         object MSouce: TLPIMemo
@@ -279,8 +273,6 @@ object LPMain: TLPMain
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
-          ExplicitLeft = 4
-          ExplicitTop = 4
           ExplicitWidth = 51
         end
         object TVAST: TTreeView
@@ -305,8 +297,8 @@ object LPMain: TLPMain
     end
   end
   object pmLog: TPopupMenu
-    Left = 872
-    Top = 688
+    Left = 842
+    Top = 648
     object MnuClearLog: TMenuItem
       Caption = 'Clear Log'
       OnClick = MnuClearLogClick
@@ -316,7 +308,7 @@ object LPMain: TLPMain
     Left = 452
     Top = 283
     Bitmap = {
-      494C010103000800240010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800280010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

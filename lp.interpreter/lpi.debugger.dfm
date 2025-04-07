@@ -15,6 +15,7 @@ object LPDebugger: TLPDebugger
   KeyPreview = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
+  OnCreate = FormCreate
   OnKeyDown = FormKeyDown
   PixelsPerInch = 96
   TextHeight = 13
@@ -40,9 +41,6 @@ object LPDebugger: TLPDebugger
     Color = clSilver
     ParentBackground = False
     TabOrder = 0
-    ExplicitLeft = 3
-    ExplicitTop = 3
-    ExplicitWidth = 1088
     object BtnStepInto: TButton
       AlignWithMargins = True
       Left = 3
@@ -58,7 +56,6 @@ object LPDebugger: TLPDebugger
       ShowHint = True
       TabOrder = 0
       OnClick = BtnStepIntoClick
-      ExplicitLeft = 0
     end
     object BtnContinue: TButton
       AlignWithMargins = True
@@ -76,7 +73,6 @@ object LPDebugger: TLPDebugger
       ShowHint = True
       TabOrder = 1
       OnClick = BtnContinueClick
-      ExplicitLeft = 38
     end
     object BtnStop: TButton
       AlignWithMargins = True
@@ -94,7 +90,6 @@ object LPDebugger: TLPDebugger
       ShowHint = True
       TabOrder = 2
       OnClick = BtnStopClick
-      ExplicitLeft = 76
     end
   end
   object Panel2: TPanel
@@ -126,7 +121,6 @@ object LPDebugger: TLPDebugger
       Font.Name = 'Tahoma'
       Font.Style = [fsBold]
       ParentFont = False
-      ExplicitTop = 0
       ExplicitWidth = 97
     end
     object LSrcView: TLPIListBox
@@ -182,9 +176,6 @@ object LPDebugger: TLPDebugger
       ParentBackground = False
       ParentFont = False
       TabOrder = 0
-      ExplicitLeft = 800
-      ExplicitTop = 14
-      ExplicitHeight = 203
       object Label3: TLabel
         AlignWithMargins = True
         Left = 3
@@ -200,7 +191,6 @@ object LPDebugger: TLPDebugger
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
-        ExplicitTop = 0
         ExplicitWidth = 49
       end
       object edtEval: TEdit
@@ -219,9 +209,6 @@ object LPDebugger: TLPDebugger
         ParentFont = False
         TabOrder = 0
         OnKeyDown = edtEvalKeyDown
-        ExplicitLeft = 45
-        ExplicitTop = 20
-        ExplicitWidth = 121
       end
       object MEvalResult: TMemo
         AlignWithMargins = True
@@ -238,10 +225,6 @@ object LPDebugger: TLPDebugger
         ParentFont = False
         ReadOnly = True
         TabOrder = 1
-        ExplicitLeft = 35
-        ExplicitTop = 75
-        ExplicitWidth = 185
-        ExplicitHeight = 89
       end
     end
     object Panel5: TPanel
@@ -253,10 +236,6 @@ object LPDebugger: TLPDebugger
       BevelOuter = bvNone
       Caption = 'Panel5'
       TabOrder = 1
-      ExplicitLeft = -5
-      ExplicitTop = 90
-      ExplicitWidth = 185
-      ExplicitHeight = 41
       object Label1: TLabel
         AlignWithMargins = True
         Left = 3
@@ -274,8 +253,6 @@ object LPDebugger: TLPDebugger
         Font.Style = [fsBold]
         ParentColor = False
         ParentFont = False
-        ExplicitLeft = 4
-        ExplicitTop = 1
         ExplicitWidth = 72
       end
       object VLEnv: TValueListEditor
@@ -294,10 +271,6 @@ object LPDebugger: TLPDebugger
         TitleCaptions.Strings = (
           'Name'
           'Value')
-        ExplicitLeft = 1
-        ExplicitTop = 14
-        ExplicitWidth = 815
-        ExplicitHeight = 203
         ColWidths = (
           159
           636)
@@ -311,7 +284,7 @@ object LPDebugger: TLPDebugger
     Left = 380
     Top = 284
     Bitmap = {
-      494C010103000800700010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800780010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
