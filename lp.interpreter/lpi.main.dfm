@@ -30,7 +30,7 @@ object LPMain: TLPMain
       Top = 4
       Width = 35
       Height = 28
-      Hint = 'Describe AST'
+      Hint = 'AST View'
       Margins.Right = 0
       Align = alRight
       ImageAlignment = iaCenter
@@ -64,6 +64,7 @@ object LPMain: TLPMain
       Top = 4
       Width = 35
       Height = 28
+      Hint = 'Debug'
       Align = alRight
       ImageAlignment = iaCenter
       ImageIndex = 1
@@ -82,10 +83,6 @@ object LPMain: TLPMain
     ActivePage = TabSource
     Align = alClient
     TabOrder = 1
-    ExplicitLeft = 3
-    ExplicitTop = 39
-    ExplicitWidth = 1144
-    ExplicitHeight = 773
     object TabSource: TTabSheet
       Caption = 'Source'
       ExplicitLeft = 0
@@ -238,7 +235,7 @@ object LPMain: TLPMain
       end
     end
     object TabAST: TTabSheet
-      Caption = 'AST View'
+      Caption = 'AST Tree'
       ImageIndex = 1
       ExplicitLeft = 0
       ExplicitTop = 0
@@ -308,7 +305,7 @@ object LPMain: TLPMain
     Left = 452
     Top = 283
     Bitmap = {
-      494C010103000800280010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C0101030008002C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
