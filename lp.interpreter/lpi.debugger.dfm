@@ -184,14 +184,14 @@ object LPDebugger: TLPDebugger
         Height = 13
         Margins.Bottom = 0
         Align = alTop
-        Caption = 'Evaluate'
+        Caption = 'Evaluate/Modify'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWhite
         Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
-        ExplicitWidth = 49
+        ExplicitWidth = 93
       end
       object edtEval: TEdit
         AlignWithMargins = True
@@ -284,7 +284,7 @@ object LPDebugger: TLPDebugger
     Left = 380
     Top = 284
     Bitmap = {
-      494C010103000800780010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C0101030008007C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

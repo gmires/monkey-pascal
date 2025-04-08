@@ -1,0 +1,66 @@
+object LPModuleSourceFrame: TLPModuleSourceFrame
+  Left = 0
+  Top = 0
+  Width = 806
+  Height = 466
+  Align = alClient
+  Color = clBlack
+  Ctl3D = True
+  ParentBackground = False
+  ParentColor = False
+  ParentCtl3D = False
+  TabOrder = 0
+  object PanelBackgroud: TPanel
+    Left = 0
+    Top = 0
+    Width = 806
+    Height = 466
+    Align = alClient
+    BevelOuter = bvNone
+    Color = clBlack
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Consolas'
+    Font.Style = []
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 0
+    ExplicitWidth = 475
+    ExplicitHeight = 339
+    object FLabelTop: TLabel
+      AlignWithMargins = True
+      Left = 3
+      Top = 3
+      Width = 800
+      Height = 13
+      Align = alTop
+      Caption = 'Module Source'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWhite
+      Font.Height = -11
+      Font.Name = 'Consolas'
+      Font.Style = []
+      ParentFont = False
+      ExplicitWidth = 78
+    end
+    object FMemoSource: TLPIMemo
+      AlignWithMargins = True
+      Left = 1
+      Top = 20
+      Width = 804
+      Height = 445
+      Margins.Left = 1
+      Margins.Top = 1
+      Margins.Right = 1
+      Margins.Bottom = 1
+      Align = alClient
+      ScrollBars = ssBoth
+      TabOrder = 0
+      GutterSize = 20
+      BreakPointSize = 14
+      GutterColor = clWindow
+      GutterTextColor = clWindowText
+    end
+  end
+end
