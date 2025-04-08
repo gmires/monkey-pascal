@@ -38,8 +38,6 @@ object LPIdeMain: TLPIdeMain
       Images = ILMain
       ParentColor = False
       TabOrder = 0
-      ExplicitLeft = 1250
-      ExplicitWidth = 64
       object tbNewPorject: TToolButton
         Left = 0
         Top = 0
@@ -112,6 +110,8 @@ object LPIdeMain: TLPIdeMain
         Hint = 'Esegui..'
         Caption = 'tbRun'
         ImageIndex = 5
+        ParentShowHint = False
+        ShowHint = True
         OnClick = MnuRunDebugClick
       end
     end
@@ -147,7 +147,6 @@ object LPIdeMain: TLPIdeMain
         item
           Width = 50
         end>
-      ExplicitTop = 638
     end
     object Panel3: TPanel
       Left = 0
@@ -196,8 +195,6 @@ object LPIdeMain: TLPIdeMain
           Font.Name = 'Consolas'
           Font.Style = []
           ParentFont = False
-          ExplicitLeft = 0
-          ExplicitTop = 0
           ExplicitWidth = 72
         end
         object ProjectTree: TTreeView
@@ -233,7 +230,6 @@ object LPIdeMain: TLPIdeMain
         Color = clBlack
         ParentBackground = False
         TabOrder = 1
-        ExplicitTop = 460
         object Label1: TLabel
           AlignWithMargins = True
           Left = 3
@@ -349,7 +345,7 @@ object LPIdeMain: TLPIdeMain
     Left = 132
     Top = 113
     Bitmap = {
-      494C010106003800280118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010106003800300118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000600000003000000001002000000000000048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -954,7 +950,7 @@ object LPIdeMain: TLPIdeMain
     Left = 132
     Top = 178
     Bitmap = {
-      494C01010100CC00D80010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010100CC00E00010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

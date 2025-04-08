@@ -6,6 +6,8 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, ToolWin, Menus, ExtCtrls, StdCtrls, lp.edits, ImgList
 
+  , DBXJSON
+
   , lp.ide.module.source
   ;
 
@@ -62,6 +64,7 @@ type
     procedure MnuProjectSaveClick(Sender: TObject);
   private
     { Private declarations }
+    CurrentProject:string;
   public
     { Public declarations }
     { -- project -- }
@@ -75,8 +78,10 @@ type
     { -- source tab and tree -- }
     function  ModuleNameByNode(Node:TTreeNode):string;
     procedure OpenTab(Node:TTreeNode);
+    procedure CloseTab(Node:TTreeNode);
     procedure SelectNote(Sheet:TTabSheet);
     procedure UpdateNote(Sheet:TTabSheet; Data:string);
+    procedure UpdateStatusBar;
   end;
 
 var
@@ -101,9 +106,34 @@ var
   current:TTreeNode;
 begin
   for current in ProjectTree.Items do
+  begin
+    CloseTab(current);
     TStringList(current.Data).Free;
+  end;
 
   ProjectTree.Items.Clear;
+end;
+
+procedure TLPIdeMain.CloseTab(Node: TTreeNode);
+var
+  S:string;
+  i:Integer;
+  current:TTabSheet;
+begin
+  current := nil;
+  S:=ModuleNameByNode(Node);
+
+  for i := 0 to PCMain.PageCount-1 do
+    if (LowerCase(PCMain.Pages[i].Caption)=LowerCase(S)) then
+    begin
+      current := PCMain.Pages[i];
+      Break;
+    end;
+
+  if Assigned(current) then
+  begin
+    current.Free;
+  end;
 end;
 
 procedure TLPIdeMain.FormCreate(Sender: TObject);
@@ -206,6 +236,8 @@ end;
 procedure TLPIdeMain.NewProject;
 begin
   CloseProject;
+  CurrentProject:='';
+  UpdateStatusBar;
   NewModule('main', NewProjectSource, nil);
 end;
 
@@ -260,6 +292,7 @@ end;
 
 procedure TLPIdeMain.RemoveModule(Node: TTreeNode);
 begin
+  CloseTab(Node);
   TStringList(Node.Data).Free;
   ProjectTree.Items.Delete(Node);
 end;
@@ -268,11 +301,51 @@ procedure TLPIdeMain.SaveProject;
 var
   i:Integer;
   F:TLPModuleSourceFrame;
+  S:string;
+  J,Z:TJSONObject;
+  M:TJSONArray;
+  Current:TTreeNode;
 begin
   for i := 0 to PCMain.PageCount-1 do
   begin
     F:= TLPModuleSourceFrame( PCMain.Pages[i].Controls[0] );
+    UpdateNote( PCMain.Pages[i], F.MemoSource.Text );
   end;
+
+  if (CurrentProject='') then
+    with TSaveDialog.Create(Self) do
+    try
+      if Execute then
+      begin
+        S:=ChangeFileExt(FileName,'.lpi');
+
+        J:= TJSONObject.Create;
+        M:= TJSONArray.Create;
+        try
+          for current in ProjectTree.Items do
+            if Current.Text='main' then
+              J.AddPair('main', TStringList(Current.Data).Text)
+            else
+            begin
+              Z:=TJSONObject.Create;
+              Z.AddPair('name', ModuleNameByNode(Current));
+              Z.AddPair('source', TStringList(Current.Data).Text);
+
+              M.AddElement(Z);
+            end;
+
+          J.AddPair('modules', M);
+
+          JSONSaveToFile(J, S);
+          CurrentProject := S;
+          UpdateStatusBar;
+        finally
+          J.Free;
+        end;
+      end;
+    finally
+      Free;
+    end;
 
 end;
 
@@ -305,8 +378,35 @@ begin
 end;
 
 procedure TLPIdeMain.UpdateNote(Sheet: TTabSheet; Data: string);
+var
+  S,S1:string;
+  node:TTreeNode;
 begin
+  S:=Sheet.Caption;
+  node := ProjectTree.Items.GetFirstNode;
+  while (S<>'') do
+  begin
+    S1:= StrSplit(S,'.');
+    if (S1<>'') then
+    begin
+      repeat
+        if node.Text=S1 then
+        begin
+          if node.HasChildren and (S<>'') then
+            node := node.getFirstChild;
 
+          Break;
+        end
+        else node := node.getNextSibling;
+      until (node=nil);
+    end;
+  end;
+  TStringList( node.Data).Text := Data;
+end;
+
+procedure TLPIdeMain.UpdateStatusBar;
+begin
+  LPIStatusBar.Panels[0].Text := 'Current project = '  + CurrentProject;
 end;
 
 end.

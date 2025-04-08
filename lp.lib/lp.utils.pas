@@ -2,8 +2,13 @@ unit lp.utils;
 
 interface
 
-function StrSplit(var S:String; C:Char):string;
-function StrSplitPlus(var S:String; C:string):string;
+uses DBXJSON, SysUtils, Classes;
+
+function  StrSplit(var S:String; C:Char):string;
+function  StrSplitPlus(var S:String; C:string):string;
+
+function  JSONToString(O:TJSONObject):string;
+procedure JSONSaveToFile(O:TJSONObject; JFileName:string);
 
 implementation
 
@@ -45,6 +50,36 @@ begin
   end;
   Result:=R;
 end;
+
+function JSONToString(O:TJSONObject):string;
+var
+  Buffer:TBytes;
+  n:Integer;
+  S:RawByteString;
+begin
+  SetLength(Buffer, O.EstimatedByteSize);
+  n:= O.ToBytes(Buffer,0);
+  SetLength(Buffer, n);
+  SetLength(S, n);
+
+  Move(Buffer[0], s[1], n);
+
+  Result := S;
+end;
+
+procedure JSONSaveToFile(O:TJSONObject; JFileName:string);
+var
+  L:TStringList;
+begin
+  L:=TStringList.Create;
+  try
+    L.Text := JSONToString(O);
+    L.SaveToFile(JFileName);
+  finally
+    L.Free;
+  end;
+end;
+
 
 
 end.
