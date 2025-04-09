@@ -4,7 +4,8 @@ uses
   Forms,
   lp.ide.main in 'lp.ide.main.pas' {LPIdeMain},
   lp.utils in '..\lp.lib\lp.utils.pas',
-  lp.ide.module.source in 'lp.ide.module.source.pas' {LPModuleSourceFrame: TFrame};
+  lp.ide.module.source in 'lp.ide.module.source.pas' {LPModuleSourceFrame: TFrame},
+  lp.base64 in '..\lp.lib\lp.base64.pas';
 
 {$R *.res}
 

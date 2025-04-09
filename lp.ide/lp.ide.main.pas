@@ -6,9 +6,10 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, ToolWin, Menus, ExtCtrls, StdCtrls, lp.edits, ImgList
 
-  , DBXJSON
+  , DBXJSON, Generics.Collections
 
   , lp.ide.module.source
+  , lp.base64
   ;
 
 type
@@ -62,25 +63,36 @@ type
     procedure MnuProjectOpenClick(Sender: TObject);
     procedure MnuRunDebugClick(Sender: TObject);
     procedure MnuProjectSaveClick(Sender: TObject);
+    procedure MnuProjectSaveWithNameClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    { -- -- }
+    function  SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
+    procedure SourceBreakPointClick(Module:string; ALine: Integer);
   private
     { Private declarations }
+    BreakPoints:TStringList;
     CurrentProject:string;
+    function  ProjectToStreamCompress: TMemoryStream;
+    procedure StreamToProject(stream:TMemoryStream);
   public
     { Public declarations }
     { -- project -- }
     procedure NewProject;
     procedure CloseProject;
     procedure OpenProject;
-    procedure SaveProject;
+    procedure SaveProject(CurrentProjectPath:string='');
     { -- module -- }
     procedure NewModule(Name,Data: string; Parent:TTreeNode);
+    procedure AddModule(Name,Data: string);
     procedure RemoveModule(Node:TTreeNode);
     { -- source tab and tree -- }
     function  ModuleNameByNode(Node:TTreeNode):string;
     procedure OpenTab(Node:TTreeNode);
     procedure CloseTab(Node:TTreeNode);
     procedure SelectNote(Sheet:TTabSheet);
-    procedure UpdateNote(Sheet:TTabSheet; Data:string);
+    function  GetNodeByModuleName(ModuleName:string):TTreeNode;
+    function  GetParentNodeByModuleName(ModuleName:string):TTreeNode;
+    procedure UpdateNode(Sheet:TTabSheet; Data:string);
     procedure UpdateStatusBar;
   end;
 
@@ -101,6 +113,23 @@ uses lp.utils;
 
 {$R *.dfm}
 
+procedure TLPIdeMain.AddModule(Name, Data: string);
+var
+  Node,Parent:TTreeNode;
+begin
+  Name := LowerCase(Name);
+  Parent := GetParentNodeByModuleName(Name);
+  if (Parent<>nil) then
+  begin
+    while (Pos('.', Name)>0) do
+      StrSplit(Name,'.');
+
+    Node := ProjectTree.Items.AddChild(Parent,Name);
+    Node.Data := TStringList.Create;
+    TStringList(Node.Data).Text := Data;
+  end;
+end;
+
 procedure TLPIdeMain.CloseProject;
 var
   current:TTreeNode;
@@ -112,6 +141,7 @@ begin
   end;
 
   ProjectTree.Items.Clear;
+  BreakPoints.Clear;
 end;
 
 procedure TLPIdeMain.CloseTab(Node: TTreeNode);
@@ -136,9 +166,52 @@ begin
   end;
 end;
 
+procedure TLPIdeMain.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  BreakPoints.Free;
+end;
+
 procedure TLPIdeMain.FormCreate(Sender: TObject);
 begin
+  BreakPoints:=TStringList.Create;
   NewProject;
+end;
+
+function TLPIdeMain.GetNodeByModuleName(ModuleName: string): TTreeNode;
+var
+  S1:string;
+begin
+  Result := ProjectTree.Items.GetFirstNode;
+  while (ModuleName<>'') do
+  begin
+    S1:= StrSplit(ModuleName,'.');
+    if (S1<>'') then
+    begin
+      repeat
+        if Result.Text=S1 then
+        begin
+          if Result.HasChildren and (ModuleName<>'') then
+            Result := Result.getFirstChild;
+
+          Break;
+        end
+        else Result := Result.getNextSibling;
+      until (Result=nil);
+    end;
+  end;
+end;
+
+function TLPIdeMain.GetParentNodeByModuleName(ModuleName: string): TTreeNode;
+var
+  S:string;
+begin
+  S:='';
+  while (Pos('.', ModuleName)>0) do
+  begin
+    if S<>'' then S:=S+'.';
+    S:= S+StrSplit(ModuleName,'.');
+  end;
+  Result := GetNodeByModuleName(S);
 end;
 
 procedure TLPIdeMain.MnuExitClick(Sender: TObject);
@@ -192,6 +265,11 @@ end;
 
 procedure TLPIdeMain.MnuProjectSaveClick(Sender: TObject);
 begin
+  SaveProject(CurrentProject);
+end;
+
+procedure TLPIdeMain.MnuProjectSaveWithNameClick(Sender: TObject);
+begin
   SaveProject;
 end;
 
@@ -242,8 +320,29 @@ begin
 end;
 
 procedure TLPIdeMain.OpenProject;
+var
+  M:TMemoryStream;
 begin
-//
+  With TOpenDialog.Create(Self) do
+  try
+    Title := 'Open LPI Project';
+    Filter:= 'LPI Project files (*.lpi)';
+    if Execute then
+    begin
+      CloseProject;
+      M:= TMemoryStream.Create;
+      try
+        M.LoadFromFile(FileName);
+        StreamToProject(M);
+      finally
+        M.Free;
+      end;
+      CurrentProject:=FileName;
+      UpdateStatusBar;
+    end;
+  finally
+    Free;
+  end;
 end;
 
 procedure TLPIdeMain.OpenTab(Node:TTreeNode);
@@ -270,10 +369,13 @@ begin
     current.PageControl:= PCMain;
     current.Caption:= S;
     F:=TLPModuleSourceFrame.Create(current);
+    F.Module := S;
     F.LabelTop.Caption := 'Source of <'+S+'> module';
     F.MemoSource.Text := D;
     F.Align := alClient;
     F.Parent:= current;
+    F.OnModuleDrawBreakPoint := SourceDrawBreakPoint;
+    F.OnModuleBreakPointClick:= SourceBreakPointClick;
   end;
 
   PCMain.ActivePage := current;
@@ -282,6 +384,47 @@ end;
 procedure TLPIdeMain.PCMainChange(Sender: TObject);
 begin
   SelectNote(PCMain.ActivePage);
+end;
+
+function TLPIdeMain.ProjectToStreamCompress: TMemoryStream;
+var
+  S:TStringStream;
+  J,Z:TJSONObject;
+  M:TJSONArray;
+  Current:TTreeNode;
+begin
+  Result := TMemoryStream.Create;
+
+  J:= TJSONObject.Create;
+  M:= TJSONArray.Create;
+  try
+    for current in ProjectTree.Items do
+      if Current.Text='main' then
+        J.AddPair('main', StringToBase64(TStringList(Current.Data).Text))
+      else
+      begin
+        Z:=TJSONObject.Create;
+        Z.AddPair('name', ModuleNameByNode(Current));
+        Z.AddPair('source',StringToBase64( TStringList(Current.Data).Text));
+
+        M.AddElement(Z);
+      end;
+
+    J.AddPair('modules', M);
+
+    S:= TStringStream.Create;
+    try
+      S.WriteString(JSONToString(J));;
+      S.Position:=0;
+      CompressStream(S,Result);
+      Result.Position := 0;
+    finally
+      S.Free;
+    end;
+
+  finally
+    J.Free;
+  end;
 end;
 
 procedure TLPIdeMain.ProjectTreeDblClick(Sender: TObject);
@@ -297,116 +440,105 @@ begin
   ProjectTree.Items.Delete(Node);
 end;
 
-procedure TLPIdeMain.SaveProject;
+procedure TLPIdeMain.SaveProject(CurrentProjectPath:string);
 var
   i:Integer;
   F:TLPModuleSourceFrame;
   S:string;
-  J,Z:TJSONObject;
-  M:TJSONArray;
-  Current:TTreeNode;
+  MS:TMemoryStream;
 begin
   for i := 0 to PCMain.PageCount-1 do
   begin
     F:= TLPModuleSourceFrame( PCMain.Pages[i].Controls[0] );
-    UpdateNote( PCMain.Pages[i], F.MemoSource.Text );
+    UpdateNode( PCMain.Pages[i], F.MemoSource.Text );
   end;
 
-  if (CurrentProject='') then
-    with TSaveDialog.Create(Self) do
-    try
-      if Execute then
-      begin
-        S:=ChangeFileExt(FileName,'.lpi');
-
-        J:= TJSONObject.Create;
-        M:= TJSONArray.Create;
-        try
-          for current in ProjectTree.Items do
-            if Current.Text='main' then
-              J.AddPair('main', TStringList(Current.Data).Text)
-            else
-            begin
-              Z:=TJSONObject.Create;
-              Z.AddPair('name', ModuleNameByNode(Current));
-              Z.AddPair('source', TStringList(Current.Data).Text);
-
-              M.AddElement(Z);
-            end;
-
-          J.AddPair('modules', M);
-
-          JSONSaveToFile(J, S);
-          CurrentProject := S;
-          UpdateStatusBar;
-        finally
-          J.Free;
-        end;
+  MS:=ProjectToStreamCompress;
+  if MS.Size>0 then
+  begin
+    S:=CurrentProjectPath;
+    if (S='') then
+    begin
+      with TSaveDialog.Create(Self) do
+      try
+        if Execute then
+          S:=ChangeFileExt(FileName,'.lpi');
+      finally
+        Free;
       end;
-    finally
-      Free;
     end;
+    MS.SaveToFile(S);
+  end;
 
+  CurrentProject := S;
+  UpdateStatusBar;
 end;
 
 procedure TLPIdeMain.SelectNote(Sheet: TTabSheet);
 var
-  S,S1:string;
   node:TTreeNode;
 begin
-  S:=Sheet.Caption;
-  node := ProjectTree.Items.GetFirstNode;
-  while (S<>'') do
+  node := GetNodeByModuleName(Sheet.Caption);
+  if (node<>nil) then
   begin
-    S1:= StrSplit(S,'.');
-    if (S1<>'') then
-    begin
-      repeat
-        if node.Text=S1 then
-        begin
-          if node.HasChildren and (S<>'') then
-            node := node.getFirstChild;
-
-          Break;
-        end
-        else node := node.getNextSibling;
-      until (node=nil);
-    end;
+    node.MakeVisible;
+    node.Selected:= True;
   end;
-  node.MakeVisible;
-  node.Selected:= True;
 end;
 
-procedure TLPIdeMain.UpdateNote(Sheet: TTabSheet; Data: string);
+procedure TLPIdeMain.SourceBreakPointClick(Module:string; ALine: Integer);
 var
-  S,S1:string;
+  I:Integer;
+  S:string;
+begin
+  S:= Module + '.' + IntToStr(ALine);
+  I:= BreakPoints.IndexOf(S);
+  if (I<0) then
+    BreakPoints.Add(S)
+  else
+    BreakPoints.Delete(I);
+end;
+
+function TLPIdeMain.SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
+begin
+ Result := (BreakPoints.IndexOf(Module + '.' + IntToStr(ACurrentLine))>=0);
+end;
+
+procedure TLPIdeMain.StreamToProject(stream:TMemoryStream);
+var
+  J:TJSONObject;
+  M:TJSONArray;
+  i:Integer;
+begin
+  J:=JSONLoadToCompress(stream);
+  if (J<>nil) then
+  try
+    NewModule('main', Base64ToString(J.Get('main').JsonValue.Value),nil);
+    M:= J.Get('modules').JsonValue as TJSONArray;
+    if (M.Size>0) then
+      for i := 0 to M.Size-1 do
+        AddModule((M.Get(i) as TJSONObject).Get('name').JsonValue.Value
+          , Base64ToString((M.Get(i) as TJSONObject).Get('source').JsonValue.Value));
+  finally
+    J.Free;
+  end;
+end;
+
+procedure TLPIdeMain.UpdateNode(Sheet: TTabSheet; Data: string);
+var
   node:TTreeNode;
 begin
-  S:=Sheet.Caption;
-  node := ProjectTree.Items.GetFirstNode;
-  while (S<>'') do
-  begin
-    S1:= StrSplit(S,'.');
-    if (S1<>'') then
-    begin
-      repeat
-        if node.Text=S1 then
-        begin
-          if node.HasChildren and (S<>'') then
-            node := node.getFirstChild;
-
-          Break;
-        end
-        else node := node.getNextSibling;
-      until (node=nil);
-    end;
-  end;
-  TStringList( node.Data).Text := Data;
+  node := GetNodeByModuleName(Sheet.Caption);
+  if (node<>nil) then
+    TStringList( node.Data).Text := Data;
 end;
 
 procedure TLPIdeMain.UpdateStatusBar;
 begin
-  LPIStatusBar.Panels[0].Text := 'Current project = '  + CurrentProject;
+  if CurrentProject='' then
+    LPIStatusBar.Panels[0].Text := 'Current project = NewProject'
+  else
+    LPIStatusBar.Panels[0].Text := 'Current project = '  + CurrentProject;
 end;
 
 end.

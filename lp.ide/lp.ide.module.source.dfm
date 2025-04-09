@@ -1,8 +1,8 @@
 object LPModuleSourceFrame: TLPModuleSourceFrame
   Left = 0
   Top = 0
-  Width = 806
-  Height = 466
+  Width = 435
+  Height = 265
   Align = alClient
   Color = clBlack
   Ctl3D = True
@@ -10,11 +10,13 @@ object LPModuleSourceFrame: TLPModuleSourceFrame
   ParentColor = False
   ParentCtl3D = False
   TabOrder = 0
+  ExplicitWidth = 806
+  ExplicitHeight = 466
   object PanelBackgroud: TPanel
     Left = 0
     Top = 0
-    Width = 806
-    Height = 466
+    Width = 435
+    Height = 265
     Align = alClient
     BevelOuter = bvNone
     Color = clBlack
@@ -32,7 +34,7 @@ object LPModuleSourceFrame: TLPModuleSourceFrame
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 800
+      Width = 429
       Height = 13
       Align = alTop
       Caption = 'Module Source'
@@ -48,8 +50,8 @@ object LPModuleSourceFrame: TLPModuleSourceFrame
       AlignWithMargins = True
       Left = 1
       Top = 20
-      Width = 804
-      Height = 445
+      Width = 433
+      Height = 244
       Margins.Left = 1
       Margins.Top = 1
       Margins.Right = 1
@@ -61,6 +63,10 @@ object LPModuleSourceFrame: TLPModuleSourceFrame
       BreakPointSize = 14
       GutterColor = clWindow
       GutterTextColor = clWindowText
+      OnDrawBreakPoint = FMemoSourceDrawBreakPoint
+      OnBreakPointClick = FMemoSourceBreakPointClick
+      ExplicitWidth = 804
+      ExplicitHeight = 445
     end
   end
 end

@@ -27,7 +27,9 @@ package LPI;
 
 requires
   rtl,
-  vcl;
+  vcl,
+  dbrtl,
+  DbxCommonDriver;
 
 contains
   lp.builtins in '..\..\lp.lib\lp.builtins.pas',
@@ -38,7 +40,8 @@ contains
   lp.token in '..\..\lp.lib\lp.token.pas',
   lp.utils in '..\..\lp.lib\lp.utils.pas',
   lp.advobject in '..\..\lp.lib\lp.advobject.pas',
-  lp.edits in '..\..\lp.components\lp.edits.pas';
+  lp.edits in '..\..\lp.components\lp.edits.pas',
+  lp.base64 in '..\..\lp.lib\lp.base64.pas';
 
 end.
 
