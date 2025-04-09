@@ -16,7 +16,6 @@ object LPIdeDebugger: TLPIdeDebugger
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnClose = FormClose
-  OnCreate = FormCreate
   OnKeyDown = FormKeyDown
   PixelsPerInch = 96
   TextHeight = 13
@@ -39,8 +38,6 @@ object LPIdeDebugger: TLPIdeDebugger
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 0
-    ExplicitLeft = -178
-    ExplicitWidth = 1314
     object TbMain: TToolBar
       Left = 0
       Top = 0
@@ -55,7 +52,6 @@ object LPIdeDebugger: TLPIdeDebugger
       Images = ILDebugger
       ParentColor = False
       TabOrder = 0
-      ExplicitWidth = 1314
       object tbStepInto: TToolButton
         Left = 0
         Top = 0
@@ -105,8 +101,6 @@ object LPIdeDebugger: TLPIdeDebugger
       BevelOuter = bvNone
       Caption = 'Panel5'
       TabOrder = 0
-      ExplicitWidth = 807
-      ExplicitHeight = 218
       object Label1: TLabel
         AlignWithMargins = True
         Left = 3
@@ -152,7 +146,6 @@ object LPIdeDebugger: TLPIdeDebugger
         TitleCaptions.Strings = (
           'Name'
           'Value')
-        ExplicitLeft = -137
         ColWidths = (
           159
           255)
@@ -209,7 +202,6 @@ object LPIdeDebugger: TLPIdeDebugger
           ParentFont = False
           TabOrder = 0
           OnKeyDown = edtEvalKeyDown
-          ExplicitWidth = 281
         end
         object MEvalResult: TMemo
           AlignWithMargins = True
@@ -226,8 +218,6 @@ object LPIdeDebugger: TLPIdeDebugger
           ParentFont = False
           ReadOnly = True
           TabOrder = 1
-          ExplicitWidth = 281
-          ExplicitHeight = 578
         end
       end
     end
@@ -296,7 +286,7 @@ object LPIdeDebugger: TLPIdeDebugger
     Left = 132
     Top = 113
     Bitmap = {
-      494C010103004401940118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103004401980118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000600000001800000001002000000000000024
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

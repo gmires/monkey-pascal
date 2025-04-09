@@ -62,6 +62,14 @@ type
     ToolButton2: TToolButton;
     PMTabs: TPopupMenu;
     MnuTabClose: TMenuItem;
+    MnuTabCloseAll: TMenuItem;
+    MnuTabCloseAllOther: TMenuItem;
+    N3: TMenuItem;
+    { -- -- }
+    function  SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
+    procedure SourceBreakPointClick(Module:string; ALine: Integer);
+    function  EvalNotifer(AModule:string; ALine, APos: Integer; AEnv:TEnvironment; AEval:TEvaluator; var AContinue:Boolean):Boolean;
+    { -- -- }
     procedure MnuExitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MnuModuloNewClick(Sender: TObject);
@@ -76,11 +84,9 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure PMTabsPopup(Sender: TObject);
     procedure MnuTabCloseClick(Sender: TObject);
-    { -- -- }
-    function  SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
-    procedure SourceBreakPointClick(Module:string; ALine: Integer);
-    function  EvalNotifer(AModule:string; ALine, APos: Integer; AEnv:TEnvironment; AEval:TEvaluator; var AContinue:Boolean):Boolean;
-    { -- -- }
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure MnuTabCloseAllClick(Sender: TObject);
+    procedure MnuTabCloseAllOtherClick(Sender: TObject);
   private
     { Private declarations }
     BreakPoints:TStringList;
@@ -107,6 +113,7 @@ type
     procedure OpenTab(Node:TTreeNode);
     procedure CloseTab(Node:TTreeNode); overload;
     procedure CloseTab(ModuleName:string); overload;
+    procedure CheckAndCloseTab(Sheet:TTabSheet);
     procedure SelectNote(Sheet:TTabSheet);
     function  GetNodeByModuleName(ModuleName:string):TTreeNode;
     function  GetParentNodeByModuleName(ModuleName:string):TTreeNode;
@@ -181,6 +188,21 @@ end;
 procedure TLPIdeMain.AddToConsoleLog(value: string);
 begin
   ConsoleLog.Items.Add('>>> ' + value);
+end;
+
+procedure TLPIdeMain.CheckAndCloseTab(Sheet: TTabSheet);
+var
+  F: TLPModuleSourceFrame;
+begin
+  F:= TLPModuleSourceFrame( Sheet.Controls[0] );
+  if F.modified then
+  if (MessageDlg('Il sorgente del modulo è stato modificato, vuoi salvare prima di chiudere?'
+    ,mtConfirmation
+    ,mbYesNo,0)=mrYes) then
+  begin
+    UpdateNode(Sheet.Caption, F.MemoSource.Text);
+  end;
+  CloseTab(Sheet.Caption);
 end;
 
 function TLPIdeMain.CloseProject:Boolean;
@@ -272,6 +294,17 @@ end;
 procedure TLPIdeMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   BreakPoints.Free;
+end;
+
+procedure TLPIdeMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  UpdateNodes;
+  if CurrentProjectModifed then
+  begin
+    CanClose := (MessageDlg('Il progetto è stato modifica, vuoi chiudere senza salvare le modifiche, Sei sicuro/a?'
+      ,mtConfirmation
+      ,mbYesNo,0)=mrYes);
+  end;
 end;
 
 procedure TLPIdeMain.FormCreate(Sender: TObject);
@@ -388,19 +421,25 @@ begin
   RunProject;
 end;
 
-procedure TLPIdeMain.MnuTabCloseClick(Sender: TObject);
+procedure TLPIdeMain.MnuTabCloseAllClick(Sender: TObject);
 var
-  F: TLPModuleSourceFrame;
+  i:Integer;
 begin
-  F:= TLPModuleSourceFrame( PCMain.ActivePage.Controls[0] );
-  if F.modified then
-  if (MessageDlg('Il sorgente del modulo è stato modificato, vuoi salvare prima di chiudere?'
-    ,mtConfirmation
-    ,mbYesNo,0)=mrYes) then
-  begin
-    UpdateNode(PCMain.ActivePage.Caption, F.MemoSource.Text);
-  end;
-  CloseTab(PCMain.ActivePage.Caption);
+  for i := PCMain.PageCount-1 downto 0 do
+    if (PCMain.Pages[i].Caption<>'main') then
+      CheckAndCloseTab(PCMain.Pages[i]);
+
+  SelectNote(PCMain.ActivePage);
+end;
+
+procedure TLPIdeMain.MnuTabCloseAllOtherClick(Sender: TObject);
+begin
+//
+end;
+
+procedure TLPIdeMain.MnuTabCloseClick(Sender: TObject);
+begin
+  CheckAndCloseTab(PCMain.ActivePage);
   SelectNote(PCMain.ActivePage);
 end;
 

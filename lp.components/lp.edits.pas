@@ -164,14 +164,16 @@ end;
 procedure TLPIMemo.DoMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
   J,S,L:Integer;
-
 begin
-  S:= FPaintBox.Canvas.TextHeight('W');
-  J:= Perform(EM_GETFIRSTVISIBLELINE,0,0);
-  L:= Y div S + J + 1;
+  if Button = mbLeft then
+  begin
+    S:= FPaintBox.Canvas.TextHeight('W');
+    J:= Perform(EM_GETFIRSTVISIBLELINE,0,0);
+    L:= Y div S + J + 1;
 
-  DoBreakPointClick(L);
-  SendMessage(Handle,WM_PAINT,0,0);
+    DoBreakPointClick(L);
+    SendMessage(Handle,WM_PAINT,0,0);
+  end;
 end;
 
 procedure TLPIMemo.WMPaint(var Msg: TWMPaint);

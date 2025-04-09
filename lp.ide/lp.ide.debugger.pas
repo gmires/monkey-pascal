@@ -50,7 +50,6 @@ type
     procedure MnuCopyValueClick(Sender: TObject);
     function LSourceDrawArrow(ACurrentLine: Integer): Boolean;
     procedure pmEnvPopup(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
@@ -78,6 +77,12 @@ var
 begin
   F:= TLPIdeDebugger.Create(nil);
   try
+    if (FormTop<>0) then
+    begin
+      F.Position := poDesigned;
+      F.Top := FormTop;
+      F.Left := FormLeft;
+    end;
     F.LSource.Items.Text := ASource;
     F.LSource.Tag := ALine;
     F.LSource.Selected[ALine-1] := True;
@@ -125,16 +130,8 @@ end;
 
 procedure TLPIdeDebugger.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  FormTop:=Top;
-  FormLeft:=Left;
-end;
-
-procedure TLPIdeDebugger.FormCreate(Sender: TObject);
-begin
-  if (FormTop<>0) then
-    Top:=FormTop;
-  if (FormLeft<>0) then
-    Left:=FormLeft;
+  FormTop:=Self.Top;
+  FormLeft:=Self.Left;
 end;
 
 procedure TLPIdeDebugger.FormKeyDown(Sender: TObject; var Key: Word;
