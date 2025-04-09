@@ -1,9 +1,9 @@
 object LPDebugger: TLPDebugger
   Left = 455
-  Top = 138
+  Top = 140
   BorderIcons = [biMinimize, biMaximize]
   Caption = 'LPI Debugger'
-  ClientHeight = 738
+  ClientHeight = 736
   ClientWidth = 1094
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
@@ -21,7 +21,7 @@ object LPDebugger: TLPDebugger
   TextHeight = 13
   object Splitter1: TSplitter
     Left = 0
-    Top = 517
+    Top = 515
     Width = 1094
     Height = 3
     Cursor = crVSplit
@@ -96,7 +96,7 @@ object LPDebugger: TLPDebugger
     Left = 0
     Top = 33
     Width = 1094
-    Height = 484
+    Height = 482
     Align = alClient
     BevelOuter = bvNone
     Caption = 'Panel2'
@@ -128,7 +128,7 @@ object LPDebugger: TLPDebugger
       Left = 3
       Top = 19
       Width = 1088
-      Height = 462
+      Height = 460
       Style = lbOwnerDrawFixed
       Align = alClient
       Font.Charset = DEFAULT_CHARSET
@@ -151,7 +151,7 @@ object LPDebugger: TLPDebugger
   end
   object Panel3: TPanel
     Left = 0
-    Top = 520
+    Top = 518
     Width = 1094
     Height = 218
     Align = alBottom
@@ -160,6 +160,7 @@ object LPDebugger: TLPDebugger
     Color = clBackground
     ParentBackground = False
     TabOrder = 2
+    ExplicitTop = 520
     object Panel4: TPanel
       Left = 807
       Top = 0
@@ -284,7 +285,7 @@ object LPDebugger: TLPDebugger
     Left = 380
     Top = 284
     Bitmap = {
-      494C0101030008007C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800800010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

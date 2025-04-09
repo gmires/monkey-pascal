@@ -47,12 +47,22 @@
 			<DCCReference Include="lp.ide.main.pas">
 				<Form>LPIdeMain</Form>
 			</DCCReference>
-			<DCCReference Include="..\lp.lib\lp.utils.pas"/>
 			<DCCReference Include="lp.ide.module.source.pas">
 				<Form>LPModuleSourceFrame</Form>
 				<DesignClass>TFrame</DesignClass>
 			</DCCReference>
+			<DCCReference Include="..\lp.lib\lp.advobject.pas"/>
 			<DCCReference Include="..\lp.lib\lp.base64.pas"/>
+			<DCCReference Include="..\lp.lib\lp.builtins.pas"/>
+			<DCCReference Include="..\lp.lib\lp.environment.pas"/>
+			<DCCReference Include="..\lp.lib\lp.evaluator.pas"/>
+			<DCCReference Include="..\lp.lib\lp.lexer.pas"/>
+			<DCCReference Include="..\lp.lib\lp.parser.pas"/>
+			<DCCReference Include="..\lp.lib\lp.token.pas"/>
+			<DCCReference Include="..\lp.lib\lp.utils.pas"/>
+			<DCCReference Include="lp.ide.debugger.pas">
+				<Form>LPIdeDebugger</Form>
+			</DCCReference>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

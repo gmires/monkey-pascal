@@ -84,7 +84,20 @@ var
   builtins: TDictionary<string,TBuiltinObject>;
   builtedmodules: TDictionary<string,TASTProgram>;
 
+procedure ClearProjectModule;
+
 implementation
+
+procedure ClearProjectModule;
+var
+  sModule:string;
+begin
+  for sModule in builtedmodules.Keys do
+  begin
+    if (Pos('main.',sModule)>0) then
+      builtedmodules.ExtractPair(sModule).Value.Free;
+  end;
+end;
 
 function nativeBoolToBooleanObject(input:Boolean): TBooleanObject;
 begin
@@ -837,6 +850,12 @@ begin
     end;
 
   Result := Eval(node, env);
+
+  for sModule in builtedmodules.Keys do
+  begin
+    if (Pos('main.',sModule)>0) then
+      builtedmodules.ExtractPair(sModule).Value.Free;
+  end;
 end;
 
 function TEvaluator.unwrapReturnValue(obj:TEvalObject):TEvalObject;

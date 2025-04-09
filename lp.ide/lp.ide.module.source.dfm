@@ -59,6 +59,7 @@ object LPModuleSourceFrame: TLPModuleSourceFrame
       Align = alClient
       ScrollBars = ssBoth
       TabOrder = 0
+      OnChange = FMemoSourceChange
       GutterSize = 20
       BreakPointSize = 14
       GutterColor = clWindow
