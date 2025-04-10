@@ -150,31 +150,6 @@ uses lp.utils;
 
 {$R *.dfm}
 
-function _PrintLn(args: TList<TEvalObject>): TEvalObject;
-var
-  i: Integer;
-begin
-  Result := nil;
-  for i := 0 to args.Count-1 do
-    LPIdeMain.AddToConsoleLog(args[i].Inspect);
-end;
-
-function _Print(args: TList<TEvalObject>): TEvalObject;
-var
-  i: Integer;
-  S: string;
-begin
-  Result := nil;
-  for i := 0 to args.Count-1 do
-    S:=S+' '+args[i].Inspect;
-
-  S:=TrimLeft(S);
-  if S<>'' then
-    LPIdeMain.AddToConsoleLog(S);
-end;
-
-
-
 procedure TLPIdeMain.AddModule(Name, Data: string);
 var
   Node,Parent:TTreeNode;
@@ -439,7 +414,7 @@ end;
 
 procedure TLPIdeMain.MnuRunOptionsClick(Sender: TObject);
 begin
-  CurrentProjectParams := InputBox('LPI run parameters','Launch parameters..', CurrentProjectParams);
+  CurrentProjectParams := InputBox('LPI Run options','Launch with parameters..', CurrentProjectParams);
 end;
 
 procedure TLPIdeMain.MnuTabCloseAllClick(Sender: TObject);
@@ -783,7 +758,10 @@ begin
 
     Result := (S<>'');
     if Result then
+    begin
       MS.SaveToFile(S);
+      CurrentProjectModifed := False;
+    end;
   end;
 
   CurrentProject := S;
@@ -874,10 +852,59 @@ begin
     LPIStatusBar.Panels[0].Text := 'Current project = '  + CurrentProject;
 end;
 
+{ -- override builtin function -- }
+
+function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to args.Count-1 do
+    LPIdeMain.AddToConsoleLog(args[i].Inspect);
+end;
+
+function _Print(args: TList<TEvalObject>): TEvalObject;
+var
+  i: Integer;
+  S: string;
+begin
+  Result := nil;
+  for i := 0 to args.Count-1 do
+    S:=S+' '+args[i].Inspect;
+
+  S:=TrimLeft(S);
+  if S<>'' then
+    LPIdeMain.AddToConsoleLog(S);
+end;
+
+function _ReadLn(args: TList<TEvalObject>): TEvalObject;
+var
+  S:string;
+begin
+  S:= '<< ';
+  if (args.Count>1) then
+    Result:=  TErrorObject.newError('wrong number of arguments. got=%d, want max=1', [args.Count])
+  else
+  if ((args.Count=1) and (args[0].ObjectType<>STRING_OBJ)) then
+    Result:=  TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+  else
+  if ((args.Count=1) and (args[0].ObjectType=STRING_OBJ)) then
+    S:=S+TStringObject(args[0]).Value;
+
+  Result := TStringObject.Create(InputBox('LPI Read string ',S,''));
+end;
+
+function _Wait(args: TList<TEvalObject>): TEvalObject;
+begin
+  Result := TNullObject.Create;
+end;
+
 procedure init;
 begin
   builtins['println'] := TBuiltinObject.Create(_PrintLn);
   builtins['print'] := TBuiltinObject.Create(_Print);
+  builtins['readln'] := TBuiltinObject.Create(_ReadLn);
+  builtins['wait'] := TBuiltinObject.Create(_Wait);
 end;
 
 initialization
