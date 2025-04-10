@@ -65,6 +65,10 @@ type
     MnuTabCloseAll: TMenuItem;
     MnuTabCloseAllOther: TMenuItem;
     N3: TMenuItem;
+    PMRun: TPopupMenu;
+    MnuRunStepByStep: TMenuItem;
+    N4: TMenuItem;
+    MnuRunOneStep: TMenuItem;
     { -- -- }
     function  SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
     procedure SourceBreakPointClick(Module:string; ALine: Integer);
@@ -87,11 +91,14 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure MnuTabCloseAllClick(Sender: TObject);
     procedure MnuTabCloseAllOtherClick(Sender: TObject);
+    procedure MnuRunOptionsClick(Sender: TObject);
+    procedure MnuRunOneStepClick(Sender: TObject);
   private
     { Private declarations }
     BreakPoints:TStringList;
     CurrentProjectModifed:Boolean;
     CurrentProject:string;
+    CurrentProjectParams:string;
     DebuggerNextStep:Boolean;
     function  ProjectToJSON: TJSONObject;
     function  ProjectToStreamCompress: TMemoryStream;
@@ -100,7 +107,7 @@ type
     { Public declarations }
     { -- project -- }
     procedure NewProject;
-    function  RunProject:Boolean;
+    function  RunProject(DebugStetByStep:Boolean=false):Boolean;
     function  CloseProject:Boolean;
     procedure OpenProject;
     function  SaveProject(CurrentProjectPath:string=''):Boolean;
@@ -287,8 +294,9 @@ end;
 function TLPIdeMain.EvalNotifer(AModule: string; ALine, APos: Integer; AEnv: TEnvironment; AEval: TEvaluator; var AContinue: Boolean): Boolean;
 begin
   Result := True;
-  if (BreakPoints.IndexOf(AModule+'.'+IntToStr(ALine))>=0) or DebuggerNextStep then
-    LPIDebugger(GetSourceNodeByModuleName(AModule),ALine, AEnv, AEval, DebuggerNextStep, AContinue);
+  if (Pos('main', AModule)>0) then { -- questo perchè tutti i moduli dell'applicazione fanno riferimento a main, il resto sono builtin, e quindi non debuggabili -- }
+    if (BreakPoints.IndexOf(AModule+'.'+IntToStr(ALine))>=0) or DebuggerNextStep then
+      LPIDebugger(GetSourceNodeByModuleName(AModule),ALine, AEnv, AEval, DebuggerNextStep, AContinue);
 end;
 
 procedure TLPIdeMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -309,6 +317,9 @@ end;
 
 procedure TLPIdeMain.FormCreate(Sender: TObject);
 begin
+  Screen.MenuFont.Name := 'consolas';
+  Screen.MenuFont.Size := 8;
+
   LPIdeMain:=Self;
   BreakPoints:=TStringList.Create;
   CloseProject;
@@ -418,7 +429,17 @@ end;
 
 procedure TLPIdeMain.MnuRunDebugClick(Sender: TObject);
 begin
-  RunProject;
+  RunProject(Sender=MnuRunStepByStep);
+end;
+
+procedure TLPIdeMain.MnuRunOneStepClick(Sender: TObject);
+begin
+  MnuRunDebugClick(MnuRunStepByStep);
+end;
+
+procedure TLPIdeMain.MnuRunOptionsClick(Sender: TObject);
+begin
+  CurrentProjectParams := InputBox('LPI run parameters','Launch parameters..', CurrentProjectParams);
 end;
 
 procedure TLPIdeMain.MnuTabCloseAllClick(Sender: TObject);
@@ -433,8 +454,17 @@ begin
 end;
 
 procedure TLPIdeMain.MnuTabCloseAllOtherClick(Sender: TObject);
+var
+  i:Integer;
+  P:TTabSheet;
 begin
-//
+  P := PCMain.ActivePage;
+  for i := PCMain.PageCount-1 downto 0 do
+    if (PCMain.Pages[i].Caption<>'main') and (PCMain.Pages[i]<>P) then
+      CheckAndCloseTab(PCMain.Pages[i]);
+
+  PCMain.ActivePage := P;
+  SelectNote(P);
 end;
 
 procedure TLPIdeMain.MnuTabCloseClick(Sender: TObject);
@@ -478,6 +508,7 @@ end;
 
 procedure TLPIdeMain.NewProject;
 begin
+  CurrentProjectParams:='';
   CurrentProjectModifed:=false;
   CurrentProject:='';
   UpdateStatusBar;
@@ -617,7 +648,7 @@ begin
   ProjectTree.Items.Delete(Node);
 end;
 
-function TLPIdeMain.RunProject:Boolean;
+function TLPIdeMain.RunProject(DebugStetByStep:Boolean):Boolean;
 var
   i,y:Integer;
   J:TJSONObject;
@@ -629,8 +660,9 @@ var
   Par:TArrayObject;
   EvR:TEvalObject;
   MainProgram:TASTProgram;
+  S,S1:string;
 begin
-  DebuggerNextStep:=False;
+  DebuggerNextStep := DebugStetByStep;
   Result:=True;
   ClearProjectModule;
   UpdateNodes;
@@ -685,6 +717,18 @@ begin
           Par.GcManualFree:= True;
           for i := 0 to ParamCount do
             Par.Elements.Add(TStringObject.Create(ParamStr(i)));
+
+          if (CurrentProject<>'') then
+            Par.Elements.Add(TStringObject.Create(CurrentProject));
+
+          S:=CurrentProjectParams;
+          while (S<>'') do
+          begin
+            S1:= StrSplit(S,' ');
+            if (S1<>'') then
+              Par.Elements.Add(TStringObject.Create(S1));
+          end;
+
           for i := 0 to Par.Elements.Count-1 do
             Par.Elements[i].GcManualFree := True;
 
