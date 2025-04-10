@@ -24,25 +24,14 @@ type
     MMMain: TMainMenu;
     Panel1: TPanel;
     Panel2: TPanel;
-    LPIStatusBar: TStatusBar;
-    Panel3: TPanel;
     MnuFile: TMenuItem;
     MnuProjectNew: TMenuItem;
     MnuProjectOpen: TMenuItem;
     N1: TMenuItem;
     MnuExit: TMenuItem;
-    Panel4: TPanel;
-    Panel5: TPanel;
-    Label1: TLabel;
-    ConsoleLog: TListBox;
-    Label2: TLabel;
-    ProjectTree: TTreeView;
-    Splitter1: TSplitter;
-    Splitter2: TSplitter;
     TbMain: TToolBar;
     tbOpenProject: TToolButton;
     tbNewModule: TToolButton;
-    PCMain: TPageControl;
     ILMain: TImageList;
     MnuRun: TMenuItem;
     MnuRunDebug: TMenuItem;
@@ -69,6 +58,19 @@ type
     MnuRunStepByStep: TMenuItem;
     N4: TMenuItem;
     MnuRunOneStep: TMenuItem;
+    PMConsole: TPopupMenu;
+    MnuConsoleClear: TMenuItem;
+    Panel5: TPanel;
+    Label1: TLabel;
+    ConsoleLog: TListBox;
+    Splitter1: TSplitter;
+    Panel6: TPanel;
+    Splitter2: TSplitter;
+    PCMain: TPageControl;
+    Panel4: TPanel;
+    Label2: TLabel;
+    ProjectTree: TTreeView;
+    LPIStatusBar: TStatusBar;
     { -- -- }
     function  SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
     procedure SourceBreakPointClick(Module:string; ALine: Integer);
@@ -93,6 +95,7 @@ type
     procedure MnuTabCloseAllOtherClick(Sender: TObject);
     procedure MnuRunOptionsClick(Sender: TObject);
     procedure MnuRunOneStepClick(Sender: TObject);
+    procedure MnuConsoleClearClick(Sender: TObject);
   private
     { Private declarations }
     BreakPoints:TStringList;
@@ -320,6 +323,11 @@ end;
 function TLPIdeMain.GetSourceNodeByModuleName(ModuleName: string): string;
 begin
   Result := TStringList( GetNodeByModuleName(ModuleName).Data ).Text;
+end;
+
+procedure TLPIdeMain.MnuConsoleClearClick(Sender: TObject);
+begin
+  ConsoleLog.Clear;
 end;
 
 procedure TLPIdeMain.MnuExitClick(Sender: TObject);
@@ -825,7 +833,7 @@ end;
 
 { -- override builtin function -- }
 
-function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+function _PrintLn(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
 begin
@@ -834,7 +842,7 @@ begin
     LPIdeMain.AddToConsoleLog(args[i].Inspect);
 end;
 
-function _Print(args: TList<TEvalObject>): TEvalObject;
+function _Print(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
   S: string;
@@ -848,7 +856,7 @@ begin
     LPIdeMain.AddToConsoleLog(S);
 end;
 
-function _ReadLn(args: TList<TEvalObject>): TEvalObject;
+function _ReadLn(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 var
   S:string;
 begin
@@ -867,7 +875,7 @@ begin
   end;
 end;
 
-function _Wait(args: TList<TEvalObject>): TEvalObject;
+function _Wait(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 begin
   Result := TNullObject.Create;
 end;

@@ -41,6 +41,7 @@ type
     ILDebugger: TImageList;
     pmEnv: TPopupMenu;
     MnuCopyValue: TMenuItem;
+    ComboEnv: TComboBox;
     procedure tbStepIntoClick(Sender: TObject);
     procedure tbContinueClick(Sender: TObject);
     procedure tbExitClick(Sender: TObject);
@@ -48,11 +49,12 @@ type
     procedure edtEvalKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     procedure MnuCopyValueClick(Sender: TObject);
-    function LSourceDrawArrow(ACurrentLine: Integer): Boolean;
+    function  LSourceDrawArrow(ACurrentLine: Integer): Boolean;
     procedure pmEnvPopup(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
+    procedure ShowEnvironment(env:TEnvironment);
   public
     { Public declarations }
     Env:TEnvironment;
@@ -89,8 +91,7 @@ begin
     F.Env := AEnv;
     F.Evl := AEval;
 
-    for S in AEnv.Store.Keys do
-      F.VLEnv.InsertRow(S,AEnv.Store[S].Inspect, True);
+    F.ShowEnvironment(AEnv);
 
     SMResult := F.ShowModal;
     ANext    := (SMResult = mrRetry);
@@ -157,6 +158,18 @@ end;
 procedure TLPIdeDebugger.pmEnvPopup(Sender: TObject);
 begin
   MnuCopyValue.Enabled := (VLEnv.Strings.Count>0);
+end;
+
+procedure TLPIdeDebugger.ShowEnvironment(env: TEnvironment);
+var
+  i:Integer;
+  S:string;
+begin
+  for i := VLEnv.Strings.Count-1 downto 0 do
+    VLEnv.DeleteRow(i);
+
+  for S in env.Store.Keys do
+    VLEnv.InsertRow(S, env.Store[S].Inspect, True);
 end;
 
 procedure TLPIdeDebugger.tbContinueClick(Sender: TObject);

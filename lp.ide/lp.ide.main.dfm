@@ -2,8 +2,8 @@ object LPIdeMain: TLPIdeMain
   Left = 251
   Top = 181
   Caption = 'LP IDE v.1.0'
-  ClientHeight = 698
-  ClientWidth = 1314
+  ClientHeight = 737
+  ClientWidth = 1302
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -156,16 +156,17 @@ object LPIdeMain: TLPIdeMain
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 1314
+    Width = 1302
     Height = 31
     Align = alTop
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 0
+    ExplicitWidth = 1314
     object TbMain: TToolBar
       Left = 0
       Top = 0
-      Width = 1314
+      Width = 1302
       Height = 31
       Align = alClient
       ButtonHeight = 30
@@ -176,6 +177,7 @@ object LPIdeMain: TLPIdeMain
       Images = ILMain
       ParentColor = False
       TabOrder = 0
+      ExplicitWidth = 1314
       object tbNewPorject: TToolButton
         Left = 0
         Top = 0
@@ -259,8 +261,8 @@ object LPIdeMain: TLPIdeMain
   object Panel2: TPanel
     Left = 0
     Top = 31
-    Width = 1314
-    Height = 667
+    Width = 1302
+    Height = 681
     Align = alClient
     BevelOuter = bvNone
     Color = clBlack
@@ -268,64 +270,125 @@ object LPIdeMain: TLPIdeMain
     TabOrder = 1
     ExplicitLeft = -15
     ExplicitTop = 141
-    object Splitter2: TSplitter
-      Left = 326
-      Top = 0
-      Height = 642
+    ExplicitWidth = 1314
+    ExplicitHeight = 667
+    object Splitter1: TSplitter
+      Left = 0
+      Top = 506
+      Width = 1302
+      Height = 3
+      Cursor = crVSplit
+      Align = alTop
       Color = clBtnFace
       ParentColor = False
-      ExplicitLeft = 655
-      ExplicitTop = 280
-      ExplicitHeight = 100
+      ExplicitTop = 70
+      ExplicitWidth = 1314
     end
-    object LPIStatusBar: TStatusBar
+    object Panel5: TPanel
       Left = 0
-      Top = 642
-      Width = 1314
-      Height = 25
-      Panels = <
-        item
-          Width = 50
-        end>
+      Top = 509
+      Width = 1302
+      Height = 172
+      Align = alClient
+      BevelOuter = bvNone
+      Color = clBlack
+      Constraints.MinHeight = 100
+      ParentBackground = False
+      TabOrder = 0
+      ExplicitTop = 470
+      ExplicitWidth = 326
+      object Label1: TLabel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 1296
+        Height = 13
+        Align = alTop
+        Caption = 'Console Log'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWhite
+        Font.Height = -11
+        Font.Name = 'Consolas'
+        Font.Style = []
+        ParentFont = False
+        ExplicitWidth = 66
+      end
+      object ConsoleLog: TListBox
+        AlignWithMargins = True
+        Left = 1
+        Top = 20
+        Width = 1300
+        Height = 151
+        Margins.Left = 1
+        Margins.Top = 1
+        Margins.Right = 1
+        Margins.Bottom = 1
+        Align = alClient
+        BorderStyle = bsNone
+        ItemHeight = 13
+        PopupMenu = PMConsole
+        TabOrder = 0
+        ExplicitWidth = 1312
+      end
     end
-    object Panel3: TPanel
+    object Panel6: TPanel
       Left = 0
       Top = 0
-      Width = 326
-      Height = 642
-      Align = alLeft
+      Width = 1302
+      Height = 506
+      Align = alTop
       BevelOuter = bvNone
+      Caption = 'Panel6'
+      Color = 16250871
+      Constraints.MinHeight = 400
+      ParentBackground = False
       TabOrder = 1
-      ExplicitHeight = 632
-      object Splitter1: TSplitter
-        Left = 0
-        Top = 467
-        Width = 326
-        Height = 3
-        Cursor = crVSplit
-        Align = alBottom
-        ExplicitTop = 0
-        ExplicitWidth = 531
+      ExplicitLeft = 485
+      ExplicitTop = 139
+      ExplicitWidth = 556
+      ExplicitHeight = 361
+      object Splitter2: TSplitter
+        Left = 316
+        Top = 0
+        Height = 506
+        Color = clBtnFace
+        ParentColor = False
+        ExplicitLeft = 655
+        ExplicitTop = 280
+        ExplicitHeight = 100
+      end
+      object PCMain: TPageControl
+        AlignWithMargins = True
+        Left = 322
+        Top = 3
+        Width = 977
+        Height = 500
+        Align = alClient
+        Constraints.MinWidth = 150
+        Images = ILTab
+        MultiLine = True
+        PopupMenu = PMTabs
+        TabHeight = 22
+        TabOrder = 0
+        OnChange = PCMainChange
+        ExplicitWidth = 150
       end
       object Panel4: TPanel
         Left = 0
         Top = 0
-        Width = 326
-        Height = 467
-        Align = alClient
+        Width = 316
+        Height = 506
+        Align = alLeft
         BevelOuter = bvNone
         Color = clBlack
+        Constraints.MinWidth = 150
         ParentBackground = False
-        TabOrder = 0
-        ExplicitLeft = 70
-        ExplicitTop = 135
-        ExplicitWidth = 185
-        ExplicitHeight = 86
+        TabOrder = 1
         object Label2: TLabel
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 320
+          Width = 310
           Height = 13
           Align = alTop
           Caption = 'Project Tree'
@@ -341,8 +404,8 @@ object LPIdeMain: TLPIdeMain
           AlignWithMargins = True
           Left = 1
           Top = 20
-          Width = 324
-          Height = 446
+          Width = 314
+          Height = 485
           Margins.Left = 1
           Margins.Top = 1
           Margins.Right = 1
@@ -358,65 +421,23 @@ object LPIdeMain: TLPIdeMain
           Items.NodeData = {
             0301000000260000000000000000000000FFFFFFFFFFFFFFFF00000000000000
             000000000001046D00610069006E00}
-        end
-      end
-      object Panel5: TPanel
-        Left = 0
-        Top = 470
-        Width = 326
-        Height = 172
-        Align = alBottom
-        BevelOuter = bvNone
-        Color = clBlack
-        ParentBackground = False
-        TabOrder = 1
-        object Label1: TLabel
-          AlignWithMargins = True
-          Left = 3
-          Top = 3
-          Width = 320
-          Height = 13
-          Align = alTop
-          Caption = 'Console Log'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWhite
-          Font.Height = -11
-          Font.Name = 'Consolas'
-          Font.Style = []
-          ParentFont = False
-          ExplicitWidth = 66
-        end
-        object ConsoleLog: TListBox
-          AlignWithMargins = True
-          Left = 1
-          Top = 20
-          Width = 324
-          Height = 151
-          Margins.Left = 1
-          Margins.Top = 1
-          Margins.Right = 1
-          Margins.Bottom = 1
-          Align = alClient
-          BorderStyle = bsNone
-          ItemHeight = 13
-          TabOrder = 0
+          ExplicitWidth = 324
+          ExplicitHeight = 446
         end
       end
     end
-    object PCMain: TPageControl
-      Left = 329
-      Top = 0
-      Width = 985
-      Height = 642
-      Align = alClient
-      Images = ILTab
-      MultiLine = True
-      PopupMenu = PMTabs
-      TabHeight = 22
-      TabOrder = 2
-      TabPosition = tpBottom
-      OnChange = PCMainChange
-    end
+  end
+  object LPIStatusBar: TStatusBar
+    Left = 0
+    Top = 712
+    Width = 1302
+    Height = 25
+    Panels = <
+      item
+        Width = 50
+      end>
+    ExplicitTop = 642
+    ExplicitWidth = 1314
   end
   object MMMain: TMainMenu
     Images = ILMain
@@ -497,7 +518,7 @@ object LPIdeMain: TLPIdeMain
     Left = 132
     Top = 113
     Bitmap = {
-      494C0101090038007C0118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010109003800840118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000060000000480000000100200000000000006C
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1399,7 +1420,7 @@ object LPIdeMain: TLPIdeMain
     Left = 132
     Top = 178
     Bitmap = {
-      494C01010200CC00140110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010200CC001C0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1568,6 +1589,14 @@ object LPIdeMain: TLPIdeMain
       Caption = 'Run <by step>'
       ImageIndex = 8
       OnClick = MnuRunDebugClick
+    end
+  end
+  object PMConsole: TPopupMenu
+    Left = 170
+    Top = 591
+    object MnuConsoleClear: TMenuItem
+      Caption = 'Clear'
+      OnClick = MnuConsoleClearClick
     end
   end
 end

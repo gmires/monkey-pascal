@@ -9,6 +9,8 @@ uses  classes, SysUtils, Generics.Collections, Variants, StrUtils, Windows
   , lp.environment
   , lp.evaluator;
 
+procedure WaitForAnyKeyPressed(const TextMessage: string='');
+
 implementation
 
 procedure WaitForKeyPressed(KeyCode: Word; const TextMessage: string);
@@ -43,7 +45,7 @@ begin
   WaitForKeyPressed(0, TextMessage);
 end;
 
-function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+function _PrintLn(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
 begin
@@ -55,7 +57,7 @@ begin
   end;
 end;
 
-function _Print(args: TList<TEvalObject>): TEvalObject;
+function _Print(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
 begin
@@ -65,7 +67,7 @@ begin
 end;
 
 
-function _ReadLn(args: TList<TEvalObject>): TEvalObject;
+function _ReadLn(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 const
   PROMPT = '<< ';
 var
@@ -76,7 +78,7 @@ begin
   Result := TStringObject.Create(S);
 end;
 
-function _Wait(args: TList<TEvalObject>): TEvalObject;
+function _Wait(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 begin
   Result := nil;
   if ((args.Count>0) and (args[0].ObjectType=STRING_OBJ)) then

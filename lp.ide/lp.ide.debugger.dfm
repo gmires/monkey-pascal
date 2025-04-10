@@ -133,9 +133,9 @@ object LPIdeDebugger: TLPIdeDebugger
       object VLEnv: TValueListEditor
         AlignWithMargins = True
         Left = 3
-        Top = 19
+        Top = 43
         Width = 420
-        Height = 385
+        Height = 361
         Align = alClient
         DrawingStyle = gdsGradient
         FixedCols = 1
@@ -146,6 +146,8 @@ object LPIdeDebugger: TLPIdeDebugger
         TitleCaptions.Strings = (
           'Name'
           'Value')
+        ExplicitTop = 19
+        ExplicitHeight = 385
         ColWidths = (
           159
           255)
@@ -220,6 +222,17 @@ object LPIdeDebugger: TLPIdeDebugger
           TabOrder = 1
         end
       end
+      object ComboEnv: TComboBox
+        AlignWithMargins = True
+        Left = 3
+        Top = 19
+        Width = 420
+        Height = 21
+        Margins.Bottom = 0
+        Align = alTop
+        Style = csDropDownList
+        TabOrder = 2
+      end
     end
   end
   object Panel3: TPanel
@@ -286,7 +299,7 @@ object LPIdeDebugger: TLPIdeDebugger
     Left = 132
     Top = 113
     Bitmap = {
-      494C010105004401B80118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010105004401BC0118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000600000003000000001002000000000000048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

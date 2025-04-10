@@ -3,16 +3,19 @@ program LPRepl;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, IOUtils, Classes,
+  SysUtils,
+  IOUtils,
+  Classes,
+  DBXJSON,
+  lp.advobject in '..\lp.lib\lp.advobject.pas',
+  lp.base64 in '..\lp.lib\lp.base64.pas',
   lp.builtins in '..\lp.lib\lp.builtins.pas',
   lp.environment in '..\lp.lib\lp.environment.pas',
   lp.evaluator in '..\lp.lib\lp.evaluator.pas',
   lp.lexer in '..\lp.lib\lp.lexer.pas',
   lp.parser in '..\lp.lib\lp.parser.pas',
   lp.token in '..\lp.lib\lp.token.pas',
-  lp.utils in '..\lp.lib\lp.utils.pas',
-  lp.advobject in '..\lp.lib\lp.advobject.pas';
-
+  lp.utils in '..\lp.lib\lp.utils.pas';
 
 procedure StartREPL;
 
@@ -92,6 +95,7 @@ begin
   end;
 end;
 
+{
 procedure StartProgram;
 var
   MainModule,
@@ -208,6 +212,112 @@ begin
       Par.Free;
     end;
   end;
+end;
+}
+
+procedure StartProgram;
+var
+  InError:Boolean;
+
+  procedure WriteError(EMessage:string);
+  begin
+    Writeln('ERROR: ' + EMessage);
+    InError := True;
+  end;
+
+
+var
+  i,y:Integer;
+  J:TJSONObject;
+  M:TJSONArray;
+  L:TLexer;
+  P:TParser;
+  Env:TEnvironment;
+  Evl:TEvaluator;
+  Par:TArrayObject;
+  EvR:TEvalObject;
+  MainProgram:TASTProgram;
+begin
+  InError:=false;
+  ClearProjectModule;
+  J:=JSONLoadToCompress(ParamStr(1));
+  if (J<>nil) then
+  try
+    M:= J.Get('modules').JsonValue as TJSONArray;
+    if (M.Size>0) then
+      for i := 0 to M.Size-1 do
+      begin
+        L:=TLexer.Create(Base64ToString((M.Get(i) as TJSONObject).Get('source').JsonValue.Value)
+          , (M.Get(i) as TJSONObject).Get('name').JsonValue.Value);
+        try
+          P:=TParser.Create(L);
+          try
+            builtedmodules.Add(L.Module, P.ParseProgram);
+            if P.Errors.Count>0 then
+            begin
+              for y := 0 to P.Errors.Count-1 do
+                WriteError(P.Errors[y]);
+            end;
+          finally
+            P.Free;
+          end;
+        finally
+          L.Free;
+        end;
+      end;
+
+    if NOT InError then
+    begin
+      L:=TLexer.Create(Base64ToString(J.Get('main').JsonValue.Value), 'main');
+      try
+        P:=TParser.Create(L);
+        try
+          MainProgram := P.ParseProgram;
+          if (P.Errors.Count>0) then
+            for y := 0 to P.Errors.Count-1 do
+              WriteError(P.Errors[y]);
+        finally
+          P.Free;
+        end;
+      finally
+        L.Free;
+      end;
+
+      if NOT InError then
+      begin
+        Par:=TArrayObject.CreateWithElements;
+        try
+          Par.GcManualFree:= True;
+          for i := 0 to ParamCount do
+            Par.Elements.Add(TStringObject.Create(ParamStr(i)));
+
+          for i := 0 to Par.Elements.Count-1 do
+            Par.Elements[i].GcManualFree := True;
+
+          Env:=TEnvironment.Create;
+          Evl:=TEvaluator.Create;
+          try
+            Env.SetOrCreateValue('params', Par, True);
+            EvR := Evl.Run(MainProgram, Env);
+            if (EvR<>nil) then
+              WriteError(EvR.Inspect)
+          finally
+            Env.Free;
+            Evl.Free;
+          end;
+
+        finally
+          for i := 0 to Par.Elements.Count-1 do
+            Par.Elements[i].Free;
+          Par.Free;
+        end;
+      end;
+    end;
+  finally
+    J.Free;
+  end;
+
+  if InError then WaitForAnyKeyPressed;
 end;
 
 begin

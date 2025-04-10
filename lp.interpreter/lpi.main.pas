@@ -66,7 +66,7 @@ implementation
 
 {$R *.dfm}
 
-function _PrintLn(args: TList<TEvalObject>): TEvalObject;
+function _PrintLn(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 var
   i: Integer;
 begin
