@@ -236,29 +236,8 @@ begin
 end;
 
 procedure TLPIdeMain.CloseTab(Node: TTreeNode);
-//var
-//  S:string;
-//  i:Integer;
-//  current:TTabSheet;
 begin
   CloseTab(ModuleNameByNode(Node));
-{
-
-  current := nil;
-  S:=ModuleNameByNode(Node);
-
-  for i := 0 to PCMain.PageCount-1 do
-    if (LowerCase(PCMain.Pages[i].Caption)=LowerCase(S)) then
-    begin
-      current := PCMain.Pages[i];
-      Break;
-    end;
-
-  if Assigned(current) then
-  begin
-    current.Free;
-  end;
-  }
 end;
 
 procedure TLPIdeMain.ErrorToConsoleLog(value: string);
@@ -460,21 +439,13 @@ end;
 
 procedure TLPIdeMain.NewModule(Name,Data: string; Parent:TTreeNode);
 var
-  NM{,X}:TTreeNode;
+  NM:TTreeNode;
 begin
   Name := LowerCase(Name);
 
   NM:=ProjectTree.Items.AddChild(Parent,Name);
   NM.Data := TStringList.Create;
   TStringList(NM.Data).Text := Data;
-{
-  X := NM.Parent;
-  while (X<>nil) do
-  begin
-    X.Expand(false);
-    X:= X.Parent;
-  end;
-}
   ProjectTree.Selected := NM;
   NM.MakeVisible;
 
@@ -883,15 +854,17 @@ var
 begin
   S:= '<< ';
   if (args.Count>1) then
-    Result:=  TErrorObject.newError('wrong number of arguments. got=%d, want max=1', [args.Count])
+    Result:= TErrorObject.newError('wrong number of arguments. got=%d, want max=1', [args.Count])
   else
   if ((args.Count=1) and (args[0].ObjectType<>STRING_OBJ)) then
-    Result:=  TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
+    Result:= TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
   else
-  if ((args.Count=1) and (args[0].ObjectType=STRING_OBJ)) then
-    S:=S+TStringObject(args[0]).Value;
+  begin
+    if ((args.Count=1) and (args[0].ObjectType=STRING_OBJ)) then
+      S:=TStringObject(args[0]).Value;
 
-  Result := TStringObject.Create(InputBox('LPI Read string ',S,''));
+    Result := TStringObject.Create(InputBox('LPI IDE Input',S,''));
+  end;
 end;
 
 function _Wait(args: TList<TEvalObject>): TEvalObject;
