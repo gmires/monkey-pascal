@@ -84,7 +84,20 @@ var
   builtins: TDictionary<string,TBuiltinObject>;
   builtedmodules: TDictionary<string,TASTProgram>;
 
+procedure ClearProjectModule;
+
 implementation
+
+procedure ClearProjectModule;
+var
+  sModule:string;
+begin
+  for sModule in builtedmodules.Keys do
+  begin
+    if (Pos('main.',sModule)>0) then
+      builtedmodules.ExtractPair(sModule).Value.Free;
+  end;
+end;
 
 function nativeBoolToBooleanObject(input:Boolean): TBooleanObject;
 begin
@@ -189,6 +202,7 @@ var
   args:TList<TEvalObject>;
   FEnv:TEnvironment;
   method: string;
+  index:TEvalObject;
 begin
   args:= evalExpressions(node.Args, env);
   try
@@ -216,6 +230,8 @@ begin
         Gc.Add(Result);
     end;
   finally
+    for index in args do
+      index.DecRefCount;
     args.Free;
   end;
 end;
@@ -664,6 +680,7 @@ begin
         Result.Add(val);
         Break;
       end;
+      val.IncRefCount; { -- ref for arg -- }
       Result.Add(val);
     end;
 end;
@@ -837,6 +854,12 @@ begin
     end;
 
   Result := Eval(node, env);
+
+  for sModule in builtedmodules.Keys do
+  begin
+    if (Pos('main.',sModule)>0) then
+      builtedmodules.ExtractPair(sModule).Value.Free;
+  end;
 end;
 
 function TEvaluator.unwrapReturnValue(obj:TEvalObject):TEvalObject;
@@ -866,6 +889,7 @@ end;
 function TEvaluator.applyFunction(fn: TEvalObject; args: TList<TEvalObject>; env:TEnvironment):TEvalObject;
 var
   FEnv:TEnvironment;
+  CurrOb:TEvalObject;
 begin
   if (fn is TFunctionObject) then
   begin
@@ -880,7 +904,7 @@ begin
   else
   if (fn is TBuiltinObject) then
   begin
-    Result := Gc.Add(TBuiltinObject(fn).BuiltinFunction(args));
+    Result := Gc.Add(TBuiltinObject(fn).BuiltinFunction(env, args));
   end
   else Result := CreateErrorObj('not a function: %s', [fn.ObjectType])
 end;
@@ -918,6 +942,8 @@ begin
     Result := TArrayObject.Create;
     TArrayObject(Result).Elements := evalExpressions(TASTArrayLiteral(node).Elements, env);
     Gc.Add(Result);
+    for index in TArrayObject(Result).Elements do
+      index.DecRefCount;
     if ((TArrayObject(Result).Elements.Count=1) and (isError(TArrayObject(Result).Elements[0]))) then
       Result := TArrayObject(Result).Elements[0];
   end
@@ -1086,6 +1112,8 @@ begin
         else
           Result := applyFunction(Result, args, env);
       finally
+        for index in args do
+          index.DecRefCount;
         args.Free;
       end;
     end;

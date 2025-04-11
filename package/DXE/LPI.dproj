@@ -52,6 +52,8 @@
 			</DelphiCompile>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
+			<DCCReference Include="dbrtl.dcp"/>
+			<DCCReference Include="DbxCommonDriver.dcp"/>
 			<DCCReference Include="..\..\lp.lib\lp.builtins.pas"/>
 			<DCCReference Include="..\..\lp.lib\lp.environment.pas"/>
 			<DCCReference Include="..\..\lp.lib\lp.evaluator.pas"/>
@@ -61,6 +63,7 @@
 			<DCCReference Include="..\..\lp.lib\lp.utils.pas"/>
 			<DCCReference Include="..\..\lp.lib\lp.advobject.pas"/>
 			<DCCReference Include="..\..\lp.components\lp.edits.pas"/>
+			<DCCReference Include="..\..\lp.lib\lp.base64.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

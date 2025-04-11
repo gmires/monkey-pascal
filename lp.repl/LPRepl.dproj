@@ -44,6 +44,8 @@
 			<DelphiCompile Include="LPRepl.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
+			<DCCReference Include="..\lp.lib\lp.advobject.pas"/>
+			<DCCReference Include="..\lp.lib\lp.base64.pas"/>
 			<DCCReference Include="..\lp.lib\lp.builtins.pas"/>
 			<DCCReference Include="..\lp.lib\lp.environment.pas"/>
 			<DCCReference Include="..\lp.lib\lp.evaluator.pas"/>
@@ -51,7 +53,6 @@
 			<DCCReference Include="..\lp.lib\lp.parser.pas"/>
 			<DCCReference Include="..\lp.lib\lp.token.pas"/>
 			<DCCReference Include="..\lp.lib\lp.utils.pas"/>
-			<DCCReference Include="..\lp.lib\lp.advobject.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
@@ -108,7 +109,9 @@
 					<Source>
 						<Source Name="MainSource">LPRepl.dpr</Source>
 					</Source>
-					<Parameters/>
+					<Parameters>
+						<Parameters Name="RunParams">&quot;..\SS-LPI-EXAMPLE\project-first.lpi&quot;</Parameters>
+					</Parameters>
 				</Delphi.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

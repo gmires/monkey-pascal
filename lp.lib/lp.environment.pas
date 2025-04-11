@@ -28,7 +28,7 @@ const
 type
   TEvalObject = class;
   TEnvironment = class;
-  TBuiltinFunction = function(args: TList<TEvalObject>): TEvalObject;
+  TBuiltinFunction = function(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 
   TEnvironment = class
     FStore: TDictionary<string,TEvalObject>;

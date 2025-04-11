@@ -36,7 +36,7 @@ type
 
 implementation
 
-function _StringListConstructor(args: TList<TEvalObject>): TEvalObject;
+function _StringListConstructor(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 begin
   Result := TStringListObject.Create;
 end;
