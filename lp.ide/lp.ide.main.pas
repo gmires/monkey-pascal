@@ -71,6 +71,11 @@ type
     Label2: TLabel;
     ProjectTree: TTreeView;
     LPIStatusBar: TStatusBar;
+    MnuCerca: TMenuItem;
+    MnuFind: TMenuItem;
+    MnuReplace: TMenuItem;
+    FindDialogModule: TFindDialog;
+    ReplaceDialogModule: TReplaceDialog;
     { -- -- }
     function  SourceDrawBreakPoint(Module:string; ACurrentLine: Integer): Boolean;
     procedure SourceBreakPointClick(Module:string; ALine: Integer);
@@ -96,8 +101,13 @@ type
     procedure MnuRunOptionsClick(Sender: TObject);
     procedure MnuRunOneStepClick(Sender: TObject);
     procedure MnuConsoleClearClick(Sender: TObject);
+    procedure MnuFindClick(Sender: TObject);
+    procedure MnuReplaceClick(Sender: TObject);
+    procedure FindDialogModuleFind(Sender: TObject);
+    procedure ReplaceDialogModuleReplace(Sender: TObject);
   private
     { Private declarations }
+    FSelPos: integer;
     BreakPoints:TStringList;
     CurrentProjectModifed:Boolean;
     CurrentProject:string;
@@ -256,6 +266,58 @@ begin
       LPIDebugger(GetSourceNodeByModuleName(AModule),ALine, AEnv, AEval, DebuggerNextStep, AContinue);
 end;
 
+procedure TLPIdeMain.FindDialogModuleFind(Sender: TObject);
+var
+  S : string;
+  startpos : integer;
+  F:TLPModuleSourceFrame;
+begin
+  F:= TLPModuleSourceFrame( PCMain.ActivePage.Controls[0] );
+  with TFindDialog(Sender) do
+  begin
+    {If the stored position is 0 this cannot be a find next. }
+    if FSelPos = 0 then
+      Options := Options - [frFindNext];
+
+     { Figure out where to start the search and get the corresponding
+       text from the memo. }
+    if frfindNext in Options then
+    begin
+      { This is a find next, start after the end of the last found word. }
+      StartPos := FSelPos + Length(Findtext);
+      S := Copy(F.MemoSource.Lines.Text, StartPos, MaxInt);
+    end
+    else
+    begin
+      { This is a find first, start at the, well, start. }
+      S := F.MemoSource.Lines.Text;
+      StartPos := 1;
+    end;
+    { Perform a global case-sensitive search for FindText in S }
+    FSelPos := Pos(FindText, S);
+    if FSelPos > 0 then
+    begin
+       { Found something, correct position for the location of the start
+         of search. }
+      FSelPos := FSelPos + StartPos - 1;
+      F.MemoSource.SelStart := FSelPos - 1;
+      F.MemoSource.SelLength := Length(FindText);
+      F.MemoSource.SetFocus;
+    end
+    else
+    if (TFindDialog(Sender).Tag=0) then
+    begin
+      { No joy, show a message. }
+      if frfindNext in Options then
+        S := Concat('There are no further occurences of "', FindText,'" in Memo1.')
+      else
+        S := Concat('Could not find "', FindText, '" in Current Source.');
+      MessageDlg(S, mtError, [mbOK], 0);
+    end;
+  end;
+
+end;
+
 procedure TLPIdeMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   BreakPoints.Free;
@@ -325,6 +387,18 @@ begin
   Result := TStringList( GetNodeByModuleName(ModuleName).Data ).Text;
 end;
 
+procedure TLPIdeMain.MnuReplaceClick(Sender: TObject);
+begin
+  FSelPos := 0;
+  ReplaceDialogModule.Execute;
+end;
+
+procedure TLPIdeMain.MnuFindClick(Sender: TObject);
+begin
+  FSelPos := 0;
+  FindDialogModule.Execute;
+end;
+
 procedure TLPIdeMain.MnuConsoleClearClick(Sender: TObject);
 begin
   ConsoleLog.Clear;
@@ -375,7 +449,7 @@ end;
 
 procedure TLPIdeMain.MnuProjectOpenClick(Sender: TObject);
 begin
-  if CloseProject then
+//  if CloseProject then
     OpenProject;
 end;
 
@@ -602,6 +676,29 @@ begin
   ProjectTree.Items.Delete(Node);
 end;
 
+procedure TLPIdeMain.ReplaceDialogModuleReplace(Sender: TObject);
+var
+  F:TLPModuleSourceFrame;
+begin
+  F:= TLPModuleSourceFrame( PCMain.ActivePage.Controls[0] );
+  if (F.MemoSource.SelLength=0) then
+    FindDialogModuleFind(Sender);
+  if (F.MemoSource.SelLength>0) then
+    F.MemoSource.SelText := ReplaceDialogModule.ReplaceText;
+
+  if frReplaceAll in ReplaceDialogModule.Options then
+  begin
+    ReplaceDialogModule.Tag:=1;
+    FindDialogModuleFind(Sender);
+    while (F.MemoSource.SelLength>0) do
+    begin
+      F.MemoSource.SelText := ReplaceDialogModule.ReplaceText;
+      FindDialogModuleFind(Sender);
+    end;
+    ReplaceDialogModule.Tag:=0;
+  end;
+end;
+
 function TLPIdeMain.RunProject(DebugStetByStep:Boolean):Boolean;
 var
   i,y:Integer;
@@ -804,7 +901,7 @@ begin
   node := GetNodeByModuleName(ModuleName);
   if (node<>nil) then
   begin
-    CurrentProjectModifed:= CurrentProjectModifed or (TStringList( node.Data).Text <> Data);
+    CurrentProjectModifed:= CurrentProjectModifed or (TrimRight(TStringList( node.Data).Text) <> TrimRight(Data));
     TStringList( node.Data).Text := Data;
   end;
 end;

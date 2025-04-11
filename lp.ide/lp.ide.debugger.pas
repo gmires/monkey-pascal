@@ -52,6 +52,7 @@ type
     function  LSourceDrawArrow(ACurrentLine: Integer): Boolean;
     procedure pmEnvPopup(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure ComboEnvChange(Sender: TObject);
   private
     { Private declarations }
     procedure ShowEnvironment(env:TEnvironment);
@@ -74,8 +75,9 @@ implementation
 procedure LPIDebugger(ASource:string; ALine:Integer; AEnv:TEnvironment; AEval:TEvaluator; var ANext:Boolean; var AContinue:Boolean);
 var
   F:TLPIdeDebugger;
-  S:string;
   SMResult:Integer;
+  i:Integer;
+  Env:TEnvironment;
 begin
   F:= TLPIdeDebugger.Create(nil);
   try
@@ -91,7 +93,18 @@ begin
     F.Env := AEnv;
     F.Evl := AEval;
 
+    F.ComboEnv.AddItem('Current Environment', F.Env);
+    i:=0;
+    Env := AEnv.Outer;
+    while (Env<>nil) and (i<6) do
+    begin
+      F.ComboEnv.AddItem(' + level ' + IntToStr(i+1), Env);
+      Env := Env.Outer;
+      Inc(i);
+    end;
+    F.ComboEnv.ItemIndex := 0;
     F.ShowEnvironment(AEnv);
+    F.ComboEnv.OnChange := F.ComboEnvChange;
 
     SMResult := F.ShowModal;
     ANext    := (SMResult = mrRetry);
@@ -120,6 +133,11 @@ begin
   finally
     L.Free;
   end;
+end;
+
+procedure TLPIdeDebugger.ComboEnvChange(Sender: TObject);
+begin
+  ShowEnvironment( ComboEnv.Items.Objects[ComboEnv.ItemIndex] as TEnvironment );
 end;
 
 procedure TLPIdeDebugger.edtEvalKeyDown(Sender: TObject; var Key: Word;
@@ -166,7 +184,9 @@ var
   S:string;
 begin
   for i := VLEnv.Strings.Count-1 downto 0 do
-    VLEnv.DeleteRow(i);
+    VLEnv.Strings.Delete(i);
+
+  VLEnv.Repaint;
 
   for S in env.Store.Keys do
     VLEnv.InsertRow(S, env.Store[S].Inspect, True);
