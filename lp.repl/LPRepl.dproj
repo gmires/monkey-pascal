@@ -109,9 +109,7 @@
 					<Source>
 						<Source Name="MainSource">LPRepl.dpr</Source>
 					</Source>
-					<Parameters>
-						<Parameters Name="RunParams">&quot;..\SS-LPI-EXAMPLE\project-first.lpi&quot;</Parameters>
-					</Parameters>
+					<Parameters/>
 				</Delphi.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>
