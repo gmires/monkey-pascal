@@ -451,7 +451,7 @@ implementation
 procedure FreeAndNilAssigned(var Obj);
 begin
   if Assigned(TObject(Obj)) then
-    FreeAndNil(Obj);
+    FreeAndNil(TObject(Obj));
 end;
 
 { TParser }

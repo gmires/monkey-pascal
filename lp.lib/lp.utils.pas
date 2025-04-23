@@ -2,7 +2,10 @@ unit lp.utils;
 
 interface
 
-uses DBXJSON, SysUtils, Classes, ZLib;
+{$I lp.inc}
+
+uses {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
+  , SysUtils, Classes, ZLib;
 
 function  StrSplit(var S:String; C:Char):string;
 function  StrSplitPlus(var S:String; C:string):string;
