@@ -2,11 +2,13 @@ program LPRepl;
 
 {$APPTYPE CONSOLE}
 
+{$I ..\.\lp.lib\lp.inc}
+
 uses
   SysUtils,
   IOUtils,
   Classes,
-  DBXJSON,
+  {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF},
   lp.advobject in '..\lp.lib\lp.advobject.pas',
   lp.base64 in '..\lp.lib\lp.base64.pas',
   lp.builtins in '..\lp.lib\lp.builtins.pas',

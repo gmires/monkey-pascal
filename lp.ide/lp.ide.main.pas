@@ -2,11 +2,14 @@ unit lp.ide.main;
 
 interface
 
+{$I ..\lp.lib\lp.inc}
+
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, ToolWin, Menus, ExtCtrls, StdCtrls, lp.edits, ImgList, StrUtils
 
-  , DBXJSON, Generics.Collections
+  , {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
+  , Generics.Collections
 
   , lp.ide.module.source
   , lp.ide.debugger
@@ -16,7 +19,7 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.parser
-  , lp.lexer
+  , lp.lexer, System.ImageList
   ;
 
 type

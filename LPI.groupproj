@@ -1,72 +1,60 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-		<PropertyGroup>
-			<ProjectGuid>{1953EB00-781D-4DA2-A018-A4C245CBF15C}</ProjectGuid>
-		</PropertyGroup>
-		<ItemGroup>
-			<Projects Include="package\DXE\LPI.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="lp.interpreter\LPInterpreter.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="lp.repl\LPRepl.dproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="lp.ide\LPIde.dproj">
-				<Dependencies/>
-			</Projects>
-		</ItemGroup>
-		<ProjectExtensions>
-			<Borland.Personality>Default.Personality.12</Borland.Personality>
-			<Borland.ProjectType/>
-			<BorlandProject>
-				<Default.Personality/>
-			</BorlandProject>
-		</ProjectExtensions>
-		<Target Name="LPI">
-			<MSBuild Projects="package\DXE\LPI.dproj"/>
-		</Target>
-		<Target Name="LPI:Clean">
-			<MSBuild Projects="package\DXE\LPI.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="LPI:Make">
-			<MSBuild Projects="package\DXE\LPI.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="LPInterpreter">
-			<MSBuild Projects="lp.interpreter\LPInterpreter.dproj"/>
-		</Target>
-		<Target Name="LPInterpreter:Clean">
-			<MSBuild Projects="lp.interpreter\LPInterpreter.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="LPInterpreter:Make">
-			<MSBuild Projects="lp.interpreter\LPInterpreter.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="LPRepl">
-			<MSBuild Projects="lp.repl\LPRepl.dproj"/>
-		</Target>
-		<Target Name="LPRepl:Clean">
-			<MSBuild Projects="lp.repl\LPRepl.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="LPRepl:Make">
-			<MSBuild Projects="lp.repl\LPRepl.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="LPIde">
-			<MSBuild Projects="lp.ide\LPIde.dproj"/>
-		</Target>
-		<Target Name="LPIde:Clean">
-			<MSBuild Projects="lp.ide\LPIde.dproj" Targets="Clean"/>
-		</Target>
-		<Target Name="LPIde:Make">
-			<MSBuild Projects="lp.ide\LPIde.dproj" Targets="Make"/>
-		</Target>
-		<Target Name="Build">
-			<CallTarget Targets="LPI;LPInterpreter;LPRepl;LPIde"/>
-		</Target>
-		<Target Name="Clean">
-			<CallTarget Targets="LPI:Clean;LPInterpreter:Clean;LPRepl:Clean;LPIde:Clean"/>
-		</Target>
-		<Target Name="Make">
-			<CallTarget Targets="LPI:Make;LPInterpreter:Make;LPRepl:Make;LPIde:Make"/>
-		</Target>
-		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
-	</Project>
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{1953EB00-781D-4DA2-A018-A4C245CBF15C}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="lp.interpreter\LPInterpreter.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="lp.repl\LPRepl.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="lp.ide\LPIde.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="LPInterpreter">
+        <MSBuild Projects="lp.interpreter\LPInterpreter.dproj"/>
+    </Target>
+    <Target Name="LPInterpreter:Clean">
+        <MSBuild Projects="lp.interpreter\LPInterpreter.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LPInterpreter:Make">
+        <MSBuild Projects="lp.interpreter\LPInterpreter.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LPRepl">
+        <MSBuild Projects="lp.repl\LPRepl.dproj"/>
+    </Target>
+    <Target Name="LPRepl:Clean">
+        <MSBuild Projects="lp.repl\LPRepl.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LPRepl:Make">
+        <MSBuild Projects="lp.repl\LPRepl.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LPIde">
+        <MSBuild Projects="lp.ide\LPIde.dproj"/>
+    </Target>
+    <Target Name="LPIde:Clean">
+        <MSBuild Projects="lp.ide\LPIde.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LPIde:Make">
+        <MSBuild Projects="lp.ide\LPIde.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="LPInterpreter;LPRepl;LPIde"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="LPInterpreter:Clean;LPRepl:Clean;LPIde:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="LPInterpreter:Make;LPRepl:Make;LPIde:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
