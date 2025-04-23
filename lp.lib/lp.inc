@@ -1,0 +1,3 @@
+{$IFDEF VER350}
+  {$DEFINE LPI_D28}
+{$ENDIF}

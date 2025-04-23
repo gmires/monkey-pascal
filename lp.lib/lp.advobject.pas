@@ -2,6 +2,8 @@ unit lp.advobject;
 
 interface
 
+{$I lp.inc}
+
 uses classes, SysUtils, Generics.Collections, Variants, StrUtils
   , lp.environment
   , lp.evaluator;

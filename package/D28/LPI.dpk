@@ -1,0 +1,44 @@
+package LPI;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS ON}
+{$RANGECHECKS ON}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  lp.advobject in '..\..\lp.lib\lp.advobject.pas',
+  lp.base64 in '..\..\lp.lib\lp.base64.pas',
+  lp.builtins in '..\..\lp.lib\lp.builtins.pas',
+  lp.environment in '..\..\lp.lib\lp.environment.pas',
+  lp.evaluator in '..\..\lp.lib\lp.evaluator.pas',
+  lp.lexer in '..\..\lp.lib\lp.lexer.pas',
+  lp.parser in '..\..\lp.lib\lp.parser.pas',
+  lp.token in '..\..\lp.lib\lp.token.pas',
+  lp.utils in '..\..\lp.lib\lp.utils.pas';
+
+end.
