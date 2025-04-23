@@ -2,7 +2,10 @@ unit lp.builtins;
 
 interface
 
-uses  classes, SysUtils, Generics.Collections, Variants, StrUtils, Windows
+{$I lp.inc}
+
+uses  classes, SysUtils, Generics.Collections, Variants, StrUtils
+  , {$IFDEF LPI_D28} Winapi.Windows {$ELSE} Windows {$ENDIF}
   , lp.utils
   , lp.lexer
   , lp.parser

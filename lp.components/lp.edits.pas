@@ -2,7 +2,12 @@ unit lp.edits;
 
 interface
 
-uses Classes, StdCtrls, ExtCtrls, Messages, Graphics, Controls, Windows, SysUtils, Forms;
+{$I ..\lp.lib\lp.inc}
+
+uses Classes, StdCtrls, ExtCtrls, Graphics, Controls
+  , {$IFDEF LPI_D28} Winapi.Messages {$ELSE} Messages {$ENDIF}
+  , {$IFDEF LPI_D28} Winapi.Windows {$ELSE} Windows {$ENDIF}
+  , SysUtils, Forms;
 
 type
   TWMScrollEvent = Procedure(Message: TMessage) of object;

@@ -19,7 +19,8 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.parser
-  , lp.lexer, {$IFDEF LPI_D28} System.ImageList {$ELSE} ImgList {$ENDIF}
+  , lp.lexer, {$IFDEF LPI_D28} System.ImageList {$ELSE} ImgList,
+  System.ImageList {$ENDIF}
   ;
 
 type
