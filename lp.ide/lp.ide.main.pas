@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, ToolWin, Menus, ExtCtrls, StdCtrls, lp.edits, ImgList, StrUtils
+  Dialogs, ComCtrls, ToolWin, Menus, ExtCtrls, StdCtrls, lp.edits,  StrUtils
 
   , {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
   , Generics.Collections
@@ -19,7 +19,7 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.parser
-  , lp.lexer, System.ImageList
+  , lp.lexer, {$IFDEF LPI_D28} System.ImageList {$ELSE} ImgList {$ENDIF}
   ;
 
 type
