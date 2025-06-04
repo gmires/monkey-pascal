@@ -8,7 +8,6 @@ uses
   SysUtils,
   IOUtils,
   Classes,
-  {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF},
   lp.advobject in '..\lp.lib\lp.advobject.pas',
   lp.base64 in '..\lp.lib\lp.base64.pas',
   lp.builtins in '..\lp.lib\lp.builtins.pas',
@@ -17,7 +16,8 @@ uses
   lp.lexer in '..\lp.lib\lp.lexer.pas',
   lp.parser in '..\lp.lib\lp.parser.pas',
   lp.token in '..\lp.lib\lp.token.pas',
-  lp.utils in '..\lp.lib\lp.utils.pas';
+  lp.utils in '..\lp.lib\lp.utils.pas',
+  {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF};
 
 procedure StartREPL;
 

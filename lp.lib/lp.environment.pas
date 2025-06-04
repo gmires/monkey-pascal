@@ -8,6 +8,7 @@ uses classes, SysUtils, Generics.Collections, Variants, StrUtils
 
 
 const
+  ALL_OBJ          = 'OBJECT';
 	NUMBER_OBJ       = 'NUMBER';
 	BOOLEAN_OBJ      = 'BOOLEAN';
 	STRING_OBJ       = 'STRING';
@@ -56,6 +57,18 @@ type
   // ---- Object --------------------
   TEvalObjectType = string;
 
+  TMethodFunct = function(args: TList<TEvalObject>; env: TEnvironment):TEvalObject of object;
+  TMethodDescr = class(TObject)
+  public
+    ArgMin: Integer;
+    ArgMax: Integer;
+    ArgType: TArray<string>;
+    Funct: TMethodFunct;
+    ShortDescription:string;
+  public
+    constructor Create(AArgMin: Integer; AArgMax: Integer; AArgType: TArray<string>; AFunct: TMethodFunct; AShortDescription:string='');
+  end;
+
   TEvalObject = class
   public
     IIndex: Integer;
@@ -64,8 +77,8 @@ type
     function Clone:TEvalObject; virtual;
 
     { -- support for object method call -- }
-    function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
-    function MethodInline(method:string; env: TEnvironment):TEvalObject; virtual;
+    function  MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
+    function  MethodInline(method:string; env: TEnvironment):TEvalObject; virtual;
 
     { -- support for object with index (es. array or map Array[index], map[index]) -- }
     function GetIndex(Index:TEvalObject):TEvalObject; virtual;
@@ -83,6 +96,13 @@ type
 
     procedure IncRefCount;
     procedure DecRefCount;
+  protected
+    Methods: TDictionary<string, TMethodDescr>;
+    function  m_tostring(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_type(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_clone(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_help(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; virtual;
   public
     { ** for GC (mark and sweep) ** }
     //GcNext:TEvalObject;
@@ -116,7 +136,9 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
-    function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
+  protected
+    function  m_format(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
   public
     constructor Create(AValue: Double);
     function toInt:Integer;
@@ -139,16 +161,26 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
 
-    function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
-
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
+  protected
+    function  m_tonumber(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_trim(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_rtrim(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_ltrim(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_len(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_copy(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_left(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_right(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_split(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
   public
     constructor Create(AValue: string);
+    class function CreateFormat(const AFormat: string; const Args: Array of const):TStringObject;
   end;
 
   TNullObject = class(TEvalObject)
@@ -233,14 +265,22 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
 
-    function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
-
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
+  protected
+    function  m_size(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_first(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_last(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_rest(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_push(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_insert(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_join(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_delete(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
   public
     constructor Create;
     constructor CreateWithElements;
@@ -263,8 +303,6 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
 
-    function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
-
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
@@ -274,6 +312,11 @@ type
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
+  protected
+    function  m_size(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_keys(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_delete(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
   public
     constructor Create;
     destructor Destroy; override;
@@ -289,6 +332,23 @@ begin
     Result := value.Inspect;
 end;
 
+function ArgumentValidate(args: TList<TEvalObject>; ArgMin, ArgMax: Integer; ArgType: array of string):TEvalObject;
+var
+  i:Integer;
+begin
+  Result := nil;
+  if (args.Count<ArgMin) or (args.Count>ArgMax) then
+    Result := TErrorObject.newError('wrong number of arguments. got=%d, min=%d, max=%d', [args.Count, ArgMin, ArgMax])
+  else
+  begin
+    for i := 0 to args.Count-1 do
+      if ((ArgType[i]<>ALL_OBJ) and (args[i].ObjectType<>ArgType[i])) then
+      begin
+        Result := TErrorObject.newError('argument must be %s, got %s', [ArgType[i], args[i].ObjectType]);
+        Break;
+      end;
+  end;
+end;
 
 { TEvalObject }
 
@@ -309,6 +369,8 @@ begin
   GcManualFree := False;
   GcMark := False;
   Reset;
+  Methods := TDictionary<string, TMethodDescr>.Create;
+  MethodInit;
 end;
 
 function TEvalObject.CurrentIndex: TEvalObject;
@@ -324,8 +386,12 @@ begin
 end;
 
 destructor TEvalObject.Destroy;
+var
+  sMethod:string;
 begin
-    //
+  for sMethod in Methods.Keys do
+    Methods.ExtractPair(sMethod).Value.Free;
+  Methods.Free;
   inherited;
 end;
 
@@ -355,26 +421,84 @@ begin
 end;
 
 function TEvalObject.MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  M:TMethodDescr;
 begin
-  if (method='tostring') then
-    Result := TStringObject.Create(Inspect)
-  else
-  if (method='type') then
-    Result := TStringObject.Create(ObjectType)
-  else
-  if (method='clone') then
-    Result := Clone
-  else
-    Result := MethodInline(ObjectType+'.'+method, env);
+  if Methods.ContainsKey(method) then
+  begin
+    M:=Methods[method];
+    Result := ArgumentValidate(args, M.ArgMin, M.ArgMax, M.ArgType);
+    if Result = nil then
+      Result := M.Funct(args,env);
+  end
+  else Result := MethodInline(ObjectType+'.'+method, env);
 
   if Result=nil then
     TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
+end;
+
+procedure TEvalObject.MethodInit;
+begin
+  Methods.Add('tostring', TMethodDescr.Create(0, 0, [], m_tostring));
+  Methods.Add('type', TMethodDescr.Create(0, 0, [], m_type));
+  Methods.Add('clone', TMethodDescr.Create(0, 0, [], m_clone));
+  Methods.Add('help', TMethodDescr.Create(0, 1, [STRING_OBJ], m_help));
 end;
 
 function TEvalObject.MethodInline(method: string; env: TEnvironment): TEvalObject;
 begin
   Result:= nil;
   env.GetValue(method, Result);
+end;
+
+function TEvalObject.m_clone(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := Clone;
+end;
+
+function TEvalObject.m_help(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  S,current,
+  method:string;
+  M:TMethodDescr;
+  i, y: Integer;
+begin
+  if args.Count=0 then
+  begin
+    S:='Method List ----------- '#13#10;
+    for current in  Methods.Keys do
+      S:=S+current+#13#10;
+
+    Result := TStringObject.Create(S);
+  end
+  else
+  begin
+    method:=TStringObject(args[0]).Value;
+    if Methods.TryGetValue(method, M ) then
+    begin
+      S:='List of method paramenters ---- '#13#10;
+      for i := M.ArgMin to M.ArgMax do
+      begin
+        S:=S+method+'(';
+        for y := 0 to i-1 do
+          S:=S+M.ArgType[y]+',';
+        S:=S+')'+#13#10
+      end;
+
+      Result:= TStringObject.Create(S);
+    end
+    else Result:= TStringObject.CreateFormat('method %s not found in object type %s',[method, ObjectType]);
+  end;
+end;
+
+function TEvalObject.m_tostring(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(Inspect);
+end;
+
+function TEvalObject.m_type(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(ObjectType);
 end;
 
 function TEvalObject.Next: TEvalObject;
@@ -420,22 +544,15 @@ begin
   Result :=  StringReplace(FloatToStr(Value),',','.',[rfReplaceAll])
 end;
 
-function TNumberObject.MethodCall(method: string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+procedure TNumberObject.MethodInit;
 begin
-  if (method='format') then
-  begin
-    if (args.Count<>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
-    else
-    if (args[0].ObjectType<>STRING_OBJ) then
-      Result := TErrorObject.newError('argument must be STRING, got %s', [args[0].ObjectType])
-    else
-      Result := TStringObject.Create(FormatFloat(TStringObject(args[0]).Value, Value));
-  end
-  else Result := MethodInline(ObjectType+'.'+method, env);
+  inherited;
+  Methods.Add('format', TMethodDescr.Create(1, 1, [STRING_OBJ], m_format));
+end;
 
-  if (Result=nil) then
-    Result := inherited MethodCall(method, args, env);
+function TNumberObject.m_format(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(FormatFloat(TStringObject(args[0]).Value, Value));
 end;
 
 function TNumberObject.ObjectType: TEvalObjectType;
@@ -747,6 +864,11 @@ begin
   Result := TNumberObject.Create(IIndex+1);
 end;
 
+class function TStringObject.CreateFormat(const AFormat: string; const Args: array of const): TStringObject;
+begin
+  Result := TStringObject.Create(Format(AFormat, Args));
+end;
+
 function TStringObject.GetIndex(Index: TEvalObject): TEvalObject;
 begin
   if Index.ObjectType<>NUMBER_OBJ then
@@ -770,95 +892,83 @@ begin
   Result := True;
 end;
 
-function TStringObject.MethodCall(method: string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
-var
-  j: char;
-  S,S1: string;
+procedure TStringObject.MethodInit;
 begin
-  if (method='tonumber') then
-  begin
-    if (args.Count>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, max=1', [args.Count])
-    else
-    if ((args.Count>0) and (args[0].ObjectType<>NUMBER_OBJ)) then
-      Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[0].ObjectType])
-    else
-      if args.Count=1 then
-        Result := TNumberObject.Create(StrToFloatDef(Value, TNumberObject(args[0]).Value))
-      else
-        Result := TNumberObject.Create(StrToFloatDef(Value,0));
-  end
-  else
-  if (method='trim') then
-    Result := TStringObject.Create(Trim(Value))
-  else
-  if (method='rtrim') then
-    Result := TStringObject.Create(TrimRight(Value))
-  else
-  if (method='ltrim') then
-    Result := TStringObject.Create(TrimLeft(Value))
-  else
-  if (method='len') then
-    Result := TNumberObject.Create(Length(Value))
-  else
-  if (method='copy') then
-  begin
-    if (args.Count<>2) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=2', [args.Count])
-    else
-    if (args[0].ObjectType<>NUMBER_OBJ) then
-      Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[1].ObjectType])
-    else
-    if (args[1].ObjectType<>NUMBER_OBJ) then
-      Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[2].ObjectType])
-    else
-      Result := TStringObject.Create(Copy(Value,TNumberObject(args[0]).toInt,TNumberObject(args[1]).toInt));
-  end
-  else
-  if ((method='left') or (method='right')) then
-  begin
-    if (args.Count<>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
-    else
-    if (args[0].ObjectType<>NUMBER_OBJ) then
-      Result := TErrorObject.newError('argument must be NUMBER, got %s', [args[0].ObjectType])
-    else
-    begin
-      if (method='left') then
-        Result := TStringObject.Create(LeftStr(Value, TNumberObject(args[0]).toInt))
-      else
-        Result := TStringObject.Create(RightStr(Value, TNumberObject(args[0]).toInt))
-    end;
-  end
-  else
-  if (method='split') then
-  begin
-    j:=',';
-    if (args.Count>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, max=2', [args.Count])
-    else
-    if ((args.Count=1) and (args[0].ObjectType<>STRING_OBJ)) then
-      Result := TErrorObject.newError('argument to `first` must be STRING, got %s', [args[0].ObjectType])
-    else
-    begin
-      if ((args.Count=1) and (TStringObject(args[0]).Value<>'')) then
-        j:= TStringObject(args[0]).Value[1];
+  inherited;
+  Methods.Add('tonumber', TMethodDescr.Create(0, 1, [NUMBER_OBJ], m_tonumber));
+  Methods.Add('trim', TMethodDescr.Create(0, 0, [], m_trim));
+  Methods.Add('rtrim', TMethodDescr.Create(0, 0, [], m_rtrim));
+  Methods.Add('ltrim', TMethodDescr.Create(0, 0, [], m_ltrim));
+  Methods.Add('len', TMethodDescr.Create(0, 0, [], m_len));
+  Methods.Add('copy', TMethodDescr.Create(2, 2, [NUMBER_OBJ, NUMBER_OBJ], m_copy));
+  Methods.Add('left', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_left));
+  Methods.Add('right', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_right));
+  Methods.Add('split', TMethodDescr.Create(0, 1, [STRING_OBJ], m_split));
+end;
 
-      Result := TArrayObject.Create;
-      TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+function TStringObject.m_copy(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(Copy(Value,TNumberObject(args[0]).toInt,TNumberObject(args[1]).toInt));
+end;
 
-      S:= Value;
-      While (S<>'') do
-      begin
-        S1:= StrSplit(S,j);
-        TArrayObject(Result).Elements.Add(TStringObject.Create(S1));
-      end;
-    end;
-  end
-  else Result := MethodInline(ObjectType+'.'+method, env);
+function TStringObject.m_left(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(LeftStr(Value, TNumberObject(args[0]).toInt));
+end;
 
-  if (Result=nil) then
-    Result := inherited MethodCall(method, args, env);
+function TStringObject.m_len(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(Length(Value));
+end;
+
+function TStringObject.m_ltrim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(TrimLeft(Value));
+end;
+
+function TStringObject.m_right(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(RightStr(Value, TNumberObject(args[0]).toInt));
+end;
+
+function TStringObject.m_rtrim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(TrimRight(Value));
+end;
+
+function TStringObject.m_split(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+const
+  SEPARATOR = ',';
+var
+  J:Char;
+  S,S1:string;
+begin
+  J:=SEPARATOR;
+  if ((args.Count=1) and (TStringObject(args[0]).Value<>'')) then
+    j:= TStringObject(args[0]).Value[1];
+
+  Result := TArrayObject.Create;
+  TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+
+  S:= Value;
+  While (S<>'') do
+  begin
+    S1:= StrSplit(S,J);
+    TArrayObject(Result).Elements.Add(TStringObject.Create(S1));
+  end;
+end;
+
+function TStringObject.m_tonumber(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  if args.Count=1 then
+    Result := TNumberObject.Create(StrToFloatDef(Value, TNumberObject(args[0]).Value))
+  else
+    Result := TNumberObject.Create(StrToFloatDef(Value,0));
+end;
+
+function TStringObject.m_trim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(Trim(Value));
 end;
 
 function TStringObject.Next: TEvalObject;
@@ -993,126 +1103,104 @@ begin
   Result := True;
 end;
 
-function TArrayObject.MethodCall(method: string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+procedure TArrayObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('size', TMethodDescr.Create(0, 0, [], m_size));
+  Methods.Add('first', TMethodDescr.Create(0, 0, [], m_first));
+  Methods.Add('last', TMethodDescr.Create(0, 0, [], m_last));
+  Methods.Add('rest', TMethodDescr.Create(0, 0, [], m_rest));
+  Methods.Add('push', TMethodDescr.Create(1, 1, [ALL_OBJ], m_push));
+  Methods.Add('insert', TMethodDescr.Create(2, 2, [ALL_OBJ, NUMBER_OBJ], m_insert));
+  Methods.Add('join', TMethodDescr.Create(0, 1, [STRING_OBJ], m_join));
+  Methods.Add('delete', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_delete));
+end;
+
+function TArrayObject.m_delete(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 var
-  j,S: string;
+  i:Integer;
+begin
+  Result := TArrayObject.Create;
+  TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+  for i := 0 to Elements.Count-1 do
+    if (i<>TNumberObject(args[0]).toInt) then
+      TArrayObject(Result).Elements.Add(Elements[i].Clone);
+end;
+
+function TArrayObject.m_first(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  if Elements.Count>0 then
+    Result := Elements[0].Clone
+  else
+    Result := TNullObject.Create;
+end;
+
+function TArrayObject.m_insert(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  i:Integer;
+begin
+  i := TNumberObject(args[1]).toInt;
+  if ((i<0) or (i>Elements.Count)) then
+    Result:= TErrorObject.newError('index out of range, 0 to %d', [Elements.Count])
+  else
+  begin
+    Result := Clone;
+    TArrayObject(Result).Elements.Insert(i, args[0].Clone);
+  end;
+end;
+
+function TArrayObject.m_join(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+const
+  SEPARATOR = ',';
+var
+  J,S:string;
+  i:Integer;
+begin
+  J:=SEPARATOR;
+  if (args.Count=1) then
+    j:= TStringObject(args[0]).Value;
+  if Elements.Count>0 then
+  begin
+    S:='';
+    for i := 0 to Elements.Count-1 do
+      S:=S+Elements[i].Inspect+j;
+    S:= Copy(S,1,Length(S)-1);
+    Result := TStringObject.Create(S);
+  end
+  else Result := TNullObject.Create;
+end;
+
+function TArrayObject.m_last(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  if Elements.Count>0 then
+    Result := Elements[Elements.Count-1].Clone
+  else
+    Result := TNullObject.Create;
+end;
+
+function TArrayObject.m_push(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := Clone;
+  TArrayObject(Result).Elements.Add(args[0].Clone);
+end;
+
+function TArrayObject.m_rest(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
   i: Integer;
 begin
-  if (method='size') then
-    Result := TNumberObject.Create(Elements.Count)
-  else
-  if (method='first') then
+  if (Elements.Count>0) then
   begin
-    if (args.Count>0) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=0', [args.Count])
-    else
-    if Elements.Count>0 then
-      Result := Elements[0].Clone
-    else
-      Result := TNullObject.Create;
+    Result := TArrayObject.Create;
+    TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+    for i := 1 to Elements.Count-1 do
+      TArrayObject(Result).Elements.Add(Elements[i].Clone);
   end
-  else
-  if (method='last') then
-  begin
-    if (args.Count>0) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=0', [args.Count])
-    else
-    if Elements.Count>0 then
-      Result := Elements[Elements.Count-1].Clone
-    else
-      Result := TNullObject.Create;
-  end
-  else
-  if (method='rest') then
-  begin
-    if (args.Count>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=0', [args.Count])
-    else
-    if (Elements.Count>0) then
-    begin
-      Result := TArrayObject.Create;
-      TArrayObject(Result).Elements := TList<TEvalObject>.Create;
-      for i := 1 to Elements.Count-1 do
-        TArrayObject(Result).Elements.Add(Elements[i].Clone);
-    end
-    else Result := TNullObject.Create;
-  end
-  else
-  if (method='push') then
-  begin
-    if (args.Count>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
-    else
-    begin
-      Result := Clone;
-      TArrayObject(Result).Elements.Add(args[0].Clone);
-    end;
-  end
-  else
-  if (method='insert') then
-  begin
-    if (args.Count<>2) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=2', [args.Count])
-    else
-    if args[1].ObjectType<>NUMBER_OBJ then
-      Result := TErrorObject.newError('argument to `second` must be NUMBER (index of array), got %s', [args[1].ObjectType])
-    else
-    begin
-      i := TNumberObject(args[1]).toInt;
-      if ((i<0) or (i>Elements.Count)) then
-        Result:= TErrorObject.newError('index out of range, 0 to %d', [Elements.Count])
-      else
-      begin
-        Result := Clone;
-        TArrayObject(Result).Elements.Insert(i, args[0].Clone);
-      end;
-    end;
-  end
-  else
-  if (method='join') then
-  begin
-    j:=',';
-    if (args.Count>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, max=1', [args.Count])
-    else
-    if (args.Count=1) and (args[0].ObjectType<>STRING_OBJ) then
-      Result := TErrorObject.newError('argument to `second` must be STRING, got %s', [args[0].ObjectType])
-    else
-    begin
-      if (args.Count=1) then
-        j:= TStringObject(args[0]).Value;
-      if Elements.Count>0 then
-      begin
-        S:='';
-        for i := 0 to Elements.Count-1 do
-          S:=S+Elements[i].Inspect+j;
-        S:= Copy(S,1,Length(S)-1);
-        Result := TStringObject.Create(S);
-      end
-      else Result := TNullObject.Create;
-    end;
-  end
-  else
-  if (method='delete') then
-  begin
-    if (args.Count<>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
-    else
-    if args[0].ObjectType<>NUMBER_OBJ then
-      Result := TErrorObject.newError('invalid index type for ARRAY , got %s', [args[0].ObjectType])
-    else
-    begin
-      Result := TArrayObject.Create;
-      TArrayObject(Result).Elements := TList<TEvalObject>.Create;
-      for i := 0 to Elements.Count-1 do
-        if (i<>TNumberObject(args[0]).toInt) then
-          TArrayObject(Result).Elements.Add(Elements[i].Clone);
-    end;
-  end
-  else Result := MethodInline(ObjectType+'.'+method, env);
+  else Result := TNullObject.Create;
+end;
 
-  if (Result=nil) then
-    Result := inherited MethodCall(method, args, env);
+function TArrayObject.m_size(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(Elements.Count);
 end;
 
 function TArrayObject.Next: TEvalObject;
@@ -1309,61 +1397,56 @@ begin
   Result := True;
 end;
 
-function THashObject.MethodCall(method: string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+procedure THashObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('size', TMethodDescr.Create(0, 0, [], m_size));
+  Methods.Add('keys', TMethodDescr.Create(0, 0, [], m_keys));
+  Methods.Add('delete', TMethodDescr.Create(1, 1, [ALL_OBJ], m_delete));
+end;
+
+function THashObject.m_delete(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 var
   hkey: THashkey;
 begin
-  if method='size' then
-    Result := TNumberObject.Create(Pairs.Count)
-  else
-  if method='keys' then
-  begin
-    if (args.Count<>0) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=0', [args.Count])
+  hkey := THashkey.fromObject(args[0]);
+  try
+    if hkey.ObjectType=ERROR_OBJ then
+      Result := TErrorObject.newError('invalid index type for HashMap , got %s', [args[0].ObjectType])
     else
     begin
-      Result := TArrayObject.Create;
-      TArrayObject(Result).Elements := TList<TEvalObject>.Create;
-      for hkey in Pairs.Keys do
-        if (hkey.ObjectType=STRING_OBJ) then
-          TArrayObject(Result).Elements.Add(TStringObject.Create(hkey.FValueStr))
-        else
-        if (hkey.ObjectType=NUMBER_OBJ) then
-          TArrayObject(Result).Elements.Add(TNumberObject.Create(hkey.FValueNum))
-        else
-        if (hkey.ObjectType=BOOLEAN_OBJ) then
-          TArrayObject(Result).Elements.Add(TBooleanObject.Create(hkey.FValueBool));
-    end;
-  end
-  else
-  if method='delete' then
-  begin
-    if (args.Count<>1) then
-      Result := TErrorObject.newError('wrong number of arguments. got=%d, want=1', [args.Count])
-    else
-    begin
-      hkey := THashkey.fromObject(args[0]);
-      try
-        if hkey.ObjectType=ERROR_OBJ then
-          Result := TErrorObject.newError('invalid index type for HashMap , got %s', [args[0].ObjectType])
-        else
-        begin
-          Result := Clone as THashObject;
-          if THashObject(Result).Pairs.ContainsKey(hkey) then
-          begin
-            THashObject(Result).Pairs[hkey].Free;
-            THashObject(Result).Pairs.Remove(hkey);
-          end;
-        end;
-      finally
-        hkey.Free;
+      Result := Clone as THashObject;
+      if THashObject(Result).Pairs.ContainsKey(hkey) then
+      begin
+        THashObject(Result).Pairs[hkey].Free;
+        THashObject(Result).Pairs.Remove(hkey);
       end;
     end;
-  end
-  else Result := MethodInline(ObjectType+'.'+method, env);
+  finally
+    hkey.Free;
+  end;
+end;
 
-  if (Result=nil) then
-    Result := inherited MethodCall(method, args, env);
+function THashObject.m_keys(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  hkey: THashkey;
+begin
+  Result := TArrayObject.Create;
+  TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+  for hkey in Pairs.Keys do
+    if (hkey.ObjectType=STRING_OBJ) then
+      TArrayObject(Result).Elements.Add(TStringObject.Create(hkey.FValueStr))
+    else
+    if (hkey.ObjectType=NUMBER_OBJ) then
+      TArrayObject(Result).Elements.Add(TNumberObject.Create(hkey.FValueNum))
+    else
+    if (hkey.ObjectType=BOOLEAN_OBJ) then
+      TArrayObject(Result).Elements.Add(TBooleanObject.Create(hkey.FValueBool));
+end;
+
+function THashObject.m_size(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(Pairs.Count);
 end;
 
 function THashObject.Next: TEvalObject;
@@ -1472,6 +1555,17 @@ end;
 function TClosureObject.ObjectType: TEvalObjectType;
 begin
   Result := CLOSURE_OBJ;
+end;
+
+{ TMethodDescr }
+
+constructor TMethodDescr.Create(AArgMin, AArgMax: Integer; AArgType: TArray<string>; AFunct: TMethodFunct; AShortDescription:string='');
+begin
+  ArgMin := AArgMin;
+  ArgMax := AArgMax;
+  ArgType:= AArgType;
+  Funct := AFunct;
+  ShortDescription := AShortDescription;
 end;
 
 end.

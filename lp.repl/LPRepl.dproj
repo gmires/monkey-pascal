@@ -76,6 +76,15 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="..\lp.lib\lp.advobject.pas"/>
+        <DCCReference Include="..\lp.lib\lp.base64.pas"/>
+        <DCCReference Include="..\lp.lib\lp.builtins.pas"/>
+        <DCCReference Include="..\lp.lib\lp.environment.pas"/>
+        <DCCReference Include="..\lp.lib\lp.evaluator.pas"/>
+        <DCCReference Include="..\lp.lib\lp.lexer.pas"/>
+        <DCCReference Include="..\lp.lib\lp.parser.pas"/>
+        <DCCReference Include="..\lp.lib\lp.token.pas"/>
+        <DCCReference Include="..\lp.lib\lp.utils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
