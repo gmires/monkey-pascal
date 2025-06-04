@@ -48,6 +48,7 @@ type
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
     function SetOrCreateValue(name:string; value:TEvalObject; IsConst:Boolean ):TEvalObject;
+    function GetFunctionObject(AObjectType:string; var value:TEvalObject ):TDictionary<string, TEvalObject>;
 
     function AddRef(AObject:TEvalObject):TEvalObject;
 
@@ -431,7 +432,12 @@ begin
     if Result = nil then
       Result := M.Funct(args,env);
   end
-  else Result := MethodInline(ObjectType+'.'+method, env);
+  else
+  begin
+    Result := MethodInline(ObjectType+'.'+method, env);
+    if ((Result=nil) and (ObjectType<>'')) then
+      Result := MethodInline(ALL_OBJ+'.'+method, env);
+  end;
 
   if Result=nil then
     TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
@@ -465,9 +471,16 @@ var
 begin
   if args.Count=0 then
   begin
-    S:='Method List ----------- '#13#10;
+    S:='Builded Method List ----------- '#13#10;
     for current in  Methods.Keys do
-      S:=S+current+#13#10;
+      S:=S+' - '+current+IfThen(Methods[current].ShortDescription<>'',' = '+LowerCase(Methods[current].ShortDescription),'')+#13#10;
+
+    S:=S+'Inline Method List ----------- '#13#10;
+
+{        function GetFunctionObject(AObjectType:string; var value:TEvalObject ):TDictionary<string, TEvalObject>; }
+
+
+    S:=S+'use help("method") for details. '#13#10;
 
     Result := TStringObject.Create(S);
   end
@@ -476,12 +489,17 @@ begin
     method:=TStringObject(args[0]).Value;
     if Methods.TryGetValue(method, M ) then
     begin
-      S:='List of method paramenters ---- '#13#10;
+      S:='Describe method '+method+' paramenters ---- '#13#10;
+      if M.ShortDescription<>'' then
+        S:=S+'# '+M.ShortDescription+#13#10;
       for i := M.ArgMin to M.ArgMax do
       begin
-        S:=S+method+'(';
+        S:=S+' - '+method+'(';
         for y := 0 to i-1 do
-          S:=S+M.ArgType[y]+',';
+        begin
+          S:=S+M.ArgType[y];
+          if y<i-1 then S:=S+',';
+        end;
         S:=S+')'+#13#10
       end;
 
@@ -765,6 +783,26 @@ begin
   FConst.Free;
   FAllowedIdent.Free;
   inherited;
+end;
+
+function TEnvironment.GetFunctionObject(AObjectType: string; var value: TEvalObject): TDictionary<string, TEvalObject>;
+var
+  current:string;
+  CurrentStore:TDictionary<string, TEvalObject>;
+begin
+  Result := TDictionary<string, TEvalObject>.Create;
+  CurrentStore := FStore;
+  while (True) do
+  begin
+    for current in FStore.Keys do
+      if Pos(AObjectType+'.', current)>0 then
+        Result.Add(current, FStore[current]);
+
+    if FOuter<>nil then
+      CurrentStore := FOuter.Store
+    else
+      Break;
+  end;
 end;
 
 function TEnvironment.GetValue(name: string; var value: TEvalObject): Boolean;
@@ -1106,9 +1144,9 @@ end;
 procedure TArrayObject.MethodInit;
 begin
   inherited;
-  Methods.Add('size', TMethodDescr.Create(0, 0, [], m_size));
-  Methods.Add('first', TMethodDescr.Create(0, 0, [], m_first));
-  Methods.Add('last', TMethodDescr.Create(0, 0, [], m_last));
+  Methods.Add('size', TMethodDescr.Create(0, 0, [], m_size, 'get numbers of elements of array.'));
+  Methods.Add('first', TMethodDescr.Create(0, 0, [], m_first, 'get first element of array.'));
+  Methods.Add('last', TMethodDescr.Create(0, 0, [], m_last, 'get first element of array.'));
   Methods.Add('rest', TMethodDescr.Create(0, 0, [], m_rest));
   Methods.Add('push', TMethodDescr.Create(1, 1, [ALL_OBJ], m_push));
   Methods.Add('insert', TMethodDescr.Create(2, 2, [ALL_OBJ, NUMBER_OBJ], m_insert));
