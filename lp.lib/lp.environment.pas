@@ -48,7 +48,7 @@ type
     function GetValue(name:string; var value:TEvalObject ):Boolean;
     function SetValue(name:string; value:TEvalObject ):TEvalObject;
     function SetOrCreateValue(name:string; value:TEvalObject; IsConst:Boolean ):TEvalObject;
-    function GetFunctionObject(AObjectType:string; var value:TEvalObject ):TDictionary<string, TEvalObject>;
+    function GetFunctionObject(AObjectType:string):TDictionary<string, TEvalObject>;
 
     function AddRef(AObject:TEvalObject):TEvalObject;
 
@@ -56,6 +56,7 @@ type
   end;
 
   // ---- Object --------------------
+
   TEvalObjectType = string;
 
   TMethodFunct = function(args: TList<TEvalObject>; env: TEnvironment):TEvalObject of object;
@@ -68,6 +69,22 @@ type
     ShortDescription:string;
   public
     constructor Create(AArgMin: Integer; AArgMax: Integer; AArgType: TArray<string>; AFunct: TMethodFunct; AShortDescription:string='');
+  end;
+
+  TIdentifierGetFunct = function(Index:TEvalObject=nil):TEvalObject of object;
+  TIdentifierSetFunct = function(Index:TEvalObject; value:TEvalObject):TEvalObject of object;
+
+  TIdentifierDescr = class(TObject)
+  public
+    IType: string;
+    Getter: TIdentifierGetFunct;
+    Setter: TIdentifierSetFunct;
+    ShortDescription:string;
+  private
+    function GetIsReadOnly: Boolean;
+  public
+    constructor Create(AIType: string; AGetter: TIdentifierGetFunct; ASetter: TIdentifierSetFunct=nil; AShortDescription:string='');
+    property isReadOnly: Boolean read GetIsReadOnly;
   end;
 
   TEvalObject = class
@@ -104,6 +121,9 @@ type
     function  m_clone(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_help(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; virtual;
+  protected
+    Identifiers: TDictionary<string, TIdentifierDescr>;
+    procedure IdentifierInit; virtual;
   public
     { ** for GC (mark and sweep) ** }
     //GcNext:TEvalObject;
@@ -353,6 +373,11 @@ end;
 
 { TEvalObject }
 
+procedure TEvalObject.IdentifierInit;
+begin
+
+end;
+
 procedure TEvalObject.IncRefCount;
 begin
   Inc(GcRefCount);
@@ -372,6 +397,8 @@ begin
   Reset;
   Methods := TDictionary<string, TMethodDescr>.Create;
   MethodInit;
+  Identifiers:= TDictionary<string, TIdentifierDescr>.Create;
+  IdentifierInit;
 end;
 
 function TEvalObject.CurrentIndex: TEvalObject;
@@ -388,17 +415,25 @@ end;
 
 destructor TEvalObject.Destroy;
 var
-  sMethod:string;
+  current:string;
 begin
-  for sMethod in Methods.Keys do
-    Methods.ExtractPair(sMethod).Value.Free;
+  for current in Methods.Keys do
+    Methods.ExtractPair(current).Value.Free;
   Methods.Free;
+
+  for current in Identifiers.Keys do
+    Identifiers.ExtractPair(current).Value.Free;
+  Identifiers.Free;
+
   inherited;
 end;
 
 function TEvalObject.GetIdentifer(name: string; Index:TEvalObject): TEvalObject;
 begin
-  Result := TErrorObject.newError('get identifier not supported in object type %s',[ObjectType]);
+  if Identifiers.ContainsKey(name) then
+    Result :=Identifiers[name].Getter(Index)
+  else
+    Result := TErrorObject.newError('identifier "'+name+'" not supported in object type %s',[ObjectType]);
 end;
 
 function TEvalObject.GetIndex(Index: TEvalObject): TEvalObject;
@@ -467,7 +502,10 @@ var
   S,current,
   method:string;
   M:TMethodDescr;
+  X:TIdentifierDescr;
   i, y: Integer;
+  InlineMethods: TDictionary<string, TEvalObject>;
+  E:TEvalObject;
 begin
   if args.Count=0 then
   begin
@@ -477,8 +515,25 @@ begin
 
     S:=S+'Inline Method List ----------- '#13#10;
 
-{        function GetFunctionObject(AObjectType:string; var value:TEvalObject ):TDictionary<string, TEvalObject>; }
+    InlineMethods := env.GetFunctionObject(ObjectType);
+    try
+      for current in InlineMethods.Keys do
+        S:=S+' - '+current+#13#10;
+    finally
+      InlineMethods.Free;
+    end;
 
+    InlineMethods := env.GetFunctionObject(ALL_OBJ);
+    try
+      for current in InlineMethods.Keys do
+        S:=S+' - '+current+#13#10;
+    finally
+      InlineMethods.Free;
+    end;
+
+    S:=S+'Identifiers List ----------- '#13#10;
+    for current in Identifiers.Keys do
+      S:=S+' - '+current+IfThen(Identifiers[current].isReadOnly,' (readonly) ','')+IfThen(Identifiers[current].ShortDescription<>'',' = '+LowerCase(Identifiers[current].ShortDescription),'')+#13#10;
 
     S:=S+'use help("method") for details. '#13#10;
 
@@ -486,6 +541,7 @@ begin
   end
   else
   begin
+    E:=nil;
     method:=TStringObject(args[0]).Value;
     if Methods.TryGetValue(method, M ) then
     begin
@@ -502,6 +558,23 @@ begin
         end;
         S:=S+')'+#13#10
       end;
+
+      Result:= TStringObject.Create(S);
+    end
+    else
+    if env.GetValue(method, E) then
+    begin
+      if (E is TFunctionObject) then
+        Result:= TStringObject.Create(TFunctionObject(e).Inspect);
+    end
+    else
+    if Identifiers.TryGetValue(method, X) then
+    begin
+      S:='Describe identifier '+method+' ---- '#13#10;
+      if X.ShortDescription<>'' then
+        S:=S+'# '+X.ShortDescription+#13#10;
+      S:=S+' - type = '+X.IType+#13#10;
+      S:=S+' - readonly = '+IfThen(X.isReadOnly,'yes','no')+#13#10;
 
       Result:= TStringObject.Create(S);
     end
@@ -535,8 +608,22 @@ begin
 end;
 
 function TEvalObject.SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject): TEvalObject;
+var
+  I: TIdentifierDescr;
 begin
-  Result := TErrorObject.newError('set identifier not supported in object type %s',[ObjectType]);
+  if Identifiers.ContainsKey(name) then
+  begin
+     I := Identifiers[name];
+     if NOT I.isReadOnly then
+     begin
+       Result := I.Setter(Index, value);
+       if Result=nil then
+         Result := I.Getter(Index);
+     end
+     else
+      Result := TErrorObject.newError('Identifier %s is readonly',[name]);
+  end
+  else Result := TErrorObject.newError('identifier "'+name+'"not supported in object type %s',[ObjectType]);
 end;
 
 function TEvalObject.Setindex(Index, value: TEvalObject): TEvalObject;
@@ -785,7 +872,7 @@ begin
   inherited;
 end;
 
-function TEnvironment.GetFunctionObject(AObjectType: string; var value: TEvalObject): TDictionary<string, TEvalObject>;
+function TEnvironment.GetFunctionObject(AObjectType: string): TDictionary<string, TEvalObject>;
 var
   current:string;
   CurrentStore:TDictionary<string, TEvalObject>;
@@ -1604,6 +1691,21 @@ begin
   ArgType:= AArgType;
   Funct := AFunct;
   ShortDescription := AShortDescription;
+end;
+
+{ TIdentifierDescr }
+
+constructor TIdentifierDescr.Create(AIType: string; AGetter: TIdentifierGetFunct; ASetter: TIdentifierSetFunct; AShortDescription: string);
+begin
+  IType:= AIType;
+  Getter:= AGetter;
+  Setter:= ASetter;
+  ShortDescription:=AShortDescription;
+end;
+
+function TIdentifierDescr.GetIsReadOnly: Boolean;
+begin
+  Result := NOT Assigned(Setter);
 end;
 
 end.

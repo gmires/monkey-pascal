@@ -26,13 +26,20 @@ type
     function  m_clear(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_size(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
+  protected
+    function  i_get_duplicates(Index:TEvalObject=nil):TEvalObject;
+    function  i_set_duplicates(Index:TEvalObject; value:TEvalObject):TEvalObject;
+    function  i_get_sorted(Index:TEvalObject=nil):TEvalObject;
+    function  i_set_sorted(Index:TEvalObject; value:TEvalObject):TEvalObject;
+    function  i_get_casesentitive(Index:TEvalObject=nil):TEvalObject;
+    function  i_set_casesentitive(Index:TEvalObject; value:TEvalObject):TEvalObject;
+    function  i_get_text(Index:TEvalObject=nil):TEvalObject;
+    function  i_set_text(Index:TEvalObject; value:TEvalObject):TEvalObject;
+    procedure IdentifierInit; override;
   public
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
-
-    function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; override;
-    function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; override;
 
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
@@ -113,23 +120,6 @@ begin
   inherited;
 end;
 
-function TStringListObject.GetIdentifer(name: string; Index: TEvalObject): TEvalObject;
-begin
-  if name='duplicates' then
-    Result := TBooleanObject.Create(InnetList.Duplicates = dupAccept )
-  else
-  if name='sorted' then
-    Result := TBooleanObject.Create(InnetList.Sorted)
-  else
-  if name='casesentitive' then
-    Result := TBooleanObject.Create(InnetList.CaseSensitive)
-  else
-  if name='text' then
-    Result := TStringObject.Create(InnetList.Text)
-  else
-    Result:= inherited GetIdentifer(name, Index);
-end;
-
 function TStringListObject.GetIndex(Index: TEvalObject): TEvalObject;
 begin
   if Index.ObjectType<>NUMBER_OBJ then
@@ -143,6 +133,15 @@ begin
   end;
 end;
 
+procedure TStringListObject.IdentifierInit;
+begin
+  inherited;
+  Identifiers.Add('duplicates', TIdentifierDescr.Create(BOOLEAN_OBJ, i_get_duplicates, i_set_duplicates));
+  Identifiers.Add('sorted', TIdentifierDescr.Create(BOOLEAN_OBJ, i_get_sorted, i_set_sorted));
+  Identifiers.Add('casesentitive', TIdentifierDescr.Create(BOOLEAN_OBJ, i_get_casesentitive, i_set_casesentitive));
+  Identifiers.Add('text', TIdentifierDescr.Create(STRING_OBJ, i_get_text, i_set_text));
+end;
+
 function TStringListObject.Inspect: string;
 begin
   Result := 'StringList$'+ IntToHex(Integer(Pointer(InnetList)), 6) +' (' + IntToStr(InnetList.Count) + ' rows)';
@@ -151,6 +150,53 @@ end;
 function TStringListObject.isIterable: Boolean;
 begin
   Result := True;
+end;
+
+function TStringListObject.i_get_casesentitive(Index: TEvalObject): TEvalObject;
+begin
+  Result := TBooleanObject.Create(InnetList.CaseSensitive);
+end;
+
+function TStringListObject.i_get_duplicates(Index: TEvalObject): TEvalObject;
+begin
+  Result := TBooleanObject.Create(InnetList.Duplicates = dupAccept );
+end;
+
+function TStringListObject.i_get_sorted(Index: TEvalObject): TEvalObject;
+begin
+  Result := TBooleanObject.Create(InnetList.Sorted);
+end;
+
+function TStringListObject.i_get_text(Index: TEvalObject): TEvalObject;
+begin
+  Result := TStringObject.Create(InnetList.Text);
+end;
+
+function TStringListObject.i_set_casesentitive(Index, value: TEvalObject): TEvalObject;
+begin
+  Result := nil;
+  InnetList.CaseSensitive := TBooleanObject(value).Value;
+end;
+
+function TStringListObject.i_set_duplicates(Index, value: TEvalObject): TEvalObject;
+begin
+  Result := nil;
+  if TBooleanObject(value).Value then
+    InnetList.Duplicates := dupAccept
+  else
+    InnetList.Duplicates := dupIgnore;
+end;
+
+function TStringListObject.i_set_sorted(Index, value: TEvalObject): TEvalObject;
+begin
+  Result := nil;
+  InnetList.Sorted := TBooleanObject(value).Value
+end;
+
+function TStringListObject.i_set_text(Index, value: TEvalObject): TEvalObject;
+begin
+  Result := nil;
+  InnetList.Text := TStringObject(value).Value;
 end;
 
 procedure TStringListObject.MethodInit;
@@ -233,45 +279,6 @@ end;
 function TStringListObject.ObjectType: TEvalObjectType;
 begin
   Result := STRING_LIST_OBJ;
-end;
-
-function TStringListObject.SetIdentifer(name: string; value, Index: TEvalObject): TEvalObject;
-begin
-  if ((name='duplicates') or (name='sorted') or (name='casesentitive')) then
-  begin
-    if value.ObjectType<>BOOLEAN_OBJ then
-      Result := TErrorObject.newError('value type <%s> not usable for <'+name+'> property',[value.ObjectType])
-    else
-    begin
-      if (name='duplicates') then
-      begin
-        if TBooleanObject(value).Value then
-          InnetList.Duplicates := dupAccept
-        else
-          InnetList.Duplicates := dupIgnore;
-      end
-      else
-      if (name='sorted') then
-        InnetList.Sorted := TBooleanObject(value).Value
-      else
-      if (name='casesentitive') then
-        InnetList.CaseSensitive := TBooleanObject(value).Value;
-
-      Result :=GetIdentifer(name);
-    end;
-  end
-  else
-  if (name='text') then
-  begin
-    if value.ObjectType<>STRING_OBJ then
-      Result := TErrorObject.newError('value type <%s> not usable for <'+name+'> property',[value.ObjectType])
-    else
-    begin
-      InnetList.Text := TStringObject(value).Value;
-      Result :=GetIdentifer(name);
-    end;
-  end
-  else Result:= inherited SetIdentifer(name, value, Index);
 end;
 
 function TStringListObject.Setindex(Index, value: TEvalObject): TEvalObject;
