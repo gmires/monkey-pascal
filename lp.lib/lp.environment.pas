@@ -324,6 +324,8 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
 
+    function MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; override;
+
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
@@ -1520,6 +1522,13 @@ end;
 function THashObject.isIterable: Boolean;
 begin
   Result := True;
+end;
+
+function THashObject.MethodCall(method: string; args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := GetIdentifer(method);
+  if NOT (Result is TFunctionObject) then
+    Result := inherited MethodCall(method, args, env);
 end;
 
 procedure THashObject.MethodInit;
