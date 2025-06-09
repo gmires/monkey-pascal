@@ -173,6 +173,8 @@ type
     function Clone:TEvalObject; override;
   public
     constructor Create(AValue: Boolean);
+    constructor CreateTrue;
+    constructor CreateFalse;
   end;
 
   TStringObject = class(TEvalObject)
@@ -683,6 +685,16 @@ constructor TBooleanObject.Create(AValue: Boolean);
 begin
   inherited Create;
   Value := AValue;
+end;
+
+constructor TBooleanObject.CreateFalse;
+begin
+  Create(False);
+end;
+
+constructor TBooleanObject.CreateTrue;
+begin
+  Create(True);
 end;
 
 function TBooleanObject.Inspect: string;

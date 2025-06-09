@@ -4,13 +4,15 @@ interface
 
 {$I lp.inc}
 
-uses classes, SysUtils, Generics.Collections, Variants, StrUtils
+uses classes, SysUtils, Generics.Collections, Variants, StrUtils, System.IOUtils
   , lp.environment
   , lp.evaluator;
 
 const
 	STRING_LIST_OBJ = 'STRING_LIST';
 	FILE_SYSTEM_OBJ = 'FILE_SYSTEM';
+	DIRECTORY_OBJ = 'DIRECTORY';
+	FILE_OBJ = 'FILE';
 
 type
   TStringListObject = class(TEvalObject)
@@ -52,9 +54,14 @@ type
     destructor Destroy; override;
   end;
 
-  TFileSystemObject = class(TEvalObject)
+  TDirectoryObject = class(TEvalObject)
   protected
-    function  m_dirExists(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    // -- directory helper
+    function  m_Exists(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Create(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Delete(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Copy(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Empty(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
     function ObjectType:TEvalObjectType; override;
@@ -65,8 +72,41 @@ type
     destructor Destroy; override;
   end;
 
+  TFileObject = class(TEvalObject)
+  protected
+    function  m_Exists(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Create(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Delete(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Copy(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
+  public
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  TSystemObject = class(TEvalObject)
+    FDirectory: TDirectoryObject;
+    FFile: TFileObject;
+  protected
+    function  i_get_pathdelimiter(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_directory(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_file(Index:TEvalObject=nil):TEvalObject;
+    procedure IdentifierInit; override;
+  public
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
 var
-  FileSystemObject:TFileSystemObject = nil;
+  FileSystemObject:TSystemObject = nil;
 
 implementation
 
@@ -75,10 +115,10 @@ begin
   Result := TStringListObject.Create;
 end;
 
-function _FileSystemConstructor(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
+function _SystemConstructor(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
 begin
   if NOT Assigned(FileSystemObject) then
-    FileSystemObject := TFileSystemObject.Create;
+    FileSystemObject := TSystemObject.Create;
 
   Result := FileSystemObject;
 end;
@@ -86,7 +126,7 @@ end;
 procedure init;
 begin
   builtins.Add('StringList', TBuiltinObject.Create(_StringListConstructor));
-  builtins.Add('FS', TBuiltinObject.Create(_FileSystemConstructor));
+  builtins.Add('System', TBuiltinObject.Create(_SystemConstructor));
 end;
 
 procedure deinit;
@@ -300,43 +340,232 @@ begin
   end;
 end;
 
-{ TFileSystemObject }
+{ TSystemObject }
 
-function TFileSystemObject.Clone: TEvalObject;
+function TSystemObject.Clone: TEvalObject;
 begin
   Result := Self;
 end;
 
-constructor TFileSystemObject.Create;
+constructor TSystemObject.Create;
 begin
   inherited Create;
   GcManualFree := True;
+  FDirectory:= TDirectoryObject.Create;
+  FDirectory.GcManualFree := GcManualFree;
+  FFile:= TFileObject.Create;
+  FFile.GcManualFree := GcManualFree;
 end;
 
-destructor TFileSystemObject.Destroy;
+destructor TSystemObject.Destroy;
 begin
+  FFile.Free;
+  FDirectory.Free;
   inherited;
 end;
 
-function TFileSystemObject.m_dirExists(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
-begin
-  Result := TBooleanObject.Create(DirectoryExists((TStringObject(args[0]).Value)));
-end;
-
-function TFileSystemObject.Inspect: string;
-begin
-  Result := 'FileSystem$'+ IntToHex(Integer(Pointer(Self)), 6);
-end;
-
-procedure TFileSystemObject.MethodInit;
+procedure TSystemObject.IdentifierInit;
 begin
   inherited;
-  Methods.Add('dirExist', TMethodDescr.Create(1, 1, [STRING_OBJ], m_dirExists));
+  Identifiers.Add('pathDelimiter', TIdentifierDescr.Create(STRING_OBJ, i_get_pathdelimiter));
+  Identifiers.Add('Directory', TIdentifierDescr.Create(DIRECTORY_OBJ, i_get_directory));
+  Identifiers.Add('File', TIdentifierDescr.Create(FILE_OBJ, i_get_file));
 end;
 
-function TFileSystemObject.ObjectType: TEvalObjectType;
+function TSystemObject.Inspect: string;
+begin
+  Result := 'System$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+function TSystemObject.i_get_directory(Index: TEvalObject): TEvalObject;
+begin
+  Result := FDirectory;
+end;
+
+function TSystemObject.i_get_file(Index: TEvalObject): TEvalObject;
+begin
+  Result := FFile;
+end;
+
+function TSystemObject.i_get_pathdelimiter(Index: TEvalObject): TEvalObject;
+begin
+  Result := TStringObject.Create(PathDelim);
+end;
+
+function TSystemObject.ObjectType: TEvalObjectType;
 begin
   Result := FILE_SYSTEM_OBJ;
+end;
+
+{ TDirectoryObject }
+
+function TDirectoryObject.Clone: TEvalObject;
+begin
+  Result := Self;
+end;
+
+constructor TDirectoryObject.Create;
+begin
+  inherited Create;
+end;
+
+destructor TDirectoryObject.Destroy;
+begin
+
+  inherited;
+end;
+
+function TDirectoryObject.Inspect: string;
+begin
+  Result := 'Directory$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+procedure TDirectoryObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('Exist', TMethodDescr.Create(1, 1, [STRING_OBJ], m_Exists));
+  Methods.Add('Create', TMethodDescr.Create(1, 2, [STRING_OBJ, BOOLEAN_OBJ], m_Create,' with 2nd params boolean = True, create recursive.'));
+  Methods.Add('Delete', TMethodDescr.Create(1, 2, [STRING_OBJ, BOOLEAN_OBJ], m_Delete));
+  Methods.Add('Copy', TMethodDescr.Create(2, 2, [STRING_OBJ, STRING_OBJ], m_Copy));
+  Methods.Add('Empty', TMethodDescr.Create(1, 1, [STRING_OBJ], m_Empty));
+end;
+
+function TDirectoryObject.m_Copy(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
+begin
+  try
+    TDirectory.Copy(TStringObject(args[0]).Value, TStringObject(args[1]).Value);
+    Result := TBooleanObject.CreateTrue;
+  except
+    On E:Exception do
+      Result := TErrorObject.Create(E.Message);
+  end;
+end;
+
+function TDirectoryObject.m_Create(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  try
+    TDirectory.CreateDirectory(TStringObject(args[0]).Value);
+    Result := TBooleanObject.CreateTrue;
+  except
+    On E:Exception do
+      Result := TErrorObject.Create(E.Message);
+  end;
+end;
+
+function TDirectoryObject.m_Delete(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  try
+    if (args.Count=2) then
+      TDirectory.Delete(TStringObject(args[0]).Value, TBooleanObject(args[1]).Value)
+    else
+      TDirectory.Delete(TStringObject(args[0]).Value, False);
+    Result := TBooleanObject.CreateTrue;
+  except
+    On E:Exception do
+      Result := TErrorObject.Create(E.Message);
+  end;
+end;
+
+function TDirectoryObject.m_Empty(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TBooleanObject.Create(TDirectory.IsEmpty(TStringObject(args[0]).Value));
+end;
+
+function TDirectoryObject.m_Exists(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TBooleanObject.Create(TDirectory.Exists(TStringObject(args[0]).Value));
+end;
+
+function TDirectoryObject.ObjectType: TEvalObjectType;
+begin
+  Result := DIRECTORY_OBJ;
+end;
+
+{ TFileObject }
+
+function TFileObject.Clone: TEvalObject;
+begin
+  Result := Self;
+end;
+
+constructor TFileObject.Create;
+begin
+  inherited Create;
+end;
+
+destructor TFileObject.Destroy;
+begin
+  inherited;
+end;
+
+function TFileObject.Inspect: string;
+begin
+  Result := 'File$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+procedure TFileObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('Exist', TMethodDescr.Create(1, 2, [STRING_OBJ, BOOLEAN_OBJ], m_Exists));
+  Methods.Add('Copy', TMethodDescr.Create(2, 3, [STRING_OBJ, STRING_OBJ, BOOLEAN_OBJ], m_Copy));
+  Methods.Add('Delete', TMethodDescr.Create(1, 1, [STRING_OBJ], m_Delete));
+  Methods.Add('Create', TMethodDescr.Create(1, 2, [STRING_OBJ, STRING_OBJ], m_Create));
+end;
+
+function TFileObject.m_Copy(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  try
+    if args.Count=3 then
+      TFile.Copy(TStringObject(args[0]).Value, TStringObject(args[1]).Value, TBooleanObject(args[1]).Value)
+    else
+      TFile.Copy(TStringObject(args[0]).Value, TStringObject(args[1]).Value);
+    Result := TBooleanObject.CreateTrue;
+  except
+    On E:Exception do
+      Result := TErrorObject.Create(E.Message);
+  end;
+end;
+
+function TFileObject.m_Create(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  Content:string;
+begin
+  Content := '';
+  try
+    if args.Count=2 then
+    begin
+      Content := TStringObject(args[1]).Value;
+      Content := StringReplace(Content,'\n',#13,[rfReplaceAll]);
+      Content := StringReplace(Content,'\r',#10,[rfReplaceAll]);
+    end;
+
+    TFile.AppendAllText(TStringObject(args[0]).Value, Content);
+    Result := m_Exists(args, env);
+  except
+    On E:Exception do
+      Result := TErrorObject.Create(E.Message);
+  end;
+end;
+
+function TFileObject.m_Delete(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  try
+    TFile.Delete(TStringObject(args[0]).Value);
+    Result := TBooleanObject.CreateTrue;
+  except
+    On E:Exception do
+      Result := TErrorObject.Create(E.Message);
+  end;
+end;
+
+function TFileObject.m_Exists(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TBooleanObject.Create(TFile.Exists(TStringObject(args[0]).Value));
+end;
+
+function TFileObject.ObjectType: TEvalObjectType;
+begin
+  Result := FILE_OBJ;
 end;
 
 initialization
