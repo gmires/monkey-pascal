@@ -630,7 +630,6 @@ var
   pair: TPair<TASTExpression,TASTExpression>;
 begin
   Result := THashObject.Create;
-  THashObject(Result).Pairs := TDictionary<THashkey,THashPair>.create;
 
   for pair in node.Pairs do
   begin
@@ -1141,17 +1140,19 @@ begin
 
     if AObject.ObjectType=ARRAY_OBJ then
     begin
-      for Element in TArrayObject(AObject).Elements do
-        Add(Element);
+      if Assigned(TArrayObject(AObject).Elements) then
+        for Element in TArrayObject(AObject).Elements do
+          Add(Element);
     end
     else
     if AObject.ObjectType=HASH_OBJ then
     begin
-      for HKey in THashObject(AObject).Pairs.Keys do
-      begin
-        Add(THashObject(AObject).Pairs[HKey].Key);
-        Add(THashObject(AObject).Pairs[HKey].Value);
-      end;
+      if Assigned(THashObject(AObject).Pairs) then
+        for HKey in THashObject(AObject).Pairs.Keys do
+        begin
+          Add(THashObject(AObject).Pairs[HKey].Key);
+          Add(THashObject(AObject).Pairs[HKey].Value);
+        end;
     end
     else
     if AObject.ObjectType=RETURN_VALUE_OBJ then
@@ -1208,34 +1209,38 @@ var
 begin
   if Assigned(AObject) then
     if NOT AObject.GcManualFree then
+    begin
       if NOT (AObject.GcMark) then
       begin
         AObject.GcMark := True;
         AObject.MarkChild;
+      end;
 
-        { -- standard object marking -- }
-        if AObject.ObjectType=ARRAY_OBJ then
-        begin
+      { -- standard object marking -- }
+      if AObject.ObjectType=ARRAY_OBJ then
+      begin
+        if Assigned(TArrayObject(AObject).Elements) then
           for Element in TArrayObject(AObject).Elements do
             Mark(Element);
-        end
-        else
-        if AObject.ObjectType=HASH_OBJ then
-        begin
+      end
+      else
+      if AObject.ObjectType=HASH_OBJ then
+      begin
+        if Assigned(THashObject(AObject).Pairs) then
           for HKey in THashObject(AObject).Pairs.Keys do
           begin
             Mark(THashObject(AObject).Pairs[HKey].Key);
             Mark(THashObject(AObject).Pairs[HKey].Value);
           end;
-        end
-        else
-        if AObject.ObjectType=RETURN_VALUE_OBJ then
-          Mark(TReturnValueObject(AObject).Value)
-        else
-        if AObject.ObjectType=CLOSURE_OBJ then
-          Mark(TClosureObject(AObject).Env);
-        { -- standard object marking -- }
-      end;
+      end
+      else
+      if AObject.ObjectType=RETURN_VALUE_OBJ then
+        Mark(TReturnValueObject(AObject).Value)
+      else
+      if AObject.ObjectType=CLOSURE_OBJ then
+        Mark(TClosureObject(AObject).Env);
+      { -- standard object marking -- }
+    end;
 end;
 
 procedure TGarbageCollector.Mark(AEnvironment: TEnvironment);

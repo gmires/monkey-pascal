@@ -76,14 +76,15 @@ type
 
   TIdentifierDescr = class(TObject)
   public
-    IType: string;
+    IType: TArray<string>;
     Getter: TIdentifierGetFunct;
     Setter: TIdentifierSetFunct;
+    IIndexType: TArray<string>;
     ShortDescription:string;
   private
     function GetIsReadOnly: Boolean;
   public
-    constructor Create(AIType: string; AGetter: TIdentifierGetFunct; ASetter: TIdentifierSetFunct=nil; AShortDescription:string='');
+    constructor Create(AIType: TArray<string>; AIIndexType: TArray<string>; AGetter: TIdentifierGetFunct; ASetter: TIdentifierSetFunct=nil; AShortDescription:string='');
     property isReadOnly: Boolean read GetIsReadOnly;
   end;
 
@@ -433,11 +434,35 @@ begin
 end;
 
 function TEvalObject.GetIdentifer(name: string; Index:TEvalObject): TEvalObject;
+
+  function CheckIndexType(i_descr: TIdentifierDescr):TEvalObject;
+  var
+    i:Integer;
+  begin
+    Result := nil;
+    if Assigned(Index) then
+    begin
+      if (Length(i_descr.IIndexType)=0) then
+        Result := TErrorObject.newError('index not supported in identifier "'+name+'" in object type %s',[ObjectType])
+      else
+      begin
+        for i := Low(i_descr.IIndexType) to High(i_descr.IIndexType) do
+          if i_descr.IIndexType[i]=Index.ObjectType then
+            Exit;
+
+        Result := TErrorObject.newError('index Type %s not supported in identifier "'+name+'"',[Index.ObjectType])
+      end;
+    end;
+  end;
+
 begin
   if Identifiers.ContainsKey(name) then
-    Result :=Identifiers[name].Getter(Index)
-  else
-    Result := TErrorObject.newError('identifier "'+name+'" not supported in object type %s',[ObjectType]);
+  begin
+    Result:= CheckIndexType(Identifiers[name]);
+    if (Result=nil) then
+      Result :=Identifiers[name].Getter(Index)
+  end
+  else Result := TErrorObject.newError('identifier "'+name+'" not supported in object type %s',[ObjectType]);
 end;
 
 function TEvalObject.GetIndex(Index: TEvalObject): TEvalObject;
@@ -577,7 +602,18 @@ begin
       S:='Describe identifier '+method+' ---- '#13#10;
       if X.ShortDescription<>'' then
         S:=S+'# '+X.ShortDescription+#13#10;
-      S:=S+' - type = '+X.IType+#13#10;
+      S:=S+' - type = ';
+      for i := 0 to Length(X.IType)-1 do
+        S:=S+X.IType[i]+IfThen(i<Length(X.IType)-1,' or ','');
+      S:=S+#13#10;
+      if Length(X.IIndexType)>0 then
+      begin
+        S:=S+' - indexed = ';
+        for i := 0 to Length(X.IIndexType)-1 do
+          S:=S+X.IIndexType[i]+IfThen(i<Length(X.IIndexType)-1,' or ','');
+        S:=S+#13#10;
+      end;
+
       S:=S+' - readonly = '+IfThen(X.isReadOnly,'yes','no')+#13#10;
 
       Result:= TStringObject.Create(S);
@@ -1449,7 +1485,6 @@ var
   k,v:TEvalObject;
 begin
   Result := THashObject.Create;
-  THashObject(Result).Pairs := TDictionary<THashkey,THashPair>.create;
   for key in Pairs.Keys do
   begin
     k := Pairs[key].Key.Clone;
@@ -1461,6 +1496,7 @@ end;
 constructor THashObject.Create;
 begin
   inherited Create;
+  Pairs :=  TDictionary<THashkey,THashPair>.create;
 end;
 
 function THashObject.CurrentIndex: TEvalObject;
@@ -1716,11 +1752,12 @@ end;
 
 { TIdentifierDescr }
 
-constructor TIdentifierDescr.Create(AIType: string; AGetter: TIdentifierGetFunct; ASetter: TIdentifierSetFunct; AShortDescription: string);
+constructor TIdentifierDescr.Create(AIType: TArray<string>; AIIndexType: TArray<string>; AGetter: TIdentifierGetFunct; ASetter: TIdentifierSetFunct; AShortDescription: string);
 begin
   IType:= AIType;
   Getter:= AGetter;
   Setter:= ASetter;
+  IIndexType:= AIIndexType;
   ShortDescription:=AShortDescription;
 end;
 

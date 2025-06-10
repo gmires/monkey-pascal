@@ -13,6 +13,7 @@ const
 	FILE_SYSTEM_OBJ = 'FILE_SYSTEM';
 	DIRECTORY_OBJ = 'DIRECTORY';
 	FILE_OBJ = 'FILE';
+	PATH_OBJ = 'PATH';
 
 type
   TStringListObject = class(TEvalObject)
@@ -62,6 +63,7 @@ type
     function  m_Delete(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_Copy(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_Empty(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_List(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
     function ObjectType:TEvalObjectType; override;
@@ -88,13 +90,29 @@ type
     destructor Destroy; override;
   end;
 
+  TPathObject = class(TEvalObject)
+  protected
+    function  m_ExtractFileName(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
+  public
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   TSystemObject = class(TEvalObject)
     FDirectory: TDirectoryObject;
     FFile: TFileObject;
+    FPath: TPathObject;
   protected
     function  i_get_pathdelimiter(Index:TEvalObject=nil):TEvalObject;
     function  i_get_directory(Index:TEvalObject=nil):TEvalObject;
     function  i_get_file(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_path(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_args(Index:TEvalObject=nil):TEvalObject;
     procedure IdentifierInit; override;
   public
     function ObjectType:TEvalObjectType; override;
@@ -176,10 +194,10 @@ end;
 procedure TStringListObject.IdentifierInit;
 begin
   inherited;
-  Identifiers.Add('duplicates', TIdentifierDescr.Create(BOOLEAN_OBJ, i_get_duplicates, i_set_duplicates));
-  Identifiers.Add('sorted', TIdentifierDescr.Create(BOOLEAN_OBJ, i_get_sorted, i_set_sorted));
-  Identifiers.Add('casesentitive', TIdentifierDescr.Create(BOOLEAN_OBJ, i_get_casesentitive, i_set_casesentitive));
-  Identifiers.Add('text', TIdentifierDescr.Create(STRING_OBJ, i_get_text, i_set_text));
+  Identifiers.Add('duplicates',TIdentifierDescr.Create([BOOLEAN_OBJ],[], i_get_duplicates, i_set_duplicates));
+  Identifiers.Add('sorted', TIdentifierDescr.Create([BOOLEAN_OBJ],[], i_get_sorted, i_set_sorted));
+  Identifiers.Add('casesentitive', TIdentifierDescr.Create([BOOLEAN_OBJ],[], i_get_casesentitive, i_set_casesentitive));
+  Identifiers.Add('text', TIdentifierDescr.Create([STRING_OBJ],[], i_get_text, i_set_text));
 end;
 
 function TStringListObject.Inspect: string;
@@ -355,10 +373,13 @@ begin
   FDirectory.GcManualFree := GcManualFree;
   FFile:= TFileObject.Create;
   FFile.GcManualFree := GcManualFree;
+  FPath:= TPathObject.Create;
+  FPath.GcManualFree := GcManualFree;
 end;
 
 destructor TSystemObject.Destroy;
 begin
+  FPath.Free;
   FFile.Free;
   FDirectory.Free;
   inherited;
@@ -367,14 +388,36 @@ end;
 procedure TSystemObject.IdentifierInit;
 begin
   inherited;
-  Identifiers.Add('pathDelimiter', TIdentifierDescr.Create(STRING_OBJ, i_get_pathdelimiter));
-  Identifiers.Add('Directory', TIdentifierDescr.Create(DIRECTORY_OBJ, i_get_directory));
-  Identifiers.Add('File', TIdentifierDescr.Create(FILE_OBJ, i_get_file));
+  Identifiers.Add('pathDelimiter', TIdentifierDescr.Create([STRING_OBJ],[], i_get_pathdelimiter));
+  Identifiers.Add('Directory', TIdentifierDescr.Create([DIRECTORY_OBJ],[], i_get_directory));
+  Identifiers.Add('File', TIdentifierDescr.Create([FILE_OBJ],[], i_get_file));
+  Identifiers.Add('args', TIdentifierDescr.Create([ARRAY_OBJ, STRING_OBJ] ,[NUMBER_OBJ], i_get_args));
+  Identifiers.Add('Path', TIdentifierDescr.Create([PATH_OBJ],[], i_get_path));
 end;
 
 function TSystemObject.Inspect: string;
 begin
   Result := 'System$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+function TSystemObject.i_get_args(Index: TEvalObject): TEvalObject;
+var
+  i:Integer;
+begin
+  if Assigned(Index) then
+  begin
+    i := TNumberObject(Index).toInt;
+    if (i>=0) and (i<=ParamCount) then
+      Result := TStringObject.Create(ParamStr(i))
+    else
+      Result := TNullObject.Create;
+  end
+  else
+  begin
+    Result := TArrayObject.CreateWithElements;
+    for i := 0 to ParamCount do
+      TArrayObject(Result).Elements.Add(TStringObject.Create(ParamStr(i)));
+  end;
 end;
 
 function TSystemObject.i_get_directory(Index: TEvalObject): TEvalObject;
@@ -385,6 +428,11 @@ end;
 function TSystemObject.i_get_file(Index: TEvalObject): TEvalObject;
 begin
   Result := FFile;
+end;
+
+function TSystemObject.i_get_path(Index: TEvalObject): TEvalObject;
+begin
+  Result := FPath;
 end;
 
 function TSystemObject.i_get_pathdelimiter(Index: TEvalObject): TEvalObject;
@@ -428,6 +476,7 @@ begin
   Methods.Add('Delete', TMethodDescr.Create(1, 2, [STRING_OBJ, BOOLEAN_OBJ], m_Delete));
   Methods.Add('Copy', TMethodDescr.Create(2, 2, [STRING_OBJ, STRING_OBJ], m_Copy));
   Methods.Add('Empty', TMethodDescr.Create(1, 1, [STRING_OBJ], m_Empty));
+  Methods.Add('List', TMethodDescr.Create(1, 1, [STRING_OBJ], m_List));
 end;
 
 function TDirectoryObject.m_Copy(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
@@ -476,6 +525,27 @@ begin
   Result := TBooleanObject.Create(TDirectory.Exists(TStringObject(args[0]).Value));
 end;
 
+function TDirectoryObject.m_List(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  sr: TSearchRec;
+  H: THashObject;
+begin
+  Result := TArrayObject.CreateWithElements;
+  if SysUtils.FindFirst(TStringObject(args[0]).Value, faAnyFile, sr) = 0 then
+  begin
+    repeat
+      H:=THashObject.Create;
+      // -- set file attribuites --
+      H.SetIdentifer('name', TStringObject.Create(sr.Name));
+      H.SetIdentifer('size', TNumberObject.Create(sr.Size));
+      H.SetIdentifer('type', TStringObject.Create(IfThen((sr.Attr and faDirectory <> 0),'DIR','FILE')));
+      H.SetIdentifer('time', TNumberObject.Create(FileDateToDateTime(sr.Time)));
+      // -- set file attribuites --
+      TArrayObject(Result).Elements.Add(H);
+    until FindNext(sr) <> 0;
+    FindClose(sr);
+  end;
+end;
 function TDirectoryObject.ObjectType: TEvalObjectType;
 begin
   Result := DIRECTORY_OBJ;
@@ -566,6 +636,44 @@ end;
 function TFileObject.ObjectType: TEvalObjectType;
 begin
   Result := FILE_OBJ;
+end;
+
+{ TPathObject }
+
+function TPathObject.Clone: TEvalObject;
+begin
+  Result := Self;
+end;
+
+constructor TPathObject.Create;
+begin
+  inherited Create;
+end;
+
+destructor TPathObject.Destroy;
+begin
+  inherited;
+end;
+
+function TPathObject.Inspect: string;
+begin
+  Result := 'Path$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+procedure TPathObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('ExtractFileName', TMethodDescr.Create(1, 1, [STRING_OBJ], m_ExtractFileName));
+end;
+
+function TPathObject.m_ExtractFileName(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(ExtractFileName(TStringObject(args[0]).Value));
+end;
+
+function TPathObject.ObjectType: TEvalObjectType;
+begin
+  Result := PATH_OBJ;
 end;
 
 initialization
