@@ -201,6 +201,10 @@ type
     function  m_left(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_right(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_split(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_lower(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_upper(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_contains(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_startwith(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
     constructor Create(AValue: string);
@@ -1079,6 +1083,21 @@ begin
   Methods.Add('left', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_left));
   Methods.Add('right', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_right));
   Methods.Add('split', TMethodDescr.Create(0, 1, [STRING_OBJ], m_split));
+  Methods.Add('lower', TMethodDescr.Create(0, 0, [], m_lower));
+  Methods.Add('upper', TMethodDescr.Create(0, 0, [], m_upper));
+  Methods.Add('contains', TMethodDescr.Create(1, 1, [STRING_OBJ], m_contains));
+  Methods.Add('startWith', TMethodDescr.Create(1, 1, [STRING_OBJ], m_startwith));
+end;
+
+function TStringObject.m_contains(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  S:string;
+begin
+  S:= TStringObject(args[0]).Value;
+  if S='' then
+    Result := TBooleanObject.CreateFalse
+  else
+    Result := TBooleanObject.Create(Pos(S,Value)>0);
 end;
 
 function TStringObject.m_copy(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1094,6 +1113,11 @@ end;
 function TStringObject.m_len(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TNumberObject.Create(Length(Value));
+end;
+
+function TStringObject.m_lower(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(LowerCase(Value));
 end;
 
 function TStringObject.m_ltrim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1133,6 +1157,17 @@ begin
   end;
 end;
 
+function TStringObject.m_startwith(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  S:string;
+begin
+  S:= TStringObject(args[0]).Value;
+  if S='' then
+    Result := TBooleanObject.CreateFalse
+  else
+    Result := TBooleanObject.Create(StartsText(S, Value));
+end;
+
 function TStringObject.m_tonumber(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   if args.Count=1 then
@@ -1144,6 +1179,11 @@ end;
 function TStringObject.m_trim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(Trim(Value));
+end;
+
+function TStringObject.m_upper(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(UpperCase(Value));
 end;
 
 function TStringObject.Next: TEvalObject;

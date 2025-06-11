@@ -93,7 +93,12 @@ type
   TPathObject = class(TEvalObject)
   protected
     function  m_ExtractFileName(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_ExtractFileExt(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_Join(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
+  protected
+    function  i_get_pathdelimiter(Index:TEvalObject=nil):TEvalObject;
+    procedure IdentifierInit; override;
   public
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
@@ -108,11 +113,12 @@ type
     FFile: TFileObject;
     FPath: TPathObject;
   protected
-    function  i_get_pathdelimiter(Index:TEvalObject=nil):TEvalObject;
     function  i_get_directory(Index:TEvalObject=nil):TEvalObject;
     function  i_get_file(Index:TEvalObject=nil):TEvalObject;
     function  i_get_path(Index:TEvalObject=nil):TEvalObject;
     function  i_get_args(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_dirname(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_filename(Index:TEvalObject=nil):TEvalObject;
     procedure IdentifierInit; override;
   public
     function ObjectType:TEvalObjectType; override;
@@ -388,11 +394,12 @@ end;
 procedure TSystemObject.IdentifierInit;
 begin
   inherited;
-  Identifiers.Add('pathDelimiter', TIdentifierDescr.Create([STRING_OBJ],[], i_get_pathdelimiter));
   Identifiers.Add('Directory', TIdentifierDescr.Create([DIRECTORY_OBJ],[], i_get_directory));
   Identifiers.Add('File', TIdentifierDescr.Create([FILE_OBJ],[], i_get_file));
-  Identifiers.Add('args', TIdentifierDescr.Create([ARRAY_OBJ, STRING_OBJ] ,[NUMBER_OBJ], i_get_args));
   Identifiers.Add('Path', TIdentifierDescr.Create([PATH_OBJ],[], i_get_path));
+  Identifiers.Add('args', TIdentifierDescr.Create([ARRAY_OBJ, STRING_OBJ] ,[NUMBER_OBJ], i_get_args));
+  Identifiers.Add('dirname', TIdentifierDescr.Create([STRING_OBJ] ,[], i_get_dirname));
+  Identifiers.Add('filename', TIdentifierDescr.Create([STRING_OBJ] ,[], i_get_filename));
 end;
 
 function TSystemObject.Inspect: string;
@@ -425,19 +432,29 @@ begin
   Result := FDirectory;
 end;
 
+function TSystemObject.i_get_dirname(Index: TEvalObject): TEvalObject;
+begin
+  Result := TStringObject.Create(ExcludeTrailingBackslash(ExtractFilePath(ParamStr(0))));
+end;
+
 function TSystemObject.i_get_file(Index: TEvalObject): TEvalObject;
 begin
   Result := FFile;
 end;
 
+function TSystemObject.i_get_filename(Index: TEvalObject): TEvalObject;
+begin
+  if ParamCount>1 then
+    if (LowerCase(RightStr(ParamStr(1),4))='.lpi') then
+     Result := TStringObject.Create(ExcludeTrailingBackslash(ExtractFilePath(ExpandFileName(ParamStr(1)))));
+
+  if Result=nil then
+    Result := i_get_dirname;
+end;
+
 function TSystemObject.i_get_path(Index: TEvalObject): TEvalObject;
 begin
   Result := FPath;
-end;
-
-function TSystemObject.i_get_pathdelimiter(Index: TEvalObject): TEvalObject;
-begin
-  Result := TStringObject.Create(PathDelim);
 end;
 
 function TSystemObject.ObjectType: TEvalObjectType;
@@ -655,20 +672,66 @@ begin
   inherited;
 end;
 
+procedure TPathObject.IdentifierInit;
+begin
+  inherited;
+  Identifiers.Add('delimiter', TIdentifierDescr.Create([STRING_OBJ],[], i_get_pathdelimiter));
+end;
+
 function TPathObject.Inspect: string;
 begin
   Result := 'Path$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+function TPathObject.i_get_pathdelimiter(Index: TEvalObject): TEvalObject;
+begin
+  Result := TStringObject.Create(PathDelim);
 end;
 
 procedure TPathObject.MethodInit;
 begin
   inherited;
   Methods.Add('ExtractFileName', TMethodDescr.Create(1, 1, [STRING_OBJ], m_ExtractFileName));
+  Methods.Add('ExtractFileExt', TMethodDescr.Create(1, 1, [STRING_OBJ], m_ExtractFileExt));
+  Methods.Add('join', TMethodDescr.Create(1, 1, [ARRAY_OBJ], m_Join));
+end;
+
+function TPathObject.m_ExtractFileExt(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(ExtractFileExt(TStringObject(args[0]).Value));
 end;
 
 function TPathObject.m_ExtractFileName(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(ExtractFileName(TStringObject(args[0]).Value));
+end;
+
+function TPathObject.m_Join(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  current:TEvalObject;
+  n_args: TList<TEvalObject>;
+  p_deli: TStringObject;
+begin
+  Result := nil;
+  for current in TArrayObject(args[0]).Elements do
+    if (current.ObjectType<>STRING_OBJ) then
+    begin
+      Result := TErrorObject.newError('Object Type %s not supported in join method, use only %s',[current.ObjectType, STRING_OBJ]);
+      Break;
+    end;
+
+  if (Result=nil) then
+  begin
+    n_args := TList<TEvalObject>.Create;
+    p_deli := TStringObject.Create(PathDelim);
+    try
+      n_args.Add(p_deli);
+      Result := TArrayObject(args[0]).MethodCall('join', n_args, env);
+    finally
+      p_deli.Free;
+      n_args.Free;
+    end;
+  end;
 end;
 
 function TPathObject.ObjectType: TEvalObjectType;
