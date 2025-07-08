@@ -20,6 +20,7 @@ uses
   , lp.evaluator
   , lp.parser
   , lp.lexer
+  , lp.advobject
   , {$IFDEF LPI_D28} System.ImageList {$ELSE} ImgList, System.ImageList {$ENDIF}
   ;
 
