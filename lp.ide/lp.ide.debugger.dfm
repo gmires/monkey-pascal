@@ -13,11 +13,9 @@ object LPIdeDebugger: TLPIdeDebugger
   Font.Style = []
   FormStyle = fsStayOnTop
   KeyPreview = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnClose = FormClose
   OnKeyDown = FormKeyDown
-  PixelsPerInch = 96
   TextHeight = 13
   object Splitter1: TSplitter
     Left = 426
@@ -244,9 +242,6 @@ object LPIdeDebugger: TLPIdeDebugger
     Enabled = False
     ParentBackground = False
     TabOrder = 2
-    ExplicitLeft = 5
-    ExplicitWidth = 231
-    ExplicitHeight = 588
     object Label2: TLabel
       AlignWithMargins = True
       Left = 3
@@ -285,10 +280,6 @@ object LPIdeDebugger: TLPIdeDebugger
       GutterColor = clWindow
       GutterTextColor = clWindowText
       OnDrawArrow = LSourceDrawArrow
-      ExplicitLeft = 128
-      ExplicitTop = 91
-      ExplicitWidth = 1088
-      ExplicitHeight = 449
     end
   end
   object ILDebugger: TImageList
@@ -297,7 +288,7 @@ object LPIdeDebugger: TLPIdeDebugger
     Left = 132
     Top = 113
     Bitmap = {
-      494C01010300C401CC0118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010300C401040018001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000600000001800000001002000000000000024
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

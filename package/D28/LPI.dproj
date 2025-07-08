@@ -51,6 +51,9 @@
         <SanitizedProjectName>LPI</SanitizedProjectName>
         <VerInfo_Locale>1040</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <PostBuildEventCancelOnError>false</PostBuildEventCancelOnError>
+        <PostBuildEvent><![CDATA[copy ..\..\lp.ide\*.dfm ..\..\lib\$(Platform)\$(Config)
+$(PostBuildEvent)]]></PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_UsePackage>vcl;rtl;$(DCC_UsePackage)</DCC_UsePackage>
@@ -90,6 +93,19 @@
         <DCCReference Include="..\..\lp.lib\lp.token.pas"/>
         <DCCReference Include="..\..\lp.lib\lp.utils.pas"/>
         <DCCReference Include="..\..\lp.components\lp.edits.pas"/>
+        <DCCReference Include="..\..\lp.ide\lp.ide.debugger.pas">
+            <Form>LPIdeDebugger</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="..\..\lp.ide\lp.ide.main.pas">
+            <Form>LPIdeMain</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="..\..\lp.ide\lp.ide.module.source.pas">
+            <Form>LPModuleSourceFrame</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -893,4 +909,36 @@
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>
     <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
+    <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win32'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy ..\..\lp.ide\*.dfm ..\..\lib\$(Platform)\$(Config)</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>True</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win64'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy ..\..\lp.ide\*.dfm ..\..\lib\$(Platform)\$(Config)</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>True</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win32'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy ..\..\lp.ide\*.dfm ..\..\lib\$(Platform)\$(Config)</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>True</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win64'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy ..\..\lp.ide\*.dfm ..\..\lib\$(Platform)\$(Config)</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>True</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
 </Project>

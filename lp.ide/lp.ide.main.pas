@@ -5,7 +5,7 @@ interface
 {$I ..\lp.lib\lp.inc}
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Winapi.Windows, Winapi.Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, ToolWin, Menus, ExtCtrls, StdCtrls, lp.edits,  StrUtils
 
   , {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
@@ -19,11 +19,13 @@ uses
   , lp.environment
   , lp.evaluator
   , lp.parser
-  , lp.lexer, {$IFDEF LPI_D28} System.ImageList {$ELSE} ImgList,
-  System.ImageList {$ENDIF}
+  , lp.lexer
+  , {$IFDEF LPI_D28} System.ImageList {$ELSE} ImgList, System.ImageList {$ENDIF}
   ;
 
 type
+  TLPIdeMode = (mStandard, mEmbedded);
+
   TLPIdeMain = class(TForm)
     MMMain: TMainMenu;
     Panel1: TPanel;
@@ -109,8 +111,10 @@ type
     procedure MnuReplaceClick(Sender: TObject);
     procedure FindDialogModuleFind(Sender: TObject);
     procedure ReplaceDialogModuleReplace(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
+    LPIdeMode:TLPIdeMode;
     FSelPos: integer;
     BreakPoints:TStringList;
     CurrentProjectModifed:Boolean;
@@ -126,7 +130,8 @@ type
     procedure NewProject;
     function  RunProject(DebugStetByStep:Boolean=false):Boolean;
     function  CloseProject:Boolean;
-    procedure OpenProject;
+    procedure OpenProject; overload;
+    procedure OpenProject(AProjectName:string; AProjectSource:TMemoryStream); overload;
     function  SaveProject(CurrentProjectPath:string=''):Boolean;
     { -- module -- }
     procedure NewModule(Name,Data: string; Parent:TTreeNode);
@@ -161,11 +166,32 @@ const
     +' '#13
     +'main();';
 
+function LpiOpenEmbeddedIde(AProjectName: string; var AProjectSource:TMemoryStream): Boolean;
+
 implementation
 
 uses lp.utils;
 
 {$R *.dfm}
+
+function LpiOpenEmbeddedIde(AProjectName: string; var AProjectSource:TMemoryStream): Boolean;
+begin
+  With TLPIdeMain.Create(Application) do
+  try
+    CurrentProject := AProjectName;
+    LPIdeMode := mEmbedded;
+    OpenProject(AProjectName, AProjectSource);
+
+    Result := (ShowModal=mrOk);
+    if Result then
+    begin
+      AProjectSource.Free;
+      AProjectSource:= ProjectToStreamCompress;
+    end;
+  finally
+    Free;
+  end;
+end;
 
 procedure TLPIdeMain.AddModule(Name, Data: string);
 var
@@ -340,6 +366,8 @@ end;
 
 procedure TLPIdeMain.FormCreate(Sender: TObject);
 begin
+  LPIdeMode := mStandard;
+
   Screen.MenuFont.Name := 'consolas';
   Screen.MenuFont.Size := 8;
 
@@ -347,6 +375,19 @@ begin
   BreakPoints:=TStringList.Create;
   CloseProject;
   NewProject;
+end;
+
+procedure TLPIdeMain.FormShow(Sender: TObject);
+begin
+  // ***
+  // ** configure embedded lpi ide for integrations
+  // ***
+  tbNewPorject.Visible := (LPIdeMode=mStandard);
+  tbOpenProject.Visible := tbNewPorject.Visible;
+  MnuProjectNew.Visible := tbNewPorject.Visible;
+  MnuProjectOpen.Visible:= tbNewPorject.Visible;
+  N1.Visible:= tbNewPorject.Visible;
+  MnuProjectSaveWithName.Visible:= tbNewPorject.Visible;
 end;
 
 function TLPIdeMain.GetNodeByModuleName(ModuleName: string): TTreeNode;
@@ -570,6 +611,17 @@ begin
     end;
   finally
     Free;
+  end;
+end;
+
+procedure TLPIdeMain.OpenProject(AProjectName:string; AProjectSource: TMemoryStream);
+begin
+  if (AProjectSource.Size>0) then
+  begin
+    CloseProject;
+    StreamToProject(AProjectSource);
+    CurrentProject:=AProjectName;
+    UpdateStatusBar;
   end;
 end;
 
@@ -820,32 +872,40 @@ begin
   Result := True;
   UpdateNodes;
 
-  MS:=ProjectToStreamCompress;
-  if MS.Size>0 then
+  if (LPIdeMode=mEmbedded) then
   begin
-    S:=CurrentProjectPath;
-    if (S='') then
+    CurrentProjectModifed := False;
+    ModalResult := mrOk;
+  end
+  else
+  begin
+    MS:=ProjectToStreamCompress;
+    if MS.Size>0 then
     begin
-      with TSaveDialog.Create(Self) do
-      try
-        if Execute then
-          if FileName<>'' then
-            S:=ChangeFileExt(FileName,'.lpi');
-      finally
-        Free;
+      S:=CurrentProjectPath;
+      if (S='') then
+      begin
+        with TSaveDialog.Create(Self) do
+        try
+          if Execute then
+            if FileName<>'' then
+              S:=ChangeFileExt(FileName,'.lpi');
+        finally
+          Free;
+        end;
+      end;
+
+      Result := (S<>'');
+      if Result then
+      begin
+        MS.SaveToFile(S);
+        CurrentProjectModifed := False;
       end;
     end;
 
-    Result := (S<>'');
-    if Result then
-    begin
-      MS.SaveToFile(S);
-      CurrentProjectModifed := False;
-    end;
+    CurrentProject := S;
+    UpdateStatusBar;
   end;
-
-  CurrentProject := S;
-  UpdateStatusBar;
 end;
 
 procedure TLPIdeMain.SelectNote(Sheet: TTabSheet);

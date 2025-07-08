@@ -3,7 +3,7 @@ unit lp.ide.module.source;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, 
+  Winapi.Windows, Winapi.Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, lp.edits, ExtCtrls;
 
 type

@@ -3,14 +3,14 @@ unit lp.ide.debugger;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Winapi.Windows, Winapi.Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Grids, ValEdit, ExtCtrls, lp.edits, ComCtrls, ToolWin,
   ClipBrd, ImgList, Menus
 
   , lp.environment
   , lp.evaluator
   , lp.lexer
-  , lp.parser
+  , lp.parser, System.ImageList
 
   ;
 

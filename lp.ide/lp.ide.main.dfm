@@ -150,6 +150,7 @@ object LPIdeMain: TLPIdeMain
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
+  OnShow = FormShow
   TextHeight = 13
   object Panel1: TPanel
     Left = 0
