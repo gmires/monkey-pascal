@@ -115,6 +115,9 @@ type
     procedure FormShow(Sender: TObject);
   private
     { Private declarations }
+    SavedFontName: TFontName;
+    SavedFontSize: Integer;
+    //////////////////////
     LPIdeMode:TLPIdeMode;
     FSelPos: integer;
     BreakPoints:TStringList;
@@ -351,6 +354,9 @@ end;
 
 procedure TLPIdeMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  Screen.MenuFont.Name := SavedFontName;
+  Screen.MenuFont.Size := SavedFontSize;
+
   BreakPoints.Free;
 end;
 
@@ -368,6 +374,9 @@ end;
 procedure TLPIdeMain.FormCreate(Sender: TObject);
 begin
   LPIdeMode := mStandard;
+
+  SavedFontName:= Screen.MenuFont.Name;
+  SavedFontSize:= Screen.MenuFont.Size;
 
   Screen.MenuFont.Name := 'consolas';
   Screen.MenuFont.Size := 8;
