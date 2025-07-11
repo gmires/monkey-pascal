@@ -119,11 +119,16 @@ type
     procedure IncRefCount;
     procedure DecRefCount;
   protected
+    function toJSON:TJSONValue; virtual;
+    function toJSONString:TEvalObject; virtual;
+  protected
     Methods: TDictionary<string, TMethodDescr>;
     function  m_tostring(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_type(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_clone(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_help(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_toJSON(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_fromJSON(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; virtual;
   protected
     Identifiers: TDictionary<string, TIdentifierDescr>;
@@ -162,6 +167,8 @@ type
     function Inspect:string; override;
     function Clone:TEvalObject; override;
   protected
+    function toJSON:TJSONValue; override;
+  protected
     function  m_format(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
@@ -175,6 +182,8 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+  protected
+    function toJSON:TJSONValue; override;
   public
     constructor Create(AValue: Boolean);
     constructor CreateTrue;
@@ -194,6 +203,8 @@ type
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
+  protected
+    function toJSON:TJSONValue; override;
   protected
     function  m_tonumber(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_trim(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -303,6 +314,8 @@ type
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
   protected
+    function toJSON:TJSONValue; override;
+  protected
     function  m_size(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_first(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_last(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -345,6 +358,8 @@ type
     function isIterable:Boolean; override;
     function Next:TEvalObject; override;
     function CurrentIndex:TEvalObject; override;
+  protected
+    function toJSON:TJSONValue; override;
   protected
     function  m_size(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_keys(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -517,6 +532,8 @@ end;
 procedure TEvalObject.MethodInit;
 begin
   Methods.Add('tostring', TMethodDescr.Create(0, 0, [], m_tostring));
+  Methods.Add('toJSON', TMethodDescr.Create(0, 0, [], m_toJSON));
+  Methods.Add('fromJSON', TMethodDescr.Create(1, 1, [STRING_OBJ], m_fromJSON));
   Methods.Add('type', TMethodDescr.Create(0, 0, [], m_type));
   Methods.Add('clone', TMethodDescr.Create(0, 0, [], m_clone));
   Methods.Add('help', TMethodDescr.Create(0, 1, [STRING_OBJ], m_help));
@@ -531,6 +548,11 @@ end;
 function TEvalObject.m_clone(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := Clone;
+end;
+
+function TEvalObject.m_fromJSON(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := nil;
 end;
 
 function TEvalObject.m_help(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -629,6 +651,11 @@ begin
   end;
 end;
 
+function TEvalObject.m_toJSON(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := toJSONString;
+end;
+
 function TEvalObject.m_tostring(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(Inspect);
@@ -678,6 +705,25 @@ begin
   Result := TErrorObject.newError('set index not supported in object type %s',[ObjectType]);
 end;
 
+function TEvalObject.toJSON: TJSONValue;
+begin
+  Result := TJSONNull.Create;
+end;
+
+function TEvalObject.toJSONString: TEvalObject;
+var
+  V:TJSONValue;
+begin
+  Result:= nil;
+
+  V:= toJSON;
+  try
+    Result := TStringObject.Create(V.ToJSON);
+  finally
+    V.Free;
+  end;
+end;
+
 { TNumberObject }
 
 function TNumberObject.Clone: TEvalObject;
@@ -717,6 +763,11 @@ begin
   Result := Trunc(Value);
 end;
 
+function TNumberObject.toJSON: TJSONValue;
+begin
+  Result := TJSONNumber.Create(Value);
+end;
+
 { TBooleanObject }
 
 function TBooleanObject.Clone: TEvalObject;
@@ -748,6 +799,11 @@ end;
 function TBooleanObject.ObjectType: TEvalObjectType;
 begin
   Result := BOOLEAN_OBJ;
+end;
+
+function TBooleanObject.toJSON: TJSONValue;
+begin
+  Result := TJSONBool.Create(Value);
 end;
 
 { TReturnValueObject }
@@ -1227,6 +1283,11 @@ begin
   end;
 end;
 
+function TStringObject.toJSON: TJSONValue;
+begin
+  Result := TJSONString.Create(Value);
+end;
+
 { TBuiltinObject }
 
 function TBuiltinObject.Clone: TEvalObject;
@@ -1452,6 +1513,15 @@ begin
       Result := Self;
     end;
   end;
+end;
+
+function TArrayObject.toJSON: TJSONValue;
+var
+  E:TEvalObject;
+begin
+  Result := TJSONArray.Create;
+  for E in Elements do
+    TJSONArray(Result).AddElement(E.toJSON);
 end;
 
 { THashkey }
@@ -1728,6 +1798,16 @@ begin
   else Pairs.Add(HK,THashPair.Create(Index, Value));
 
   Result := Self;
+end;
+
+function THashObject.toJSON: TJSONValue;
+var
+  k:THashkey;
+begin
+  Result := TJSONObject.Create;
+  for k in Pairs.Keys do
+    if K.ObjectType=STRING_OBJ then
+      TJSONObject(Result).AddPair(k.FValueStr, Pairs[k].Value.toJSON);
 end;
 
 { TLoopObject }
