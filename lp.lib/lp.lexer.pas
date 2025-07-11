@@ -281,13 +281,77 @@ begin
 end;
 
 function TLexer.ReadString: string;
+const
+  SPECIAL_CHAR = '\';
+
+  function specialchar: Boolean;
+  begin
+    Result := (ch=SPECIAL_CHAR);
+    if Result then
+    begin
+      ReadChar;
+      ReadChar;
+    end;
+  end;
+
+  function CompileString(AValue:string):string;
+  var
+    i,y:Integer;
+    x:char;
+
+    function GetValueChar(InHex:Boolean=false):Char;
+    const
+      CharSet: Array[Boolean] of TSysCharSet = (['0'..'9'], ['0'..'9','a'..'f','A'..'F']);
+      MaxJ: Array[Boolean] of byte = (3,2);
+    var
+      j:Integer;
+      S:string;
+    begin
+      j:=0;
+      while CharInSet(AValue[i+j+1], CharSet[InHex]) and (j<MaxJ[InHex]) do inc(j);
+      S:=Copy(AValue, i+1, j);
+      if InHex then S:='$'+S;
+      Result := Char(StrToIntDef(S, 0));
+      if Result=#0 then Result := ' ';
+      Inc(i, j);
+    end;
+
+  begin
+    Result := '';
+    i:=1;
+    while (i<=Length(AValue)) do
+    begin
+      x := AValue[i];
+      if (x=SPECIAL_CHAR) and (i<Length(AValue)) then
+      begin
+        Inc(i);
+        case AValue[i] of
+          'a': x := #$07;
+          'b': x := #$08;
+          'e': x := #$1b;
+          'f': x := #$0C;
+          'n': x := #$0A;
+          'r': x := #$0D;
+          't': x := #$09;
+          'v': x := #$0B;
+          'x','i': x := GetValueChar(AValue[i]='x');
+        else
+          x := AValue[i];
+        end;
+      end;
+
+      Result := Result + x;
+      Inc(i);
+    end;
+  end;
+
 var
   CurrentPos:Integer;
 begin
   CurrentPos := Position;
-  while NOT CharInSet(ch, ['"', #0]) do ReadChar;
-
+  while specialchar or NOT CharInSet(ch, ['"', #0]) do ReadChar;
 	Result := Copy(Input, CurrentPos, Position-CurrentPos);
+  Result := CompileString(Result);
 end;
 
 procedure TLexer.SkipComment;

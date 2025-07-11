@@ -2,7 +2,10 @@ unit lp.environment;
 
 interface
 
+{$I lp.inc}
+
 uses classes, SysUtils, Generics.Collections, Variants, StrUtils
+  ,{$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
   ,lp.parser
   ,lp.utils;
 
