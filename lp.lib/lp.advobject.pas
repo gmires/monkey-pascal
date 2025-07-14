@@ -135,6 +135,7 @@ type
   protected
     function  m_stringify(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_parse(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_validate(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
     function ObjectType:TEvalObjectType; override;
@@ -794,6 +795,7 @@ begin
   inherited;
   Methods.Add('stringify', TMethodDescr.Create(1, 1, [ALL_OBJ], m_stringify,'return string json rappresentation of objects.'));
   Methods.Add('parse', TMethodDescr.Create(1, 1, [STRING_OBJ], m_parse,'return object rappresentation of json string.'));
+  Methods.Add('validate', TMethodDescr.Create(1, 1, [STRING_OBJ], m_validate,'validate json string rappresentation.'));
 end;
 
 function JSONInnerParse(O:TJSONValue):TEvalObject;
@@ -848,6 +850,18 @@ end;
 function TJSONLIBObject.m_stringify(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := args[0].toJSONString;
+end;
+
+function TJSONLIBObject.m_validate(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
+var
+  O:TJSONValue;
+begin
+  O:=TJSONObject.ParseJSONValue(TStringObject(args[0]).Value);
+  try
+     Result := TBooleanObject.Create(Assigned(O));
+  finally
+    if Assigned(O) then O.Free;
+  end;
 end;
 
 function TJSONLIBObject.ObjectType: TEvalObjectType;
