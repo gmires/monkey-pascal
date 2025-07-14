@@ -5,6 +5,7 @@ interface
 {$I lp.inc}
 
 uses classes, SysUtils, Generics.Collections, Variants, StrUtils, System.IOUtils
+  ,{$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
   , lp.environment
   , lp.evaluator;
 
@@ -14,6 +15,7 @@ const
 	DIRECTORY_OBJ = 'DIRECTORY';
 	FILE_OBJ = 'FILE';
 	PATH_OBJ = 'PATH';
+	JSON_OBJ = 'JSON';
 
 type
   TStringListObject = class(TEvalObject)
@@ -129,8 +131,23 @@ type
     destructor Destroy; override;
   end;
 
+  TJSONLIBObject = class(TEvalObject)
+  protected
+    function  m_stringify(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_parse(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    procedure MethodInit; override;
+  public
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
 var
   FileSystemObject:TSystemObject = nil;
+  JSONLIBObject:TJSONLIBObject = nil;
 
 implementation
 
@@ -147,10 +164,19 @@ begin
   Result := FileSystemObject;
 end;
 
+function _JSONLIBConstructor(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
+begin
+  if NOT Assigned(JSONLIBObject) then
+    JSONLIBObject := TJSONLIBObject.Create;
+
+  Result := JSONLIBObject;
+end;
+
 procedure init;
 begin
   builtins.Add('StringList', TBuiltinObject.Create(_StringListConstructor));
   builtins.Add('System', TBuiltinObject.Create(_SystemConstructor));
+  builtins.Add('JSON', TBuiltinObject.Create(_JSONLIBConstructor));
 end;
 
 procedure deinit;
@@ -737,6 +763,96 @@ end;
 function TPathObject.ObjectType: TEvalObjectType;
 begin
   Result := PATH_OBJ;
+end;
+
+{ TJSONLIBObject }
+
+function TJSONLIBObject.Clone: TEvalObject;
+begin
+  Result := Self;
+end;
+
+constructor TJSONLIBObject.Create;
+begin
+  inherited Create;
+  GcManualFree := True;
+end;
+
+destructor TJSONLIBObject.Destroy;
+begin
+
+  inherited;
+end;
+
+function TJSONLIBObject.Inspect: string;
+begin
+  Result := 'Json$'+ IntToHex(Integer(Pointer(Self)), 6);
+end;
+
+procedure TJSONLIBObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('stringify', TMethodDescr.Create(1, 1, [ALL_OBJ], m_stringify,'return string json rappresentation of objects.'));
+  Methods.Add('parse', TMethodDescr.Create(1, 1, [STRING_OBJ], m_parse,'return object rappresentation of json string.'));
+end;
+
+function JSONInnerParse(O:TJSONValue):TEvalObject;
+var
+  i:Integer;
+begin
+  Result := nil;
+  if O is TJSONNumber then
+    Result := TNumberObject.Create(TJSONNumber(O).AsDouble)
+  else
+  if O is TJSONBool then
+    Result := TBooleanObject.Create(TJSONBool(O).AsBoolean)
+  else
+  if O is TJSONNull then
+    Result := TNullObject.Create
+  else
+  if O is TJSONString then
+    Result := TStringObject.Create(TJSONString(O).Value)
+  else
+  if O is TJSONObject then
+  begin
+    Result := THashObject.Create;
+    for i := 0 to TJSONObject(O).Count-1 do
+      THashObject(Result).SetIdentifer(TJSONObject(O).Get(i).JsonString.Value, JSONInnerParse(TJSONObject(O).Get(i).JsonValue));
+  end
+  else
+  if O is TJSONArray then
+  begin
+    Result := TArrayObject.CreateWithElements;
+    for i := 0 to TJSONArray(O).Size-1 do
+      TArrayObject(Result).Elements.Add(JSONInnerParse(TJSONArray(O).Get(i)));
+  end;
+
+  if (Result=nil) then Result := TNullObject.Create;
+end;
+
+function TJSONLIBObject.m_parse(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
+var
+  O:TJSONValue;
+begin
+  O:=TJSONObject.ParseJSONValue(TStringObject(args[0]).Value);
+  try
+    if Assigned(O) then
+      Result := JSONInnerParse(O)
+    else
+      Result := TNullObject.Create;
+  finally
+    if Assigned(O) then O.Free;
+  end;
+end;
+
+function TJSONLIBObject.m_stringify(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := args[0].toJSONString;
+end;
+
+function TJSONLIBObject.ObjectType: TEvalObjectType;
+begin
+  Result := JSON_OBJ;
 end;
 
 initialization

@@ -118,7 +118,7 @@ type
 
     procedure IncRefCount;
     procedure DecRefCount;
-  protected
+
     function toJSON:TJSONValue; virtual;
     function toJSONString:TEvalObject; virtual;
   protected

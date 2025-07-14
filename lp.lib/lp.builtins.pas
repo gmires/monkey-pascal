@@ -16,6 +16,8 @@ procedure WaitForAnyKeyPressed(const TextMessage: string='');
 
 implementation
 
+uses lp.advobject;
+
 procedure WaitForKeyPressed(KeyCode: Word; const TextMessage: string);
 var
   Handle: THandle;
@@ -97,6 +99,7 @@ const
     +' const PI = 3.141592653589793; '
     +' const E = 2.718281828459045; '
     +' const System = System(); '
+    +' const JSON = JSON(); '
     +' '
     +' function ARRAY.empty = fn(){ '
     +'   return self.size()==0; '
