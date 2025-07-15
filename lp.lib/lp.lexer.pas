@@ -19,7 +19,7 @@ type
     procedure ReadChar;
     function  PeekChar:Char;
     procedure SkipWhiteSpace;
-    procedure SkipComment;
+    function  SkipComment:Boolean;
     function  ReadNumber: string;
     function  ReadIdentifier: string;
     function  ReadString: string;
@@ -57,8 +57,7 @@ function TLexer.NextToken: TToken;
 begin
   Result := nil;
   SkipWhiteSpace;
-  SkipComment;
-  SkipWhiteSpace;
+  while SkipComment do SkipWhiteSpace;
   case ch of
      #0 : Result := TToken.create(ttEOF, '', Line, Coln, Module);
     '+' :
@@ -354,9 +353,10 @@ begin
   Result := CompileString(Result);
 end;
 
-procedure TLexer.SkipComment;
+function TLexer.SkipComment:Boolean;
 begin
-  if ((ch='/') and (PeekChar='*')) then
+  Result := ((ch='/') and (PeekChar='*'));
+  if Result then
   begin
      while NOT ((ch='*') and (PeekChar='/')) do ReadChar;
      ReadChar;

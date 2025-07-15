@@ -1029,6 +1029,8 @@ begin
     begin
       FStore[name].GcRefCount := 0;
       FStore[name].GcMark := False;
+      Result.GcManualFree := FStore[name].GcManualFree;
+      FStore[name].GcManualFree := False;
       FStore[name] := Result;
     end
     else Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
@@ -1056,6 +1058,8 @@ begin
     begin
       FStore[name].GcRefCount := 0;
       FStore[name].GcMark := False;
+      FStore[name].GcManualFree := False;
+      Result.GcManualFree:= FStore[name].GcManualFree;
       FStore[name] := Result
     end
     else Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
@@ -1509,6 +1513,8 @@ begin
       Exit( TErrorObject.newError('unusable index for array: %s', [TNumberObject(Index).Inspect]))
     else
     begin
+      Value.GcManualFree:= Elements[TNumberObject(Index).toInt].GcManualFree;
+      Elements[TNumberObject(Index).toInt].GcManualFree := False;
       Elements[TNumberObject(Index).toInt] := Value;
       Result := Self;
     end;
@@ -1771,6 +1777,8 @@ begin
 
   if Pairs.ContainsKey(HK) then
   begin
+    Value.GcManualFree := Pairs[HK].Value.GcManualFree;
+    Pairs[HK].Value.GcManualFree := false;
     Pairs[HK].Value := Value;
     FreeAndNil(HK);
   end
@@ -1792,6 +1800,8 @@ begin
 
   if Pairs.ContainsKey(HK) then
   begin
+    Value.GcManualFree := Pairs[HK].Value.GcManualFree;
+    Pairs[HK].Value.GcManualFree := false;
     Pairs[HK].Value := Value;
     FreeAndNil(HK);
   end
