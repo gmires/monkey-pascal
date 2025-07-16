@@ -44,6 +44,7 @@ type
     function evalPostfixExpression(Op:string; left:TEvalObject):TEvalObject;
     function evalIntegerInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
     function evalStringInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+    function evalDateTimeInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
     function evalBooleanInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
     function evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
     function evalIfExpression(node:TASTIfExpression; env :TEnvironment):TEvalObject;
@@ -463,6 +464,28 @@ begin
     Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
 end;
 
+function TEvaluator.evalDateTimeInfixExpression(Op: string; left, right: TEvalObject): TEvalObject;
+var
+  LVal,
+  RVal:TDateTime;
+begin
+  LVal:= TDateTimeObject(left).Value;
+  RVal:= TDateTimeObject(right).Value;
+  if Op='<'  then Result:= nativeBoolToBooleanObject(LVal < RVal)
+  else
+  if Op='<=' then Result:= nativeBoolToBooleanObject(LVal <= RVal)
+  else
+  if Op='>'  then Result:= nativeBoolToBooleanObject(LVal > RVal)
+  else
+  if Op='>=' then Result:= nativeBoolToBooleanObject(LVal >= RVal)
+  else
+  if Op='==' then Result:= nativeBoolToBooleanObject(LVal = RVal)
+  else
+  if Op='!=' then Result:= nativeBoolToBooleanObject(LVal <> RVal)
+  else
+    Result := TErrorObject.newError('unknown operator: %s %s %s', [left.ObjectType, Op, right.ObjectType])
+end;
+
 function TEvaluator.evalInfixExpression(Op:string; left, right: TEvalObject):TEvalObject;
 begin
   if ((left.ObjectType=NUMBER_OBJ) and (right.ObjectType=NUMBER_OBJ)) then
@@ -473,6 +496,9 @@ begin
   else
   if ((left.ObjectType=BOOLEAN_OBJ) and (right.ObjectType=BOOLEAN_OBJ)) then
     Result := evalBooleanInfixExpression(Op, left, right)
+  else
+  if ((left.ObjectType=DATETIME_OBJ) and (right.ObjectType=DATETIME_OBJ)) then
+    Result := evalDateTimeInfixExpression(Op, left, right)
   else
   if (Op='==') then
     Result := nativeBoolToBooleanObject(left = right)

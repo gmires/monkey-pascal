@@ -4,7 +4,7 @@ interface
 
 {$I lp.inc}
 
-uses classes, SysUtils, Generics.Collections, Variants, StrUtils
+uses classes, SysUtils, Generics.Collections, Variants, StrUtils, DateUtils
   ,{$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
   ,lp.parser
   ,lp.utils;
@@ -24,6 +24,7 @@ const
 	HASH_OBJ         = 'HASH';
 	LOOP_OBJ         = 'LOOP';
 	CLOSURE_OBJ      = 'CLOSURE';
+	DATETIME_OBJ     = 'DATETIME';
 
 const
   LOOP_TYPE_BREAK  = 'break';
@@ -128,7 +129,6 @@ type
     function  m_clone(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_help(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_toJSON(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
-    function  m_fromJSON(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; virtual;
   protected
     Identifiers: TDictionary<string, TIdentifierDescr>;
@@ -219,6 +219,7 @@ type
     function  m_upper(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_contains(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_startwith(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_empty(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
     constructor Create(AValue: string);
@@ -369,6 +370,56 @@ type
     constructor Create;
     destructor Destroy; override;
   end;
+
+  TDateTimeObject = class(TEvalObject)
+  public
+    Value: TDateTime;
+    function ObjectType:TEvalObjectType; override;
+    function Inspect:string; override;
+    function Clone:TEvalObject; override;
+  protected
+    function toJSON:TJSONValue; override;
+  protected
+    function  i_get_date(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_year(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_month(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_day(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_hour(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_minute(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_second(Index:TEvalObject=nil):TEvalObject;
+    function  i_get_millisecond(Index:TEvalObject=nil):TEvalObject;
+    procedure IdentifierInit; override;
+  protected
+    function  m_valid(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_encode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_decode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
+    function  m_years_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_months_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_weeks_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_days_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_hours_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_minutes_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_seconds_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_milliseconds_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
+    function  m_years_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_months_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_weeks_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_days_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_hours_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_minutes_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_seconds_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_milliseconds_add(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
+    procedure MethodInit; override;
+  public
+    constructor Create; overload;
+    constructor Create(AValue:TDateTime); overload;
+    destructor Destroy; override;
+  end;
+
+function ArgumentValidate(args: TList<TEvalObject>; ArgMin, ArgMax: Integer; ArgType: array of string):TEvalObject;
 
 implementation
 
@@ -533,7 +584,6 @@ procedure TEvalObject.MethodInit;
 begin
   Methods.Add('tostring', TMethodDescr.Create(0, 0, [], m_tostring));
   Methods.Add('toJSON', TMethodDescr.Create(0, 0, [], m_toJSON));
-  Methods.Add('fromJSON', TMethodDescr.Create(1, 1, [STRING_OBJ], m_fromJSON));
   Methods.Add('type', TMethodDescr.Create(0, 0, [], m_type));
   Methods.Add('clone', TMethodDescr.Create(0, 0, [], m_clone));
   Methods.Add('help', TMethodDescr.Create(0, 1, [STRING_OBJ], m_help));
@@ -548,11 +598,6 @@ end;
 function TEvalObject.m_clone(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := Clone;
-end;
-
-function TEvalObject.m_fromJSON(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
-begin
-  Result := nil;
 end;
 
 function TEvalObject.m_help(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1027,11 +1072,14 @@ begin
   begin
     if FConst.IndexOf(name)<0 then
     begin
-      FStore[name].GcRefCount := 0;
-      FStore[name].GcMark := False;
-      Result.GcManualFree := FStore[name].GcManualFree;
-      FStore[name].GcManualFree := False;
-      FStore[name] := Result;
+      if (FStore[name]<>value) then
+      begin
+        FStore[name].GcRefCount := 0;
+        FStore[name].GcMark := False;
+        Result.GcManualFree := FStore[name].GcManualFree;
+        FStore[name].GcManualFree := False;
+        FStore[name] := Result;
+      end;
     end
     else Result := TErrorObject.newError('identifier : %s is const, READONLY value',[name]);
   end
@@ -1056,11 +1104,14 @@ begin
   begin
     if FConst.IndexOf(name)<0 then
     begin
-      FStore[name].GcRefCount := 0;
-      FStore[name].GcMark := False;
-      FStore[name].GcManualFree := False;
-      Result.GcManualFree:= FStore[name].GcManualFree;
-      FStore[name] := Result
+      if (FStore[name]<>value) then
+      begin
+        FStore[name].GcRefCount := 0;
+        FStore[name].GcMark := False;
+        FStore[name].GcManualFree := False;
+        Result.GcManualFree:= FStore[name].GcManualFree;
+        FStore[name] := Result
+      end;
     end
     else Result := TErrorObject.newError('identifier : %s is const, not modifier value',[name]);
   end
@@ -1150,6 +1201,7 @@ begin
   Methods.Add('upper', TMethodDescr.Create(0, 0, [], m_upper));
   Methods.Add('contains', TMethodDescr.Create(1, 1, [STRING_OBJ], m_contains));
   Methods.Add('startWith', TMethodDescr.Create(1, 1, [STRING_OBJ], m_startwith));
+  Methods.Add('empty', TMethodDescr.Create(0, 0, [], m_empty));
 end;
 
 function TStringObject.m_contains(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1166,6 +1218,11 @@ end;
 function TStringObject.m_copy(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(Copy(Value,TNumberObject(args[0]).toInt,TNumberObject(args[1]).toInt));
+end;
+
+function TStringObject.m_empty(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TBooleanObject.Create(Length(Value)=0);
 end;
 
 function TStringObject.m_left(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1897,6 +1954,259 @@ end;
 function TIdentifierDescr.GetIsReadOnly: Boolean;
 begin
   Result := NOT Assigned(Setter);
+end;
+
+{ TDateTimeObject }
+
+function TDateTimeObject.Clone: TEvalObject;
+begin
+  Result := TDateTimeObject.Create(Value);
+end;
+
+constructor TDateTimeObject.Create;
+begin
+  inherited Create;
+  Value := Now;
+end;
+
+constructor TDateTimeObject.Create(AValue: TDateTime);
+begin
+  Create;
+  Value := AValue;
+end;
+
+destructor TDateTimeObject.Destroy;
+begin
+
+  inherited;
+end;
+
+procedure TDateTimeObject.IdentifierInit;
+begin
+  inherited;
+  Identifiers.Add('date', TIdentifierDescr.Create([DATETIME_OBJ],[], i_get_date, nil,'return only date part of datetime object'));
+  Identifiers.Add('year', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_year, nil,'return Year of datetime object'));
+  Identifiers.Add('month', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_month, nil,'return Month of datetime object'));
+  Identifiers.Add('day', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_day, nil,'return Day of datetime object'));
+  Identifiers.Add('hour', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_hour, nil,'return Hour of datetime object'));
+  Identifiers.Add('minute', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_minute, nil,'return Minute of datetime object'));
+  Identifiers.Add('second', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_second, nil,'return Second of datetime object'));
+  Identifiers.Add('millisec', TIdentifierDescr.Create([NUMBER_OBJ],[], i_get_millisecond, nil,'return Millisecond of datetime object'));
+end;
+
+function TDateTimeObject.Inspect: string;
+begin
+  Result := DateToStr(Value);
+end;
+
+function TDateTimeObject.i_get_date(Index: TEvalObject): TEvalObject;
+begin
+  Result := TDateTimeObject.Create(Trunc(Value));
+end;
+
+function TDateTimeObject.i_get_day(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(DayOf(Value));
+end;
+
+function TDateTimeObject.i_get_hour(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(HourOf(Value));
+end;
+
+function TDateTimeObject.i_get_millisecond(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(MilliSecondOf(Value));
+end;
+
+function TDateTimeObject.i_get_minute(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(MinuteOf(Value));
+end;
+
+function TDateTimeObject.i_get_month(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(MonthOf(Value));
+end;
+
+function TDateTimeObject.i_get_second(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(SecondOf(Value));
+end;
+
+function TDateTimeObject.i_get_year(Index: TEvalObject): TEvalObject;
+begin
+  Result := TNumberObject.Create(YearOf(Value));
+end;
+
+procedure TDateTimeObject.MethodInit;
+begin
+  inherited;
+  Methods.Add('valid', TMethodDescr.Create(0, 0, [], m_valid,'return is a valid date time object.'));
+  Methods.Add('encode', TMethodDescr.Create(3, 7, [NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ ], m_encode,'Date from min Year, Month, Day (optional hour, min, sec, millis), return is valid'));
+  Methods.Add('decode', TMethodDescr.Create(0, 0, [], m_decode,'return an array on numbers [Year, Month, Day, Hour, Minute, Second, Millisecond]'));
+
+  Methods.Add('yearsBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_years_between,'return Years between passed date time object.'));
+  Methods.Add('monthsBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_months_between,'return Months between passed date time object.'));
+  Methods.Add('weeksBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_weeks_between,'return Weeks between passed date time object.'));
+  Methods.Add('daysBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_days_between,'return Days between passed date time object.'));
+  Methods.Add('hoursBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_hours_between,'return Hours between passed date time object.'));
+  Methods.Add('minutesBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_minutes_between,'return Minutes between passed date time object.'));
+  Methods.Add('secondsBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_seconds_between,'return Seconds between passed date time object.'));
+  Methods.Add('millisBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_milliseconds_between,'return MilliSeconds between passed date time object.'));
+
+  Methods.Add('addYears', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_years_add,'add Years to date time object.'));
+  Methods.Add('addMonths', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_months_add,'add Months to date time object.'));
+  Methods.Add('addWeeks', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_weeks_add,'add Weeks to date time object.'));
+  Methods.Add('addDays', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_days_add,'add Days to date time object.'));
+  Methods.Add('addHours', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_hours_add,'add Hours to date time object.'));
+  Methods.Add('addMinutes', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_minutes_add,'add Minutes to passed date time object.'));
+  Methods.Add('addSeconds', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_seconds_add,'add Seconds to passed date time object.'));
+  Methods.Add('addMillis', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_milliseconds_add,'add MilliSeconds to date time object.'));
+end;
+
+function TDateTimeObject.m_days_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncDay(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_days_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(DaysBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_decode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  AYear, AMonth, ADay,
+  AHour, AMinute, ASecond, AMilliSecond: Word;
+begin
+  DecodeDateTime(Value
+    , AYear, AMonth, ADay
+    , AHour, AMinute, ASecond, AMilliSecond);
+  Result := TArrayObject.CreateWithElements;
+
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(AYear));
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(AMonth));
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(ADay));
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(AHour));
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(AMinute));
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(ASecond));
+  TArrayObject(Result).Elements.Add(TNumberObject.Create(AMilliSecond));
+end;
+
+function TDateTimeObject.m_encode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+const
+  DP_SIZE = 7;
+var
+  DPart: Array[0..DP_SIZE-1] of Word;
+  i:Integer;
+begin
+  for i := 0 to DP_SIZE-1 do DPart[i] := 0;
+  for i := 0 to args.Count-1 do DPart[i] := TNumberObject(args[i]).toInt;
+
+  Result := TBooleanObject.Create(IsValidDateTime(DPart[0],DPart[1],DPart[2],DPart[3],DPart[4],DPart[5],DPart[6]));
+  if TBooleanObject(Result).Value then
+    Value := EncodeDateTime(DPart[0],DPart[1],DPart[2],DPart[3],DPart[4],DPart[5],DPart[6]);
+end;
+
+function TDateTimeObject.m_hours_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncHour(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_hours_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(HoursBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_milliseconds_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncMilliSecond(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_milliseconds_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(MilliSecondsBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_minutes_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncMinute(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_minutes_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(MinutesBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_months_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncMonth(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_months_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(MonthsBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_seconds_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncSecond(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_seconds_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(SecondsBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_valid(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  AYear, AMonth, ADay,
+  AHour, AMinute, ASecond, AMilliSecond: Word;
+begin
+  DecodeDateTime(Value
+    , AYear, AMonth, ADay
+    , AHour, AMinute, ASecond, AMilliSecond);
+
+  Result := TBooleanObject.Create(IsValidDateTime(AYear, AMonth, ADay, AHour, AMinute, ASecond, AMilliSecond));
+end;
+
+function TDateTimeObject.m_weeks_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncWeek(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_weeks_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(WeeksBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.m_years_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Value := IncYear(Value, TNumberObject(args[0]).toInt);
+  Result:= Self;
+end;
+
+function TDateTimeObject.m_years_between(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(YearsBetween(Value, TDateTimeObject(args[0]).Value));
+end;
+
+function TDateTimeObject.ObjectType: TEvalObjectType;
+begin
+  Result := DATETIME_OBJ;
+end;
+
+function TDateTimeObject.toJSON: TJSONValue;
+begin
+  Result := TJSONString.Create(DateToISO8601(Value));
 end;
 
 end.

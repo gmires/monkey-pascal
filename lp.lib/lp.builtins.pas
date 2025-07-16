@@ -4,7 +4,7 @@ interface
 
 {$I lp.inc}
 
-uses  classes, SysUtils, Generics.Collections, Variants, StrUtils
+uses  classes, SysUtils, Generics.Collections, Variants, StrUtils, DateUtils
   , {$IFDEF LPI_D28} Winapi.Windows {$ELSE} Windows {$ENDIF}
   , lp.utils
   , lp.lexer
@@ -17,6 +17,22 @@ procedure WaitForAnyKeyPressed(const TextMessage: string='');
 implementation
 
 uses lp.advobject;
+
+/////////////////////////////
+// base object constructor
+//////////
+function _DateTimeConstructor(env:TEnvironment; args: TList<TEvalObject>): TEvalObject;
+begin
+  Result := ArgumentValidate(args, 0, 1, [STRING_OBJ]);
+  if (Result=nil) then
+  begin
+    Result := TDateTimeObject.Create;
+    if ((args.Count=1) and (args[0].ObjectType=STRING_OBJ)) then
+      TDateTimeObject(Result).Value := ISO8601ToDate(TStringObject(args[0]).Value);
+  end;
+end;
+////
+////////////////////////////
 
 procedure WaitForKeyPressed(KeyCode: Word; const TextMessage: string);
 var
@@ -184,6 +200,7 @@ begin
   builtins.Add('println', TBuiltinObject.Create(_PrintLn));
   builtins.Add('readln', TBuiltinObject.Create(_ReadLn));
   builtins.Add('wait', TBuiltinObject.Create(_Wait));
+  builtins.Add('Datetime', TBuiltinObject.Create(_DateTimeConstructor));
 
   for i := Low(MODULES) to High(MODULES) do
   begin
