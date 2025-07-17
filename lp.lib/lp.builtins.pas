@@ -13,6 +13,7 @@ uses  classes, SysUtils, Generics.Collections, Variants, StrUtils, DateUtils
   , lp.evaluator;
 
 procedure WaitForAnyKeyPressed(const TextMessage: string='');
+procedure BuiltedModuleAdd(ModuleName, ModuleSource:string);
 
 implementation
 
@@ -33,6 +34,27 @@ begin
 end;
 ////
 ////////////////////////////
+
+procedure BuiltedModuleAdd(ModuleName, ModuleSource:string);
+var
+  L:TLexer;
+  P:TParser;
+begin
+  if NOT builtedmodules.ContainsKey(ModuleName) then
+  begin
+    L:=TLexer.Create(ModuleSource, ModuleName);
+    try
+      P := TParser.Create(L);
+      try
+        builtedmodules.Add(ModuleName, P.ParseProgram);
+      finally
+        P.Free;
+      end;
+    finally
+      L.Free;
+    end;
+  end;
+end;
 
 procedure WaitForKeyPressed(KeyCode: Word; const TextMessage: string);
 var
@@ -203,19 +225,7 @@ begin
   builtins.Add('Datetime', TBuiltinObject.Create(_DateTimeConstructor));
 
   for i := Low(MODULES) to High(MODULES) do
-  begin
-    L:=TLexer.Create(MODULES[i][1],MODULES[i][0]);
-    try
-      P := TParser.Create(L);
-      try
-        builtedmodules.Add(MODULES[i][0], P.ParseProgram);
-      finally
-        P.Free;
-      end;
-    finally
-      L.Free;
-    end;
-  end;
+    BuiltedModuleAdd(MODULES[i][0], MODULES[i][1]);
 end;
 
 initialization

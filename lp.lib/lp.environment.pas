@@ -5,9 +5,11 @@ interface
 {$I lp.inc}
 
 uses classes, SysUtils, Generics.Collections, Variants, StrUtils, DateUtils
+  ,System.NetEncoding
   ,{$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
   ,lp.parser
-  ,lp.utils;
+  ,lp.utils
+  ,lp.base64;
 
 
 const
@@ -220,6 +222,15 @@ type
     function  m_contains(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_startwith(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_empty(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_to_base64(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_from_base64(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
+    function  m_url_encode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_url_decode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
+    function  m_html_encode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_html_decode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
     procedure MethodInit; override;
   public
     constructor Create(AValue: string);
@@ -1202,6 +1213,12 @@ begin
   Methods.Add('contains', TMethodDescr.Create(1, 1, [STRING_OBJ], m_contains));
   Methods.Add('startWith', TMethodDescr.Create(1, 1, [STRING_OBJ], m_startwith));
   Methods.Add('empty', TMethodDescr.Create(0, 0, [], m_empty));
+  Methods.Add('toBase64', TMethodDescr.Create(0, 0, [], m_to_base64));
+  Methods.Add('fromBase64', TMethodDescr.Create(0, 0, [], m_from_base64));
+  Methods.Add('toEncodedUrl', TMethodDescr.Create(0, 0, [], m_url_encode));
+  Methods.Add('toDecodedUrl', TMethodDescr.Create(0, 0, [], m_url_decode));
+  Methods.Add('toEncodedHtml', TMethodDescr.Create(0, 0, [], m_html_encode));
+  Methods.Add('toDecodedHtml', TMethodDescr.Create(0, 0, [], m_html_decode));
 end;
 
 function TStringObject.m_contains(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1223,6 +1240,21 @@ end;
 function TStringObject.m_empty(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TBooleanObject.Create(Length(Value)=0);
+end;
+
+function TStringObject.m_from_base64(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(DecodeString(Value));
+end;
+
+function TStringObject.m_html_decode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(TNetEncoding.HTML.Decode(Value));
+end;
+
+function TStringObject.m_html_encode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(TNetEncoding.HTML.Encode(Value));
 end;
 
 function TStringObject.m_left(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1296,6 +1328,11 @@ begin
     Result := TNumberObject.Create(StrToFloatDef(Value,0));
 end;
 
+function TStringObject.m_to_base64(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(EncodeString(Value));
+end;
+
 function TStringObject.m_trim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(Trim(Value));
@@ -1304,6 +1341,16 @@ end;
 function TStringObject.m_upper(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(UpperCase(Value));
+end;
+
+function TStringObject.m_url_decode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(TNetEncoding.URL.Decode(Value));
+end;
+
+function TStringObject.m_url_encode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(TNetEncoding.URL.Encode(Value));
 end;
 
 function TStringObject.Next: TEvalObject;

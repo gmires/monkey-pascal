@@ -259,7 +259,7 @@ var
   CurrentPos:Integer;
 begin
 	CurrentPos := Position;
-  while (isLetter(ch)) do ReadChar;
+  while (isLetter(ch) or isDigit(ch)) do ReadChar;
 
 	Result := Copy(Input, CurrentPos, Position-CurrentPos);
 end;
@@ -289,7 +289,7 @@ const
     if Result then
     begin
       ReadChar;
-      ReadChar;
+      //////ReadChar; testing is bad +1 in while loop
     end;
   end;
 
