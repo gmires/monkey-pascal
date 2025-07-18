@@ -430,7 +430,9 @@ type
     destructor Destroy; override;
   end;
 
-function ArgumentValidate(args: TList<TEvalObject>; ArgMin, ArgMax: Integer; ArgType: array of string):TEvalObject;
+function  ArgumentValidate(args: TList<TEvalObject>; ArgMin, ArgMax: Integer; ArgType: array of string):TEvalObject;
+procedure EvalObjectSetManualFree(Value:TEvalObject);
+procedure EvalObjectFree(Value:TEvalObject);
 
 implementation
 
@@ -459,6 +461,51 @@ begin
       end;
   end;
 end;
+
+procedure EvalObjectSetManualFree(Value:TEvalObject);
+var
+  H:THashkey;
+  C:TEvalObject;
+begin
+  Value.GcManualFree := True;
+  if Value is TArrayObject then
+  begin
+    for c in TArrayObject(Value).Elements do
+      EvalObjectSetManualFree(C);
+  end
+  else
+  if Value is THashObject then
+  begin
+    for H in THashObject(Value).Pairs.Keys do
+    begin
+      EvalObjectSetManualFree(THashObject(Value).Pairs[H].Key);
+      EvalObjectSetManualFree(THashObject(Value).Pairs[H].Value);
+    end;
+  end;
+end;
+
+procedure EvalObjectFree(Value:TEvalObject);
+var
+  H:THashkey;
+  C:TEvalObject;
+begin
+  if Value is TArrayObject then
+  begin
+    for c in TArrayObject(Value).Elements do
+      EvalObjectFree(C);
+  end
+  else
+  if Value is THashObject then
+  begin
+    for H in THashObject(Value).Pairs.Keys do
+    begin
+      EvalObjectFree(THashObject(Value).Pairs[H].Key);
+      EvalObjectFree(THashObject(Value).Pairs[H].Value);
+    end;
+  end;
+  Value.Free;
+end;
+
 
 { TEvalObject }
 
