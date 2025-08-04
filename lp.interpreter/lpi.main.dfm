@@ -145,10 +145,8 @@ object LPMain: TLPMain
     0000F0000000F0000000F0000000E000000000000000000600000007E0000007
     E0000007E0000003C000E0000007F000000FF000000FF000000FF000000FE000
     0007E0000007F000000FF800001FFCF00E3FFFF01FFFFFF81FFFFFF81FFF}
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCreate = FormCreate
-  PixelsPerInch = 96
   TextHeight = 13
   object Panel1: TPanel
     Left = 0
@@ -220,10 +218,6 @@ object LPMain: TLPMain
     TabOrder = 1
     object TabSource: TTabSheet
       Caption = 'Source'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 281
-      ExplicitHeight = 165
       object SplitLog: TSplitter
         Left = 0
         Top = 483
@@ -298,10 +292,6 @@ object LPMain: TLPMain
         Color = clBlack
         ParentBackground = False
         TabOrder = 1
-        ExplicitLeft = 270
-        ExplicitTop = 275
-        ExplicitWidth = 185
-        ExplicitHeight = 41
         object Label2: TLabel
           AlignWithMargins = True
           Left = 3
@@ -362,20 +352,13 @@ object LPMain: TLPMain
           BreakPointSize = 16
           GutterColor = clWindow
           GutterTextColor = clWindowText
-          ExplicitLeft = 135
-          ExplicitTop = 150
-          ExplicitWidth = 566
-          ExplicitHeight = 106
+          ExplicitLeft = 3
         end
       end
     end
     object TabAST: TTabSheet
       Caption = 'AST Tree'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Panel4: TPanel
         Left = 0
         Top = 0
@@ -386,10 +369,6 @@ object LPMain: TLPMain
         Color = clBlack
         ParentBackground = False
         TabOrder = 0
-        ExplicitLeft = 325
-        ExplicitTop = 310
-        ExplicitWidth = 185
-        ExplicitHeight = 41
         object Label3: TLabel
           AlignWithMargins = True
           Left = 3
@@ -420,10 +399,6 @@ object LPMain: TLPMain
           Indent = 19
           ReadOnly = True
           TabOrder = 0
-          ExplicitLeft = 95
-          ExplicitTop = 160
-          ExplicitWidth = 121
-          ExplicitHeight = 97
         end
       end
     end
@@ -440,7 +415,7 @@ object LPMain: TLPMain
     Left = 452
     Top = 283
     Bitmap = {
-      494C010103000800380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000800040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

@@ -183,6 +183,7 @@ end;
 procedure deinit;
 begin
   if Assigned(FileSystemObject) then FileSystemObject.Free;
+  if Assigned(JSONLIBObject) then JSONLIBObject.Free;
 end;
 
 

@@ -125,7 +125,7 @@ type
     function toJSON:TJSONValue; virtual;
     function toJSONString:TEvalObject; virtual;
   protected
-    Methods: TDictionary<string, TMethodDescr>;
+    Methods: TObjectDictionary<string, TMethodDescr>;
     function  m_tostring(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_type(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_clone(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -133,7 +133,7 @@ type
     function  m_toJSON(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; virtual;
   protected
-    Identifiers: TDictionary<string, TIdentifierDescr>;
+    Identifiers: TObjectDictionary<string, TIdentifierDescr>;
     procedure IdentifierInit; virtual;
   public
     { ** for GC (mark and sweep) ** }
@@ -531,9 +531,9 @@ begin
   GcManualFree := False;
   GcMark := False;
   Reset;
-  Methods := TDictionary<string, TMethodDescr>.Create;
+  Methods := TObjectDictionary<string, TMethodDescr>.Create([doOwnsValues]);
   MethodInit;
-  Identifiers:= TDictionary<string, TIdentifierDescr>.Create;
+  Identifiers:= TObjectDictionary<string, TIdentifierDescr>.Create([doOwnsValues]);
   IdentifierInit;
 end;
 
@@ -553,12 +553,15 @@ destructor TEvalObject.Destroy;
 var
   current:string;
 begin
-  for current in Methods.Keys do
-    Methods.ExtractPair(current).Value.Free;
+
+//  for current in Methods.Keys do
+//    Methods[current].Free;
+//    Methods.ExtractPair(current).Value.Free;
   Methods.Free;
 
-  for current in Identifiers.Keys do
-    Identifiers.ExtractPair(current).Value.Free;
+//  for current in Identifiers.Keys do
+//    Identifiers[current].Free;
+//    Identifiers.ExtractPair(current).Value.Free;
   Identifiers.Free;
 
   inherited;

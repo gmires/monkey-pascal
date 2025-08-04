@@ -870,6 +870,12 @@ begin
       end;
     end;
   finally
+    if Assigned(MainProgram) then
+    begin
+      MainProgram.Free;
+      MainProgram:= nil;
+    end;
+
     J.Free;
   end;
 end;

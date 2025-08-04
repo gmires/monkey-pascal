@@ -82,8 +82,8 @@ type
   end;
 
 var
-  builtins: TDictionary<string,TBuiltinObject>;
-  builtedmodules: TDictionary<string,TASTProgram>;
+  builtins: TObjectDictionary<string,TBuiltinObject>;
+  builtedmodules: TObjectDictionary<string,TASTProgram>;
 
 procedure ClearProjectModule;
 
@@ -96,7 +96,7 @@ begin
   for sModule in builtedmodules.Keys do
   begin
     if (Pos('main.',sModule)>0) then
-      builtedmodules.ExtractPair(sModule).Value.Free;
+      builtedmodules.Remove(sModule);
   end;
 end;
 
@@ -883,7 +883,10 @@ begin
   for sModule in builtedmodules.Keys do
   begin
     if (Pos('main.',sModule)>0) then
-      builtedmodules.ExtractPair(sModule).Value.Free;
+    begin
+      builtedmodules[sModule].Free;
+      builtedmodules.Remove(sModule);
+    end;
   end;
 end;
 
@@ -1304,8 +1307,8 @@ end;
 
 procedure init;
 begin
-  builtins := TDictionary<string,TBuiltinObject>.Create;
-  builtedmodules := TDictionary<string,TASTProgram>.Create;
+  builtins := TObjectDictionary<string,TBuiltinObject>.Create([doOwnsValues]);
+  builtedmodules := TObjectDictionary<string,TASTProgram>.Create([doOwnsValues]);
 end;
 
 procedure deinit;

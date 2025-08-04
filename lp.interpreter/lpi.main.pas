@@ -17,7 +17,7 @@ uses
   , lp.evaluator
   , lp.builtins
   , lp.advobject
-  , lp.edits
+  , lp.edits, System.ImageList
   { -- lp core uses -- }
   ;
 
