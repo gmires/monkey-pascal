@@ -82,8 +82,9 @@ type
   end;
 
 var
-  builtins: TObjectDictionary<string,TBuiltinObject>;
+  builtins: TDictionary<string,TBuiltinObject>;
   builtedmodules: TObjectDictionary<string,TASTProgram>;
+  GCCounterWait: Integer = 100;
 
 procedure ClearProjectModule;
 
@@ -172,7 +173,7 @@ begin
       end;
 
       Inc(FGCCounter);
-      if (FGCCounter>=100) then
+      if (FGCCounter>=GCCounterWait) then
       begin
         Gc.Mark(env);
         GC.Sweep;
@@ -1157,7 +1158,7 @@ var
 begin
   Result := AObject;
   if Assigned(AObject) then
-  if NOT AObject.GcManualFree then
+//  if NOT AObject.GcManualFree then
   begin
     FLock.Acquire;
     try
@@ -1307,7 +1308,7 @@ end;
 
 procedure init;
 begin
-  builtins := TObjectDictionary<string,TBuiltinObject>.Create([doOwnsValues]);
+  builtins := TDictionary<string,TBuiltinObject>.Create;
   builtedmodules := TObjectDictionary<string,TASTProgram>.Create([doOwnsValues]);
 end;
 

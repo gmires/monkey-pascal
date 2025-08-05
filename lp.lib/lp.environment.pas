@@ -175,6 +175,7 @@ type
     procedure MethodInit; override;
   public
     constructor Create(AValue: Double);
+    destructor Destroy; override;
     function toInt:Integer;
   end;
 
@@ -190,6 +191,7 @@ type
     constructor Create(AValue: Boolean);
     constructor CreateTrue;
     constructor CreateFalse;
+    destructor Destroy; override;
   end;
 
   TStringObject = class(TEvalObject)
@@ -235,6 +237,7 @@ type
   public
     constructor Create(AValue: string);
     class function CreateFormat(const AFormat: string; const Args: Array of const):TStringObject;
+    destructor Destroy; override;
   end;
 
   TNullObject = class(TEvalObject)
@@ -843,6 +846,11 @@ begin
   Value := AValue;
 end;
 
+destructor TNumberObject.Destroy;
+begin
+  inherited;
+end;
+
 function TNumberObject.Inspect: string;
 begin
   Result :=  StringReplace(FloatToStr(Value),',','.',[rfReplaceAll])
@@ -895,6 +903,11 @@ end;
 constructor TBooleanObject.CreateTrue;
 begin
   Create(True);
+end;
+
+destructor TBooleanObject.Destroy;
+begin
+  inherited;
 end;
 
 function TBooleanObject.Inspect: string;
@@ -1216,6 +1229,11 @@ end;
 function TStringObject.CurrentIndex: TEvalObject;
 begin
   Result := TNumberObject.Create(IIndex+1);
+end;
+
+destructor TStringObject.Destroy;
+begin
+  inherited;
 end;
 
 class function TStringObject.CreateFormat(const AFormat: string; const Args: array of const): TStringObject;
