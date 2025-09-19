@@ -84,7 +84,7 @@ type
 var
   builtins: TDictionary<string,TBuiltinObject>;
   builtedmodules: TObjectDictionary<string,TASTProgram>;
-  GCCounterWait: Integer = 100;
+  GCCounterWait: Integer = 100000; // default value is 100, but is very low
 
 procedure ClearProjectModule;
 
@@ -844,7 +844,8 @@ var
 begin
   Result := TEnvironment.Create(env);
   for i := 0 to fn.Parameters.Count-1 do
-    Result.SetOrCreateValue(fn.Parameters[i].Value, Gc.Add(args[i].Clone), False);
+    // -- Result.SetOrCreateValue(fn.Parameters[i].Value, Gc.Add(args[i].Clone), False);
+    Result.SetOrCreateValue(fn.Parameters[i].Value, Gc.Add(args[i].Reference), False);
 end;
 
 function TEvaluator.OnEvalNotifier(AModule: string; ALine, APos: Integer;  AEnvironment: TEnvironment; var AContinue:Boolean): Boolean;
@@ -1167,7 +1168,6 @@ begin
     finally
       FLock.Release;
     end;
-
     if AObject.ObjectType=ARRAY_OBJ then
     begin
       if Assigned(TArrayObject(AObject).Elements) then

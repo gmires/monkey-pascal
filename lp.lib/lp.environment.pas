@@ -100,6 +100,7 @@ type
     function ObjectType:TEvalObjectType; virtual;
     function Inspect:string; virtual;
     function Clone:TEvalObject; virtual;
+    function Reference:TEvalObject; virtual;
 
     { -- support for object method call -- }
     function  MethodCall(method:string; args: TList<TEvalObject>; env: TEnvironment):TEvalObject; virtual;
@@ -113,7 +114,7 @@ type
     function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; virtual;
     function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; virtual;
 
-    { -- support for interble value, index object element (es. foreach v,i in object ) -- }
+    { -- support for interable value, index object element (es. foreach v,i in object ) -- }
     function  isIterable:Boolean; virtual;
     function  Next:TEvalObject; virtual;
     function  CurrentIndex:TEvalObject; virtual;
@@ -129,6 +130,7 @@ type
     function  m_tostring(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_type(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_clone(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_ref(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_help(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_toJSON(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; virtual;
@@ -168,6 +170,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+    function Reference:TEvalObject; override;
   protected
     function toJSON:TJSONValue; override;
   protected
@@ -185,6 +188,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+    function Reference:TEvalObject; override;
   protected
     function toJSON:TJSONValue; override;
   public
@@ -200,6 +204,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+    function Reference:TEvalObject; override;
 
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
@@ -245,6 +250,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+    function Reference:TEvalObject; override;
   end;
 
   TLoopObject = class(TEvalObject)
@@ -391,6 +397,7 @@ type
     function ObjectType:TEvalObjectType; override;
     function Inspect:string; override;
     function Clone:TEvalObject; override;
+    function Reference:TEvalObject; override;
   protected
     function toJSON:TJSONValue; override;
   protected
@@ -650,6 +657,7 @@ begin
   Methods.Add('toJSON', TMethodDescr.Create(0, 0, [], m_toJSON));
   Methods.Add('type', TMethodDescr.Create(0, 0, [], m_type));
   Methods.Add('clone', TMethodDescr.Create(0, 0, [], m_clone));
+  Methods.Add('ref', TMethodDescr.Create(0, 0, [], m_ref));
   Methods.Add('help', TMethodDescr.Create(0, 1, [STRING_OBJ], m_help));
 end;
 
@@ -760,6 +768,11 @@ begin
   end;
 end;
 
+function TEvalObject.m_ref(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := Reference;
+end;
+
 function TEvalObject.m_toJSON(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := toJSONString;
@@ -783,6 +796,11 @@ end;
 function TEvalObject.ObjectType: TEvalObjectType;
 begin
   Result := '';
+end;
+
+function TEvalObject.Reference: TEvalObject;
+begin
+  Result := Self;
 end;
 
 procedure TEvalObject.Reset;
@@ -872,6 +890,11 @@ begin
   Result := NUMBER_OBJ;
 end;
 
+function TNumberObject.Reference: TEvalObject;
+begin
+  Result := Clone;
+end;
+
 function TNumberObject.toInt: Integer;
 begin
   Result := Trunc(Value);
@@ -918,6 +941,11 @@ end;
 function TBooleanObject.ObjectType: TEvalObjectType;
 begin
   Result := BOOLEAN_OBJ;
+end;
+
+function TBooleanObject.Reference: TEvalObject;
+begin
+  Result := Clone;
 end;
 
 function TBooleanObject.toJSON: TJSONValue;
@@ -1213,6 +1241,11 @@ begin
   Result := NULL_OBJ;
 end;
 
+function TNullObject.Reference: TEvalObject;
+begin
+  Result := Clone;
+end;
+
 { TStringObject }
 
 function TStringObject.Clone: TEvalObject;
@@ -1437,6 +1470,11 @@ begin
   Result := STRING_OBJ;
 end;
 
+function TStringObject.Reference: TEvalObject;
+begin
+  Result := Clone;
+end;
+
 function TStringObject.Setindex(Index, value: TEvalObject): TEvalObject;
 begin
   if Index.ObjectType<>NUMBER_OBJ then
@@ -1532,7 +1570,7 @@ begin
     if ((TNumberObject(Index).toInt<0) or (TNumberObject(Index).toInt>Elements.Count - 1)) then
       Result := TNullObject.Create
     else
-      Result := Elements[TNumberObject(Index).toInt];
+      Result := Elements[TNumberObject(Index).toInt].Reference;
   end;
 end;
 
@@ -1575,17 +1613,21 @@ function TArrayObject.m_delete(args: TList<TEvalObject>; env: TEnvironment): TEv
 var
   i:Integer;
 begin
-  Result := TArrayObject.Create;
-  TArrayObject(Result).Elements := TList<TEvalObject>.Create;
-  for i := 0 to Elements.Count-1 do
-    if (i<>TNumberObject(args[0]).toInt) then
-      TArrayObject(Result).Elements.Add(Elements[i].Clone);
+  i := TNumberObject(args[0]).toInt;
+  if ((i>=0) and (i<Self.Elements.Count)) then
+  begin
+    Elements[i].GcManualFree := False;
+    Elements[i].GcRefCount := 0;
+    Elements.Delete(i);
+    Result := Self;
+  end
+  else Result:= TErrorObject.newError('index out of range, 0 to %d', [Elements.Count])
 end;
 
 function TArrayObject.m_first(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   if Elements.Count>0 then
-    Result := Elements[0].Clone
+    Result := Elements[0].Reference
   else
     Result := TNullObject.Create;
 end;
@@ -1599,8 +1641,8 @@ begin
     Result:= TErrorObject.newError('index out of range, 0 to %d', [Elements.Count])
   else
   begin
-    Result := Clone;
-    TArrayObject(Result).Elements.Insert(i, args[0].Clone);
+    Self.Elements.Insert(i, args[0].Reference);
+    Result := Self;
   end;
 end;
 
@@ -1628,15 +1670,15 @@ end;
 function TArrayObject.m_last(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   if Elements.Count>0 then
-    Result := Elements[Elements.Count-1].Clone
+    Result := Elements[Elements.Count-1].Reference
   else
     Result := TNullObject.Create;
 end;
 
 function TArrayObject.m_push(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
-  Result := Clone;
-  TArrayObject(Result).Elements.Add(args[0].Clone);
+  Elements.Add(args[0].Reference);
+  Result := Self;
 end;
 
 function TArrayObject.m_rest(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1645,12 +1687,11 @@ var
 begin
   if (Elements.Count>0) then
   begin
-    Result := TArrayObject.Create;
-    TArrayObject(Result).Elements := TList<TEvalObject>.Create;
-    for i := 1 to Elements.Count-1 do
-      TArrayObject(Result).Elements.Add(Elements[i].Clone);
-  end
-  else Result := TNullObject.Create;
+    Elements[0].GcManualFree := False;
+    Elements[0].GcRefCount := 0;
+    Elements.Delete(0);
+  end;
+  Result := Self;
 end;
 
 function TArrayObject.m_size(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1687,7 +1728,7 @@ begin
     begin
       Value.GcManualFree:= Elements[TNumberObject(Index).toInt].GcManualFree;
       Elements[TNumberObject(Index).toInt].GcManualFree := False;
-      Elements[TNumberObject(Index).toInt] := Value;
+      Elements[TNumberObject(Index).toInt] := Value.Reference;
       Result := Self;
     end;
   end;
@@ -1817,7 +1858,7 @@ begin
   HK.FValueStr := name;
 
   if Pairs.ContainsKey(HK) then
-    Result := Pairs[HK].Value
+    Result := Pairs[HK].Value.Reference
   else
     Result := TNullObject.Create;
 
@@ -1833,7 +1874,7 @@ begin
     Exit(TErrorObject.newError('unusable as hash key: %s', [Index.ObjectType]));
 
   if Pairs.ContainsKey(HK) then
-    Result := Pairs[HK].Value
+    Result := Pairs[HK].Value.Reference
   else
     Result := TNullObject.Create;
 
@@ -1951,7 +1992,7 @@ begin
   begin
     Value.GcManualFree := Pairs[HK].Value.GcManualFree;
     Pairs[HK].Value.GcManualFree := false;
-    Pairs[HK].Value := Value;
+    Pairs[HK].Value := Value.Reference;
     FreeAndNil(HK);
   end
   else Pairs.Add(HK,THashPair.Create(TStringObject.Create(name), Value));
@@ -1974,7 +2015,7 @@ begin
   begin
     Value.GcManualFree := Pairs[HK].Value.GcManualFree;
     Pairs[HK].Value.GcManualFree := false;
-    Pairs[HK].Value := Value;
+    Pairs[HK].Value := Value.Reference;
     FreeAndNil(HK);
   end
   else Pairs.Add(HK,THashPair.Create(Index, Value));
@@ -2317,6 +2358,11 @@ end;
 function TDateTimeObject.ObjectType: TEvalObjectType;
 begin
   Result := DATETIME_OBJ;
+end;
+
+function TDateTimeObject.Reference: TEvalObject;
+begin
+  Result := Clone;
 end;
 
 function TDateTimeObject.toJSON: TJSONValue;
