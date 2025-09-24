@@ -352,7 +352,6 @@ object LPMain: TLPMain
           BreakPointSize = 16
           GutterColor = clWindow
           GutterTextColor = clWindowText
-          ExplicitLeft = 3
         end
       end
     end

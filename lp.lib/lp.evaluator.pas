@@ -12,9 +12,9 @@ type
 
   TGarbageCollector = class
     FLock: TCriticalSection;
-    FObjects: TList<TEvalObject>;
-    function GetElemCount: Integer;
+    FHead: TEvalObject;
   public
+    Count:Integer;
     constructor Create;
     destructor Destroy; override;
 
@@ -22,8 +22,6 @@ type
     procedure Mark(AObject: TEvalObject); overload;
     procedure Mark(AEnvironment: TEnvironment); overload;
     procedure Sweep;
-
-    property ElemCount:Integer read GetElemCount;
   end;
 
   TEvalNotifierEvent = function(AModule:string; ALine, APos: Integer; AEnvironment:TEnvironment; AEval:TEvaluator; var AContinue:Boolean):Boolean of object;
@@ -84,7 +82,7 @@ type
 var
   builtins: TDictionary<string,TBuiltinObject>;
   builtedmodules: TObjectDictionary<string,TASTProgram>;
-  GCCounterWait: Integer = 100000; // default value is 100, but is very low
+  GCCounterWait: Integer = 10000; // default value is 100
 
 procedure ClearProjectModule;
 
@@ -165,11 +163,11 @@ begin
 
     if (Result<>nil) then
     begin
-      Gc.Mark(Result);
+//      Gc.Mark(Result);
       if (Result.ObjectType = RETURN_VALUE_OBJ) then
       begin
         Gc.Add(TReturnValueObject(Result).Value);
-        Gc.Mark(TReturnValueObject(Result).Value);
+//        Gc.Mark(TReturnValueObject(Result).Value);
       end;
 
       Inc(FGCCounter);
@@ -221,7 +219,7 @@ begin
           FEnv.SetOrCreateValue('self', AObject, false);
           Result := unwrapReturnValue(Eval(TFunctionObject(Result).Body, FEnv));
         finally
-          Gc.Mark(FEnv);
+//          Gc.Mark(FEnv);
           DelEnv(FEnv);
         end;
       end
@@ -927,7 +925,7 @@ begin
     try
       Result := unwrapReturnValue(Eval(TFunctionObject(fn).Body, FEnv));
     finally
-      Gc.Mark(FEnv);
+//      Gc.Mark(FEnv);
       DelEnv(FEnv);
     end;
   end
@@ -1157,79 +1155,72 @@ var
   Element: TEvalObject;
   Hkey: THashkey;
 begin
-  Result := AObject;
-  if Assigned(AObject) then
-//  if NOT AObject.GcManualFree then
-  begin
-    FLock.Acquire;
-    try
-      if FObjects.IndexOf(AObject)<0 then
-        FObjects.Add(AObject);
-    finally
-      FLock.Release;
+  try
+//    FLock.Acquire;
+
+    Result := AObject;
+    if Assigned(Result) then
+    begin
+      if NOT Result.GcGarbage then
+      begin
+        Result.GcGarbage := True;
+        Result.GcNext := FHead.GcNext;
+        FHead.GcNext  := Result;
+        Inc(Count);
+      end;
+
+      if Result.ObjectType=ARRAY_OBJ then
+      begin
+        if Assigned(TArrayObject(Result).Elements) then
+          for Element in TArrayObject(Result).Elements do
+            Add(Element);
+      end
+      else
+      if Result.ObjectType=HASH_OBJ then
+      begin
+        if Assigned(THashObject(Result).Pairs) then
+          for HKey in THashObject(Result).Pairs.Keys do
+          begin
+            Add(THashObject(Result).Pairs[HKey].Key);
+            Add(THashObject(Result).Pairs[HKey].Value);
+          end;
+      end
+      else
+      if Result.ObjectType=RETURN_VALUE_OBJ then
+        Add(TReturnValueObject(Result).Value);
     end;
-    if AObject.ObjectType=ARRAY_OBJ then
-    begin
-      if Assigned(TArrayObject(AObject).Elements) then
-        for Element in TArrayObject(AObject).Elements do
-          Add(Element);
-    end
-    else
-    if AObject.ObjectType=HASH_OBJ then
-    begin
-      if Assigned(THashObject(AObject).Pairs) then
-        for HKey in THashObject(AObject).Pairs.Keys do
-        begin
-          Add(THashObject(AObject).Pairs[HKey].Key);
-          Add(THashObject(AObject).Pairs[HKey].Value);
-        end;
-    end
-    else
-    if AObject.ObjectType=RETURN_VALUE_OBJ then
-      Add(TReturnValueObject(AObject).Value);
+  finally
+//    FLock.Release;
   end;
 end;
 
 constructor TGarbageCollector.Create;
 begin
+  Count:= 0;
   FLock:= TCriticalSection.Create;
-  FObjects:= TList<TEvalObject>.Create;
+  FHead:= TStringObject.Create('GCHead');
 end;
 
 destructor TGarbageCollector.Destroy;
 var
-  i: Integer;
-  P: Pointer;
+  node, tmp:TEvalObject;
 begin
-  P:=nil;
-  FLock.Acquire;
-  try
-    FObjects.Sort;
-    for i := 0 to FObjects.Count-1 do
-    try
-      if P<>FObjects[i] then
-      if NOT (FObjects[i].GcManualFree) then
-      begin
-        P:=FObjects[i];
-        FObjects[i].Free;
-      end;
-
-    except
-      Continue;
-    end;
-    FObjects.Clear;
-  finally
-    FLock.Release;
+  node:= FHead;
+  while (node.GcNext<>nil) do
+  begin
+    if NOT node.GcNext.GcManualFree then
+    begin
+      tmp := node.GcNext;
+      node.GcNext := tmp.GcNext;
+      tmp.Free;
+      Dec(Count);
+    end
+    else node := node.GcNext;
   end;
 
-  FreeAndNil(FObjects);
-  FreeAndNil(FLock);
+  FHead.Free;
+  FLock.Free;
   inherited;
-end;
-
-function TGarbageCollector.GetElemCount: Integer;
-begin
-  Result := FObjects.Count;
 end;
 
 procedure TGarbageCollector.Mark(AObject: TEvalObject);
@@ -1286,22 +1277,26 @@ end;
 
 procedure TGarbageCollector.Sweep;
 var
-  i:Integer;
-  current:TEvalObject;
+  node,tmp:TEvalObject;
 begin
-  try
-    FLock. Acquire;
-    for current in FObjects do
-      if (NOT current.GcMark and NOT current.GcManualFree and (current.GcRefCount<=0)) then
-      begin
-        FObjects.Remove(current);
-        current.Free;
-      end;
-    for i := 0 to FObjects.Count-1 do
-      FObjects[i].GcMark := False;
-  finally
-    FLock.Release;
-  end;
+  node:= FHead;
+  while (node.GcNext<>nil) do
+    if (NOT node.GcNext.GcMark and NOT node.GcNext.GcManualFree and (node.GcNext.GcRefCount<=0)) then
+    begin
+      tmp := node.GcNext;
+      node.GcNext := tmp.GcNext;
+      tmp.Free;
+
+      Dec(Count);
+    end
+    else node := node.GcNext;
+
+  node:= FHead;
+  while (node.GcNext<>nil) do
+  begin
+    node.GcNext.GcMark := false;
+    node:= node.GcNext;
+  end
 end;
 
 /////-------------------------------------------

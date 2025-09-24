@@ -139,9 +139,10 @@ type
     procedure IdentifierInit; virtual;
   public
     { ** for GC (mark and sweep) ** }
-    //GcNext:TEvalObject;
+    GcNext:TEvalObject;
     GcRefCount:Integer;
     GcMark:Boolean;
+    GcGarbage:Boolean;
     GcManualFree:Boolean;
 
     procedure MarkChild; virtual;
@@ -536,10 +537,14 @@ end;
 
 constructor TEvalObject.Create;
 begin
-  //GcNext := nil;
+  // -- garbage collector -- //
+  GcNext := nil;
   GcRefCount := 0;
   GcManualFree := False;
-  GcMark := False;
+  GcMark := True;
+  GcGarbage:= False;
+  // -- garbage collector -- //
+
   Reset;
   Methods := TObjectDictionary<string, TMethodDescr>.Create([doOwnsValues]);
   MethodInit;
@@ -1619,7 +1624,7 @@ begin
     Elements[i].GcManualFree := False;
     Elements[i].GcRefCount := 0;
     Elements.Delete(i);
-    Result := Self;
+    Result := TNumberObject.Create(Elements.Count);
   end
   else Result:= TErrorObject.newError('index out of range, 0 to %d', [Elements.Count])
 end;
@@ -1642,7 +1647,7 @@ begin
   else
   begin
     Self.Elements.Insert(i, args[0].Reference);
-    Result := Self;
+    Result := TNumberObject.Create(Elements.Count);
   end;
 end;
 
@@ -1678,7 +1683,7 @@ end;
 function TArrayObject.m_push(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Elements.Add(args[0].Reference);
-  Result := Self;
+  Result := TNumberObject.Create(Elements.Count);
 end;
 
 function TArrayObject.m_rest(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1691,7 +1696,7 @@ begin
     Elements[0].GcRefCount := 0;
     Elements.Delete(0);
   end;
-  Result := Self;
+  Result := TNumberObject.Create(Elements.Count);
 end;
 
 function TArrayObject.m_size(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
