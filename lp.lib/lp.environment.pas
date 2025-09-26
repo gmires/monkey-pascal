@@ -142,7 +142,7 @@ type
     GcNext:TEvalObject;
     GcRefCount:Integer;
     GcMark:Boolean;
-    GcGarbage:Boolean;
+    GcGarbage:Integer;
     GcManualFree:Boolean;
 
     procedure MarkChild; virtual;
@@ -542,7 +542,7 @@ begin
   GcRefCount := 0;
   GcManualFree := False;
   GcMark := True;
-  GcGarbage:= False;
+  GcGarbage:= 0;
   // -- garbage collector -- //
 
   Reset;

@@ -1161,9 +1161,9 @@ begin
     Result := AObject;
     if Assigned(Result) then
     begin
-      if NOT Result.GcGarbage then
+      if Result.GcGarbage=0 then
       begin
-        Result.GcGarbage := True;
+        Inc(Result.GcGarbage);
         Result.GcNext := FHead.GcNext;
         FHead.GcNext  := Result;
         Inc(Count);
@@ -1208,6 +1208,9 @@ begin
   node:= FHead;
   while (node.GcNext<>nil) do
   begin
+    if node.GcNext.GcGarbage>1 then
+      Exception.Create(Format('Object Type %s with refecence %d', [node.GcNext.ObjectType, node.GcNext.GcGarbage]));
+
     if NOT node.GcNext.GcManualFree then
     begin
       tmp := node.GcNext;
