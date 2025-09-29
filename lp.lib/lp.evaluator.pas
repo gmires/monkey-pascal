@@ -1299,7 +1299,7 @@ begin
   begin
     node.GcNext.GcMark := false;
     node:= node.GcNext;
-  end
+  end;
 end;
 
 /////-------------------------------------------
