@@ -775,12 +775,12 @@ begin
         begin
           P:= (node as TASTMethodCallExpression).Call;
           if (P is TASTIdentifier) then
-            Result := enobj.SetIdentifer(TASTIdentifier(P).Value, AValue, nil)
+            Result := Gc.Add(enobj.SetIdentifer(TASTIdentifier(P).Value, AValue, nil))
           else
           if (P is TASTIndexExpression) then
           begin
             index := Eval((P as TASTIndexExpression).index, env);
-            Result:= enobj.SetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, AValue, index);
+            Result:= Gc.Add(enobj.SetIdentifer(((P as TASTIndexExpression).Left as TASTIdentifier).Value, AValue, index));
           end
           else Result := CreateErrorObj('Object Type <%s> not supported for dot assign operator',[P.toString]);
         end

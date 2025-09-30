@@ -831,7 +831,6 @@ begin
       begin
         Par:=TArrayObject.CreateWithElements;
         try
-          Par.GcManualFree:= True;
           for i := 0 to ParamCount do
             Par.Elements.Add(TStringObject.Create(ParamStr(i)));
 
@@ -846,14 +845,12 @@ begin
               Par.Elements.Add(TStringObject.Create(S1));
           end;
 
-          for i := 0 to Par.Elements.Count-1 do
-            Par.Elements[i].GcManualFree := True;
-
           Env:=TEnvironment.Create;
           Evl:=TEvaluator.Create;
           try
             Evl.EvalNotifierEvent := EvalNotifer;
             Env.SetOrCreateValue('params', Par, True);
+            Evl.Gc.Add(Par);
             EvR := Evl.Run(MainProgram, Env);
             if (EvR<>nil) then
               AddToConsoleLog(EvR.Inspect)
@@ -863,9 +860,6 @@ begin
           end;
 
         finally
-          for i := 0 to Par.Elements.Count-1 do
-            Par.Elements[i].Free;
-          Par.Free;
         end;
       end;
     end;
