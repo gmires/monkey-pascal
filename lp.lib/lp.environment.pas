@@ -1786,7 +1786,9 @@ begin
       Result := FValueStr = THashkey(Obj).FValueStr
     else
     if (ObjectType=BOOLEAN_OBJ) then
-      Result := FValueBool = THashkey(Obj).FValueBool;
+      Result := FValueBool = THashkey(Obj).FValueBool
+    else
+      Result := False;
 end;
 
 class function THashkey.fromObject(Obj: TEvalObject): THashkey;
@@ -1844,12 +1846,18 @@ end;
 destructor THashObject.Destroy;
 var
   hkey: THashkey;
+  hpair: THashPair;
 begin
+  for hpair in Pairs.Values do
+    hpair.Free;
   for hkey in Pairs.Keys do
+    hkey.Free;
+
+{  for hkey in Pairs.Keys do
   begin
     Pairs[hkey].Free;
     hkey.Free;
-  end;
+  end;}
   Pairs.Clear;
   FreeAndNil(Pairs);
   inherited;

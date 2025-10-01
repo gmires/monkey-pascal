@@ -1204,18 +1204,24 @@ end;
 destructor TGarbageCollector.Destroy;
 var
   node, tmp:TEvalObject;
+  ErrCount: Integer;
 begin
+  ErrCount:= 0;
   node:= FHead;
   while (node.GcNext<>nil) do
   begin
-    if node.GcNext.GcGarbage>1 then
-      Exception.Create(Format('Object Type %s with refecence %d', [node.GcNext.ObjectType, node.GcNext.GcGarbage]));
+//    if node.GcNext.GcGarbage>1 then
+//      Exception.Create(Format('Object Type %s with refecence %d', [node.GcNext.ObjectType, node.GcNext.GcGarbage]));
 
     if NOT node.GcNext.GcManualFree then
     begin
       tmp := node.GcNext;
       node.GcNext := tmp.GcNext;
-      tmp.Free;
+      try
+        tmp.Free;
+      except
+        Inc(ErrCount);
+      end;
       Dec(Count);
     end
     else node := node.GcNext;
