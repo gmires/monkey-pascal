@@ -881,13 +881,8 @@ begin
   Result := Eval(node, env);
 
   for sModule in builtedmodules.Keys do
-  begin
     if (Pos('main.',sModule)>0) then
-    begin
-      builtedmodules[sModule].Free;
       builtedmodules.Remove(sModule);
-    end;
-  end;
 end;
 
 function TEvaluator.unwrapReturnValue(obj:TEvalObject):TEvalObject;
