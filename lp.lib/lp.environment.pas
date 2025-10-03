@@ -5,7 +5,7 @@ interface
 {$I lp.inc}
 
 uses classes, SysUtils, Generics.Collections, Variants, StrUtils, DateUtils
-  ,System.NetEncoding
+  ,System.NetEncoding, Math
   ,{$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
   ,lp.parser
   ,lp.utils
@@ -176,6 +176,9 @@ type
     function toJSON:TJSONValue; override;
   protected
     function  m_format(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_round(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_trunc(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_round_to(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     procedure MethodInit; override;
   public
     constructor Create(AValue: Double);
@@ -229,6 +232,7 @@ type
     function  m_upper(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_contains(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_startwith(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_endwith(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_empty(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_to_base64(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_from_base64(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -238,6 +242,15 @@ type
 
     function  m_html_encode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_html_decode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+
+    function  m_concat(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_index_of(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_pad_start(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_pad_end(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_repeat(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_replace(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_to_char_code(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_char_code_at(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
 
     procedure MethodInit; override;
   public
@@ -883,11 +896,29 @@ procedure TNumberObject.MethodInit;
 begin
   inherited;
   Methods.Add('format', TMethodDescr.Create(1, 1, [STRING_OBJ], m_format));
+  Methods.Add('round', TMethodDescr.Create(0, 0, [], m_round));
+  Methods.Add('trunc', TMethodDescr.Create(0, 0, [], m_trunc));
+  Methods.Add('roundTo', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_round_to));
 end;
 
 function TNumberObject.m_format(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(FormatFloat(TStringObject(args[0]).Value, Value));
+end;
+
+function TNumberObject.m_round(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(Round(Value));
+end;
+
+function TNumberObject.m_round_to(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(RoundTo(Value, TNumberObject(args[0]).toInt));
+end;
+
+function TNumberObject.m_trunc(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(Trunc(Value));
 end;
 
 function TNumberObject.ObjectType: TEvalObjectType;
@@ -1317,7 +1348,10 @@ begin
   Methods.Add('lower', TMethodDescr.Create(0, 0, [], m_lower));
   Methods.Add('upper', TMethodDescr.Create(0, 0, [], m_upper));
   Methods.Add('contains', TMethodDescr.Create(1, 1, [STRING_OBJ], m_contains));
+  Methods.Add('concat', TMethodDescr.Create(1, 1, [STRING_OBJ], m_concat));
+  Methods.Add('indexof', TMethodDescr.Create(1, 1, [STRING_OBJ], m_index_of));
   Methods.Add('startWith', TMethodDescr.Create(1, 1, [STRING_OBJ], m_startwith));
+  Methods.Add('endWith', TMethodDescr.Create(1, 1, [STRING_OBJ], m_endwith));
   Methods.Add('empty', TMethodDescr.Create(0, 0, [], m_empty));
   Methods.Add('toBase64', TMethodDescr.Create(0, 0, [], m_to_base64));
   Methods.Add('fromBase64', TMethodDescr.Create(0, 0, [], m_from_base64));
@@ -1325,6 +1359,29 @@ begin
   Methods.Add('toDecodedUrl', TMethodDescr.Create(0, 0, [], m_url_decode));
   Methods.Add('toEncodedHtml', TMethodDescr.Create(0, 0, [], m_html_encode));
   Methods.Add('toDecodedHtml', TMethodDescr.Create(0, 0, [], m_html_decode));
+
+  Methods.Add('padStart', TMethodDescr.Create(1, 2, [NUMBER_OBJ, STRING_OBJ], m_pad_start));
+  Methods.Add('padEnd', TMethodDescr.Create(1, 2, [NUMBER_OBJ, STRING_OBJ], m_pad_end));
+  Methods.Add('repeat', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_repeat));
+  Methods.Add('replace', TMethodDescr.Create(2, 2, [STRING_OBJ,STRING_OBJ], m_replace));
+  Methods.Add('toCharCode', TMethodDescr.Create(0, 0, [], m_to_char_code));
+  Methods.Add('charCodeAt', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_char_code_at));
+end;
+
+function TStringObject.m_char_code_at(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
+var
+  P:Integer;
+begin
+  P := TNumberObject(args[0]).toInt;
+  if ((P>0) and (P<=Length(Value))) then
+    Result := TNumberObject.Create(Ord(Value[P]))
+  else
+    Result := TNullObject.Create;
+end;
+
+function TStringObject.m_concat(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(Value + TStringObject(args[0]).Value);
 end;
 
 function TStringObject.m_contains(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1348,6 +1405,17 @@ begin
   Result := TBooleanObject.Create(Length(Value)=0);
 end;
 
+function TStringObject.m_endwith(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  S:string;
+begin
+  S:= TStringObject(args[0]).Value;
+  if S='' then
+    Result := TBooleanObject.CreateFalse
+  else
+    Result := TBooleanObject.Create(EndsText(S, Value));
+end;
+
 function TStringObject.m_from_base64(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(DecodeString(Value));
@@ -1361,6 +1429,11 @@ end;
 function TStringObject.m_html_encode(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(TNetEncoding.HTML.Encode(Value));
+end;
+
+function TStringObject.m_index_of(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TNumberObject.Create(Pos(TStringObject(args[0]).Value, Value));
 end;
 
 function TStringObject.m_left(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1381,6 +1454,48 @@ end;
 function TStringObject.m_ltrim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(TrimLeft(Value));
+end;
+
+function TStringObject.m_pad_end(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  C:Char;
+begin
+  C:=' ';
+  if (args.Count=2) then
+    if (TStringObject(args[1]).Value<>'') then
+      C:= TStringObject(args[1]).Value[1];
+
+  Result := TStringObject.Create(StrSpace(Value, TNumberObject(args[0]).toInt, C))
+end;
+
+function TStringObject.m_pad_start(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  C:Char;
+begin
+  C:=' ';
+  if (args.Count=2) then
+    if (TStringObject(args[1]).Value<>'') then
+      C:= TStringObject(args[1]).Value[1];
+
+  Result := TStringObject.Create(StrSpace(Value, -TNumberObject(args[0]).toInt, C))
+end;
+
+function TStringObject.m_repeat(args: TList<TEvalObject>;  env: TEnvironment): TEvalObject;
+var
+  i,R:Integer;
+  S:string;
+begin
+  S:='';
+  R:=TNumberObject(args[0]).toInt;
+  for i := 1 to R do
+    S:=S+Value;
+
+  Result := TStringObject.Create(S);
+end;
+
+function TStringObject.m_replace(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(StringReplace(Value,TStringObject(args[0]).Value,TStringObject(args[1]).Value,[rfReplaceAll]));
 end;
 
 function TStringObject.m_right(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
@@ -1437,6 +1552,15 @@ end;
 function TStringObject.m_to_base64(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
 begin
   Result := TStringObject.Create(EncodeString(Value));
+end;
+
+function TStringObject.m_to_char_code(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  i:Integer;
+begin
+  Result := TArrayObject.CreateWithElements;
+  for i := 1 to Length(Value) do
+    TArrayObject(Result).Elements.Add(TNumberObject.Create(Ord( Value[i])) );
 end;
 
 function TStringObject.m_trim(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;

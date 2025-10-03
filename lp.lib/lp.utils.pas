@@ -9,6 +9,7 @@ uses {$IFDEF LPI_D28} JSON {$ELSE} DBXJSON {$ENDIF}
 
 function  StrSplit(var S:String; C:Char):string;
 function  StrSplitPlus(var S:String; C:string):string;
+function  StrSpace(S:String; LC:Integer; C:Char=' '):string;
 
 function  JSONToString(O:TJSONObject):string;
 
@@ -60,6 +61,27 @@ begin
     S:=Copy(S,P+length(C),length(S)-P);
   end;
   Result:=R;
+end;
+
+function StrSpace(S:String; LC:Integer; C:Char=' '):string;
+var
+  L:Integer;
+begin
+  L:=length(S);
+  if LC>0 then
+  begin
+    if L>LC then S:=Copy(S,1,LC)
+    else
+      S:=S+StringOfChar(C,LC-L);
+  end
+  else
+  begin
+    LC:=-LC;
+    if L>LC then S:=Copy(S,1,LC)
+    else
+      S:=StringOfChar(C,LC-L)+S;
+  end;
+  Result:=S;
 end;
 
 function JSONToString(O:TJSONObject):string;
