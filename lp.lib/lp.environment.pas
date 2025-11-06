@@ -389,6 +389,8 @@ type
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
     function GetObject(name:string):TEvalObject; //** utility function for return real object (not copy) in integrations **//
+    function ChkObject(name:string; OType:TEvalObjectType):Boolean; overload;//** utility function return if exists and type specified  **//
+    function ChkObject(name:string; OType:TEvalObjectType; var OObject:TEvalObject):Boolean; overload;//** utility function return if exists and type specified  **//
     function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; override;
     function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; override;
 
@@ -1985,6 +1987,33 @@ end;
 
 { THashObject }
 
+function THashObject.ChkObject(name: string; OType: TEvalObjectType): Boolean;
+var
+  OObject:TEvalObject;
+begin
+  Result := ChkObject(name, OType, OObject);
+end;
+
+function THashObject.ChkObject(name: string; OType: TEvalObjectType; var OObject: TEvalObject): Boolean;
+var
+  HK:THashkey;
+begin
+  OObject := nil;
+
+  HK := THashkey.Create(STRING_OBJ);
+  HK.FValueStr := name;
+
+  Result := Pairs.ContainsKey(HK);
+  if Result then
+  begin
+    Result := (Pairs[HK].Value.ObjectType=OType);
+    if Result then
+      OObject := Pairs[HK].Value;
+  end;
+
+  FreeAndNil(HK);
+end;
+
 function THashObject.Clone: TEvalObject;
 var
   key:THashkey;
@@ -2071,7 +2100,7 @@ begin
   HK.FValueStr := name;
 
   if Pairs.ContainsKey(HK) then
-    Result := Pairs[HK].Value.Reference;
+    Result := Pairs[HK].Value;
 
   FreeAndNil(HK);
 end;
