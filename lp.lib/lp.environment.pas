@@ -228,6 +228,7 @@ type
     function  m_left(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_right(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_split(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_split_at_len(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_lower(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_upper(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_contains(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -387,6 +388,7 @@ type
     function GetIndex(Index:TEvalObject):TEvalObject; override;
     function Setindex(Index:TEvalObject; value:TEvalObject):TEvalObject; override;
 
+    function GetObject(name:string):TEvalObject; //** utility function for return real object (not copy) in integrations **//
     function GetIdentifer(name:string; Index:TEvalObject=nil):TEvalObject; override;
     function SetIdentifer(name:string; value:TEvalObject; Index:TEvalObject=nil):TEvalObject; override;
 
@@ -1345,6 +1347,7 @@ begin
   Methods.Add('left', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_left));
   Methods.Add('right', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_right));
   Methods.Add('split', TMethodDescr.Create(0, 1, [STRING_OBJ], m_split));
+  Methods.Add('splitAtLength', TMethodDescr.Create(1, 1, [NUMBER_OBJ], m_split_at_len));
   Methods.Add('lower', TMethodDescr.Create(0, 0, [], m_lower));
   Methods.Add('upper', TMethodDescr.Create(0, 0, [], m_upper));
   Methods.Add('contains', TMethodDescr.Create(1, 1, [STRING_OBJ], m_contains));
@@ -1527,6 +1530,46 @@ begin
   begin
     S1:= StrSplit(S,J);
     TArrayObject(Result).Elements.Add(TStringObject.Create(S1));
+  end;
+end;
+
+function TStringObject.m_split_at_len(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+var
+  L:TStringList;
+  Len,i:Integer;
+  S0,S1,S2:String;
+begin
+  Result := TArrayObject.Create;
+  TArrayObject(Result).Elements := TList<TEvalObject>.Create;
+
+  Len:=TNumberObject(args[0]).toInt;
+  L:=TStringList.Create;
+  try
+    L.Text := TNetEncoding.HTML.Decode(Value);
+
+    for i := 0 to L.Count-1 do
+    begin
+      S0 := L[i];
+      While (S0<>'') do
+      begin
+        S1 := StrSplit(S0,' ');
+        if (Length(S2+' '+S1)>Len) then
+        begin
+          TArrayObject(Result).Elements.Add(TStringObject.Create(S2));
+          S2:=S1;
+        end
+        else S2 := S2+' '+S1;
+      end;
+      if (S2<>'') then
+      begin
+        TArrayObject(Result).Elements.Add(TStringObject.Create(S2));
+        S2:='';
+      end;
+    end;
+    if (S2<>'') then
+      TArrayObject(Result).Elements.Add(TStringObject.Create(S2));
+  finally
+    L.Free;
   end;
 end;
 
@@ -2014,6 +2057,21 @@ begin
     Result := Pairs[HK].Value.Reference
   else
     Result := TNullObject.Create;
+
+  FreeAndNil(HK);
+end;
+
+function THashObject.GetObject(name: string): TEvalObject;
+var
+  HK:THashkey;
+begin
+  Result := nil;
+
+  HK := THashkey.Create(STRING_OBJ);
+  HK.FValueStr := name;
+
+  if Pairs.ContainsKey(HK) then
+    Result := Pairs[HK].Value.Reference;
 
   FreeAndNil(HK);
 end;
