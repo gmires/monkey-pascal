@@ -472,7 +472,7 @@ end;
 
 function TSystemObject.i_get_filename(Index: TEvalObject): TEvalObject;
 begin
-  if ParamCount>1 then
+  if ParamCount>0 then
     if (LowerCase(RightStr(ParamStr(1),4))='.lpi') then
      Result := TStringObject.Create(ExcludeTrailingBackslash(ExtractFilePath(ExpandFileName(ParamStr(1)))));
 
