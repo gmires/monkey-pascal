@@ -25,7 +25,8 @@ uses
   ;
 
 type
-  TLPIdeMode = (mStandard, mEmbedded);
+  TLPIdeMode = (mStandard, mEmbedded, mEmbeddedOnSave);
+  TLPOnProjectSave = function(AProjectSource:TMemoryStream):Boolean of object;
 
   TLPIdeMain = class(TForm)
     MMMain: TMainMenu;
@@ -119,6 +120,7 @@ type
     SavedFontSize: Integer;
     //////////////////////
     LPIdeMode:TLPIdeMode;
+    FOnProjectSave:TLPOnProjectSave;
     FSelPos: integer;
     BreakPoints:TStringList;
     CurrentProjectModifed:Boolean;
@@ -157,6 +159,9 @@ type
     { -- utility -- }
     procedure AddToConsoleLog(value:string);
     procedure ErrorToConsoleLog(value:string);
+
+    property OnProjectSave:TLPOnProjectSave read FOnProjectSave
+      write FOnProjectSave;
   end;
 
 var
@@ -170,7 +175,8 @@ const
     +' '#13
     +'main();';
 
-function LpiOpenEmbeddedIde(AProjectName: string; var AProjectSource:TMemoryStream): Boolean;
+function LpiOpenEmbeddedIde(AProjectName: string; var AProjectSource:TMemoryStream): Boolean; overload;
+function LpiOpenEmbeddedIde(AProjectName: string; AProjectSource:TMemoryStream; AOnProjectSave:TLPOnProjectSave): Boolean; overload;
 
 implementation
 
@@ -196,6 +202,22 @@ begin
     Free;
   end;
 end;
+
+function LpiOpenEmbeddedIde(AProjectName: string; AProjectSource:TMemoryStream; AOnProjectSave:TLPOnProjectSave): Boolean; overload;
+begin
+  With TLPIdeMain.Create(Application) do
+  try
+    CurrentProject := AProjectName;
+    LPIdeMode := mEmbeddedOnSave;
+    OnProjectSave := AOnProjectSave;
+    OpenProject(AProjectName, AProjectSource);
+
+    ShowModal;
+  finally
+    Free;
+  end;
+end;
+
 
 procedure TLPIdeMain.AddModule(Name, Data: string);
 var
@@ -374,6 +396,7 @@ end;
 procedure TLPIdeMain.FormCreate(Sender: TObject);
 begin
   LPIdeMode := mStandard;
+  FOnProjectSave:= nil;
 
   SavedFontName:= Screen.MenuFont.Name;
   SavedFontSize:= Screen.MenuFont.Size;
@@ -392,10 +415,16 @@ begin
   // ***
   // ** configure embedded lpi ide for integrations
   // ***
-  tbNewPorject.Visible := (LPIdeMode=mStandard);
+  tbNewPorject.Visible  := (LPIdeMode=mStandard);
   tbOpenProject.Visible := tbNewPorject.Visible;
   MnuProjectNew.Visible := tbNewPorject.Visible;
   MnuProjectOpen.Visible:= tbNewPorject.Visible;
+  if (LPIdeMode=mEmbeddedOnSave) and NOT Assigned(FOnProjectSave) then
+  begin
+    tbSaveProject.Visible := false;
+    MnuProjectSave.Visible:= false;
+    ToolButton3.Visible := false;
+  end;
   N1.Visible:= tbNewPorject.Visible;
   MnuProjectSaveWithName.Visible:= tbNewPorject.Visible;
 end;
@@ -886,6 +915,20 @@ begin
   begin
     CurrentProjectModifed := False;
     ModalResult := mrOk;
+  end
+  else
+  if (LPIdeMode=mEmbeddedOnSave) then
+  begin
+    CurrentProjectModifed:= Assigned(FOnProjectSave);
+    if CurrentProjectModifed then
+    begin
+      MS:=ProjectToStreamCompress;
+      try
+        CurrentProjectModifed := NOT FOnProjectSave(MS);
+      finally
+        MS.Free;
+      end;
+    end;
   end
   else
   begin
