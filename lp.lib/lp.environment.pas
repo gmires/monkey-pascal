@@ -432,6 +432,7 @@ type
     function  m_valid(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_encode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_decode(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
+    function  m_format(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
 
     function  m_years_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
     function  m_months_between(args: TList<TEvalObject>; env: TEnvironment):TEvalObject;
@@ -2425,6 +2426,7 @@ begin
   Methods.Add('valid', TMethodDescr.Create(0, 0, [], m_valid,'return is a valid date time object.'));
   Methods.Add('encode', TMethodDescr.Create(3, 7, [NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ,NUMBER_OBJ ], m_encode,'Date from min Year, Month, Day (optional hour, min, sec, millis), return is valid'));
   Methods.Add('decode', TMethodDescr.Create(0, 0, [], m_decode,'return an array on numbers [Year, Month, Day, Hour, Minute, Second, Millisecond]'));
+  Methods.Add('format', TMethodDescr.Create(1, 1, [STRING_OBJ], m_format,'return formatted string datetime.'));
 
   Methods.Add('yearsBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_years_between,'return Years between passed date time object.'));
   Methods.Add('monthsBetween', TMethodDescr.Create(1, 1, [DATETIME_OBJ], m_months_between,'return Months between passed date time object.'));
@@ -2488,6 +2490,11 @@ begin
   Result := TBooleanObject.Create(IsValidDateTime(DPart[0],DPart[1],DPart[2],DPart[3],DPart[4],DPart[5],DPart[6]));
   if TBooleanObject(Result).Value then
     Value := EncodeDateTime(DPart[0],DPart[1],DPart[2],DPart[3],DPart[4],DPart[5],DPart[6]);
+end;
+
+function TDateTimeObject.m_format(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
+begin
+  Result := TStringObject.Create(FormatDateTime(TStringObject(args[0]).Value, Value));
 end;
 
 function TDateTimeObject.m_hours_add(args: TList<TEvalObject>; env: TEnvironment): TEvalObject;
