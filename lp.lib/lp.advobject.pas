@@ -632,7 +632,7 @@ function TFileObject.m_Copy(args: TList<TEvalObject>; env: TEnvironment): TEvalO
 begin
   try
     if args.Count=3 then
-      TFile.Copy(TStringObject(args[0]).Value, TStringObject(args[1]).Value, TBooleanObject(args[1]).Value)
+      TFile.Copy(TStringObject(args[0]).Value, TStringObject(args[1]).Value, TBooleanObject(args[2]).Value)
     else
       TFile.Copy(TStringObject(args[0]).Value, TStringObject(args[1]).Value);
     Result := TBooleanObject.CreateTrue;
