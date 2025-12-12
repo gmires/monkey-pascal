@@ -206,6 +206,14 @@ const
     +'   } '
     +'   return r; '
     +' };'
+    +' '
+    +' let isNull = fn(x){ '
+    +'   return (x.type()=="NULL"); '
+    +' };'
+    +' '
+    +' let isNotNull = fn(x){ '
+    +'   return (!isNull(x)); '
+    +' };'
     +'   ';
 var
   MODULES: Array[0..M_COUNT-1, 0..1] of string = (
