@@ -1,6 +1,8 @@
 ﻿# monkey pascal interpreter with Garbage Collector mark-and-sweep and Debugger and IDE
 Code for “Writing an Interpreter in Go” by Thorsten Ball in Pascal.
 
+[Documentazione](docs/index.md)
+
 > LPI integrated development environment
 ![Alt text](resources/IDE.png)
 
@@ -1054,3 +1056,4 @@ end.
 
 > DEBUGGER
 ![Alt text](resources/DBG.png)
+
