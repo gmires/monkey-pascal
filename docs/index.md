@@ -27,7 +27,6 @@ Nel repository sono presenti più progetti (Delphi):
 
 ## Indice dei contenuti
 
-- [README (panoramica)](../README.md)
 - [Manuale del linguaggio](language.md)
 - [Architettura dell’interprete](architecture.md)
 - [Builtins ed estensioni](builtins-and-extensions.md)
