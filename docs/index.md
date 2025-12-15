@@ -32,6 +32,8 @@ Nel repository sono presenti più progetti (Delphi):
 - [Architettura dell’interprete](architecture.md)
 - [Builtins ed estensioni](builtins-and-extensions.md)
 - [IDE e Debugger](ide-and-debugger.md)
+- [Architettura oggetti di base](objects-specs.base.md)
+- [Architettura oggetti avanzati](objects-specs.advanced.md)
 
 ## Note
 
