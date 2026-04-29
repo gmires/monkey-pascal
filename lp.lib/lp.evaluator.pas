@@ -653,6 +653,7 @@ var
   k,v: TEvalObject;
   h:THashkey;
   pair: TPair<TASTExpression,TASTExpression>;
+  S:string;
 begin
   Result := THashObject.Create;
 
@@ -668,10 +669,12 @@ begin
     h:= THashkey.fromObject(k);
     if h.ObjectType=ERROR_OBJ then
     begin
+      S:=k.ObjectType;
+
       FreeAndNil(k);
       FreeAndNil(h);
       FreeAndNil(Result);
-      Exit(CreateErrorObj('unusable as hash key: %s', [k.ObjectType]));
+      Exit(CreateErrorObj('unusable as hash key: %s', [S]));
     end;
 
     v := Eval(pair.Value, env);

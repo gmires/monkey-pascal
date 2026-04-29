@@ -671,7 +671,7 @@ begin
   end;
 
   if Result=nil then
-    TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
+    Result := TErrorObject.newError('method %s not found in object type %s',[method, ObjectType]);
 end;
 
 procedure TEvalObject.MethodInit;
