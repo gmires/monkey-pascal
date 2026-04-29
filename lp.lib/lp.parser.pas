@@ -1071,7 +1071,7 @@ end;
 function TParser.ParseNullLiteral: TASTExpression;
 begin
   Result:= TASTNullLiteral.Create;
-  TASTNumberLiteral(Result).Token := CurrToken.Clone;
+  TASTNullLiteral(Result).Token := CurrToken.Clone;
 end;
 
 function TParser.ParseNumberLiteral: TASTExpression;
